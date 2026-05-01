@@ -1,0 +1,10 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - '${FRONTEND_PORT}:5173'
+    networks:
+      - isep
+networks:
+  isep:
+    driver: bridge
