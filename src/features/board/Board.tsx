@@ -1,4 +1,6 @@
+import { useState } from "react";
 import {
+  CLOCKWISE_TRACK,
   GREY_TRACK,
   RED_TILES as RED_GOAL_PATH,
   YELLOW_TILES as YELLOW_GOAL_PATH,
@@ -8,6 +10,8 @@ import {
 } from "./BoardPath";
 import { Figure } from "./Figure";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const getFigureColor = (x: number, y: number) => {
   if (x < 800 && y < 800) return "#577CDB"; // Blue
   if (x > 800 && y < 800) return "#EBE036"; // Yellow
@@ -15,7 +19,53 @@ const getFigureColor = (x: number, y: number) => {
   return "#57DB8F"; // Green
 };
 
+const INITIAL_FIGURES = [
+  { id: "blue-1", color: "#577CDB", trackIndex: 1 },
+  { id: "yellow-1", color: "#EBE036", trackIndex: 18 },
+  { id: "green-1", color: "#57DB8F", trackIndex: 31 },
+  { id: "red-1", color: "#DB5757", trackIndex: 44 },
+];
+
+const REMAINING_NEST_INDICES = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
+
 export default function Board() {
+  const [figures, setFigures] = useState(INITIAL_FIGURES);
+  const [selectedFigureId, setSelectedFigureId] = useState<string | null>(null);
+
+  const hypotheticalDiceRoll = 6;
+
+  const activeFigure = figures.find((f) => f.id === selectedFigureId);
+
+  let targetTile = null;
+  let targetIndex: number | null = null;
+
+  if (activeFigure && CLOCKWISE_TRACK) {
+    targetIndex =
+      (activeFigure.trackIndex + hypotheticalDiceRoll) % CLOCKWISE_TRACK.length;
+    targetTile = CLOCKWISE_TRACK[targetIndex];
+  }
+
+  const handleMoveToTarget = async () => {
+    if (!activeFigure || targetIndex === null || !CLOCKWISE_TRACK) return;
+
+    setSelectedFigureId(null);
+    const startIdx = activeFigure.trackIndex;
+
+    for (let step = 1; step <= hypotheticalDiceRoll; step++) {
+      setFigures((prevFigures) =>
+        prevFigures.map((fig) => {
+          if (fig.id === activeFigure.id) {
+            const nextIndex = (startIdx + step) % CLOCKWISE_TRACK.length;
+            return { ...fig, trackIndex: nextIndex };
+          }
+          return fig;
+        }),
+      );
+
+      await sleep(300);
+    }
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-primary p-4">
       <div className="w-full max-w-180 aspect-square p-4 relative">
@@ -75,6 +125,7 @@ export default function Board() {
               fill="#577CDB"
             />
           ))}
+
           {YELLOW_GOAL_PATH.map((p, i) => (
             <rect
               key={`yellow-goal-${i}`}
@@ -86,6 +137,7 @@ export default function Board() {
               fill="#EBE036"
             />
           ))}
+
           {RED_GOAL_PATH.map((p, i) => (
             <rect
               key={`red-goal-${i}`}
@@ -97,6 +149,7 @@ export default function Board() {
               fill="#DB5757"
             />
           ))}
+
           {GREEN_GOAL_PATH.map((p, i) => (
             <rect
               key={`green-goal-${i}`}
@@ -121,14 +174,56 @@ export default function Board() {
             />
           ))}
 
-          {NEST_SLOTS.map((p, i) => (
-            <Figure
-              key={`initial-figure-${i}`}
-              x={p.x}
-              y={p.y}
-              color={getFigureColor(p.x, p.y)}
+          {targetTile && (
+            <circle
+              cx={targetTile.x}
+              cy={targetTile.y}
+              r={36}
+              fill="rgba(255, 255, 255, 0.2)"
+              stroke="#FFFFFF"
+              strokeWidth="4"
+              strokeDasharray="16 8"
+              style={{
+                cursor: "pointer",
+                transformOrigin: `${targetTile.x}px ${targetTile.y}px`,
+                animation: "spin 4s linear infinite",
+              }}
+              onClick={handleMoveToTarget}
             />
-          ))}
+          )}
+
+          {REMAINING_NEST_INDICES.map((nestIndex) => {
+            const p = NEST_SLOTS[nestIndex];
+            return (
+              <Figure
+                key={`nest-fig-${nestIndex}`}
+                x={p.x}
+                y={p.y}
+                color={getFigureColor(p.x, p.y)}
+              />
+            );
+          })}
+
+          {figures.map((fig) => {
+            if (!CLOCKWISE_TRACK) return null;
+
+            const p = CLOCKWISE_TRACK[fig.trackIndex];
+            return (
+              <Figure
+                key={fig.id}
+                x={p.x}
+                y={p.y}
+                color={fig.color}
+                onClick={() => {
+                  setSelectedFigureId(
+                    fig.id === selectedFigureId ? null : fig.id,
+                  );
+
+                  console.log("Clicked figure:", fig.id);
+                }}
+              />
+            );
+          })}
         </svg>
       </div>
     </div>
