@@ -7,4 +7,18 @@
 @theme {
   --color-primary: #282828;
   --color-secondary: #f59e0b;
+  --color-accent: #acacac;
+  --font-lilita: "Lilita One", sans-serif;
+  --font-afacad: "Afacad", sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-primary);
+    color: white;
+  }
+}
+
+button {
+  cursor: pointer;
 }

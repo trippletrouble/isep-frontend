@@ -12,27 +12,139 @@ import { Figure } from "./Figure";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const getFigureColor = (x: number, y: number) => {
-  if (x < 800 && y < 800) return "#577CDB"; // Blue
-  if (x > 800 && y < 800) return "#EBE036"; // Yellow
-  if (x < 800 && y > 800) return "#DB5757"; // Red
-  return "#57DB8F"; // Green
+type FigureState = {
+  id: string;
+  color: string;
+  position: "nest" | number;
+  nestIndex: number;
+  startTrackIndex: number;
 };
 
-const INITIAL_FIGURES = [
-  { id: "blue-1", color: "#577CDB", trackIndex: 1 },
-  { id: "yellow-1", color: "#EBE036", trackIndex: 18 },
-  { id: "green-1", color: "#57DB8F", trackIndex: 31 },
-  { id: "red-1", color: "#DB5757", trackIndex: 44 },
+const INITIAL_FIGURES: FigureState[] = [
+  {
+    id: "b1",
+    color: "#577CDB",
+    position: "nest",
+    nestIndex: 12,
+    startTrackIndex: 13,
+  },
+  {
+    id: "b2",
+    color: "#577CDB",
+    position: "nest",
+    nestIndex: 13,
+    startTrackIndex: 13,
+  },
+  {
+    id: "b3",
+    color: "#577CDB",
+    position: "nest",
+    nestIndex: 14,
+    startTrackIndex: 13,
+  },
+  {
+    id: "b4",
+    color: "#577CDB",
+    position: "nest",
+    nestIndex: 15,
+    startTrackIndex: 13,
+  },
+
+  {
+    id: "y1",
+    color: "#EBE036",
+    position: "nest",
+    nestIndex: 8,
+    startTrackIndex: 26,
+  },
+  {
+    id: "y2",
+    color: "#EBE036",
+    position: "nest",
+    nestIndex: 9,
+    startTrackIndex: 26,
+  },
+  {
+    id: "y3",
+    color: "#EBE036",
+    position: "nest",
+    nestIndex: 10,
+    startTrackIndex: 26,
+  },
+  {
+    id: "y4",
+    color: "#EBE036",
+    position: "nest",
+    nestIndex: 11,
+    startTrackIndex: 26,
+  },
+
+  {
+    id: "r1",
+    color: "#DB5757",
+    position: "nest",
+    nestIndex: 0,
+    startTrackIndex: 0,
+  },
+  {
+    id: "r2",
+    color: "#DB5757",
+    position: "nest",
+    nestIndex: 1,
+    startTrackIndex: 0,
+  },
+  {
+    id: "r3",
+    color: "#DB5757",
+    position: "nest",
+    nestIndex: 2,
+    startTrackIndex: 0,
+  },
+  {
+    id: "r4",
+    color: "#DB5757",
+    position: "nest",
+    nestIndex: 3,
+    startTrackIndex: 0,
+  },
+
+  {
+    id: "g1",
+    color: "#57DB8F",
+    position: "nest",
+    nestIndex: 4,
+    startTrackIndex: 39,
+  },
+  {
+    id: "g2",
+    color: "#57DB8F",
+    position: "nest",
+    nestIndex: 5,
+    startTrackIndex: 39,
+  },
+  {
+    id: "g3",
+    color: "#57DB8F",
+    position: "nest",
+    nestIndex: 6,
+    startTrackIndex: 39,
+  },
+  {
+    id: "g4",
+    color: "#57DB8F",
+    position: "nest",
+    nestIndex: 7,
+    startTrackIndex: 39,
+  },
 ];
 
-const REMAINING_NEST_INDICES = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
+interface BoardProps {
+  diceRoll: number;
+}
 
-export default function Board() {
+export default function Board({ diceRoll }: BoardProps) {
   const [figures, setFigures] = useState(INITIAL_FIGURES);
   const [selectedFigureId, setSelectedFigureId] = useState<string | null>(null);
-
-  const hypotheticalDiceRoll = 6;
 
   const activeFigure = figures.find((f) => f.id === selectedFigureId);
 
@@ -40,192 +152,216 @@ export default function Board() {
   let targetIndex: number | null = null;
 
   if (activeFigure && CLOCKWISE_TRACK) {
-    targetIndex =
-      (activeFigure.trackIndex + hypotheticalDiceRoll) % CLOCKWISE_TRACK.length;
-    targetTile = CLOCKWISE_TRACK[targetIndex];
+    if (activeFigure.position === "nest") {
+      if (diceRoll === 6) {
+        targetIndex = activeFigure.startTrackIndex;
+        targetTile = CLOCKWISE_TRACK[targetIndex];
+      }
+    } else {
+      targetIndex = (activeFigure.position + diceRoll) % CLOCKWISE_TRACK.length;
+      targetTile = CLOCKWISE_TRACK[targetIndex];
+    }
   }
 
   const handleMoveToTarget = async () => {
     if (!activeFigure || targetIndex === null || !CLOCKWISE_TRACK) return;
 
     setSelectedFigureId(null);
-    const startIdx = activeFigure.trackIndex;
 
-    for (let step = 1; step <= hypotheticalDiceRoll; step++) {
-      setFigures((prevFigures) =>
-        prevFigures.map((fig) => {
+    if (activeFigure.position === "nest") {
+      setFigures((prev) =>
+        prev.map((fig) =>
+          fig.id === activeFigure.id
+            ? { ...fig, position: targetIndex as number }
+            : fig,
+        ),
+      );
+      return;
+    }
+
+    const startIdx = activeFigure.position;
+    for (let step = 1; step <= diceRoll; step++) {
+      setFigures((prev) =>
+        prev.map((fig) => {
           if (fig.id === activeFigure.id) {
             const nextIndex = (startIdx + step) % CLOCKWISE_TRACK.length;
-            return { ...fig, trackIndex: nextIndex };
+            return { ...fig, position: nextIndex };
           }
           return fig;
         }),
       );
-
-      await sleep(300);
+      await sleep(250);
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-primary p-4">
-      <div className="w-full max-w-180 aspect-square p-4 relative">
-        <svg
-          viewBox="0 0 1571 1573"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M545 0C583.66 3.54343e-06 615 31.3401 615 70V545C615 583.66 583.66 615 545 615H70C31.3401 615 0 583.66 0 545V70C3.54389e-06 31.3401 31.3401 0 70 0H545ZM124.343 84.3428C102.251 84.3428 84.3428 102.251 84.3428 124.343V490.657C84.3429 512.748 102.251 530.657 124.343 530.657H490.657C512.749 530.657 530.657 512.749 530.657 490.657V124.343C530.657 102.251 512.749 84.3428 490.657 84.3428H124.343Z"
+    <div className="w-full max-w-180 aspect-square relative">
+      <svg
+        viewBox="0 0 1571 1573"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full"
+      >
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M545 0C583.66 3.54343e-06 615 31.3401 615 70V545C615 583.66 583.66 615 545 615H70C31.3401 615 0 583.66 0 545V70C3.54389e-06 31.3401 31.3401 0 70 0H545ZM124.343 84.3428C102.251 84.3428 84.3428 102.251 84.3428 124.343V490.657C84.3429 512.748 102.251 530.657 124.343 530.657H490.657C512.749 530.657 530.657 512.749 530.657 490.657V124.343C530.657 102.251 512.749 84.3428 490.657 84.3428H124.343Z"
+          fill="#577CDB"
+        />
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M1500 0C1538.66 3.54343e-06 1570 31.3401 1570 70V545C1570 583.66 1538.66 615 1500 615H1025C986.34 615 955 583.66 955 545V70C955 31.3401 986.34 0 1025 0H1500ZM1079.34 84.3428C1057.25 84.3428 1039.34 102.251 1039.34 124.343V490.657C1039.34 512.748 1057.25 530.657 1079.34 530.657H1445.66C1467.75 530.657 1485.66 512.749 1485.66 490.657V124.343C1485.66 102.251 1467.75 84.3428 1445.66 84.3428H1079.34Z"
+          fill="#EBE036"
+        />
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M565.5 958C593.114 958 615.5 980.386 615.5 1008V1523C615.5 1550.61 593.114 1573 565.5 1573H50.5C22.8858 1573 0.5 1550.61 0.5 1523V1008C0.5 980.386 22.8858 958 50.5 958H565.5ZM124.843 1042.34C102.751 1042.34 84.8428 1060.25 84.8428 1082.34V1448.66C84.8428 1470.75 102.751 1488.66 124.843 1488.66H491.157C513.249 1488.66 531.157 1470.75 531.157 1448.66V1082.34C531.157 1060.25 513.249 1042.34 491.157 1042.34H124.843Z"
+          fill="#DB5757"
+        />
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M1520.5 958C1548.11 958 1570.5 980.386 1570.5 1008V1523C1570.5 1550.61 1548.11 1573 1520.5 1573H1005.5C977.886 1573 955.5 1550.61 955.5 1523V1008C955.5 980.386 977.886 958 1005.5 958H1520.5ZM1079.84 1042.34C1057.75 1042.34 1039.84 1060.25 1039.84 1082.34V1448.66C1039.84 1470.75 1057.75 1488.66 1079.84 1488.66H1446.16C1468.25 1488.66 1486.16 1470.75 1486.16 1448.66V1082.34C1486.16 1060.25 1468.25 1042.34 1446.16 1042.34H1079.84Z"
+          fill="#57DB8F"
+        />
+
+        <BoardCenter />
+
+        {GREY_TRACK.map((p, i) => (
+          <rect
+            key={`grey-${i}`}
+            x={p.x - 45}
+            y={p.y - 45}
+            width="90"
+            height="90"
+            rx="15"
+            fill="#5B5B5B"
+          />
+        ))}
+
+        {BLUE_GOAL_PATH.map((p, i) => (
+          <rect
+            key={`blue-goal-${i}`}
+            x={p.x - 45}
+            y={p.y - 45}
+            width="90"
+            height="90"
+            rx="15"
             fill="#577CDB"
           />
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M1500 0C1538.66 3.54343e-06 1570 31.3401 1570 70V545C1570 583.66 1538.66 615 1500 615H1025C986.34 615 955 583.66 955 545V70C955 31.3401 986.34 0 1025 0H1500ZM1079.34 84.3428C1057.25 84.3428 1039.34 102.251 1039.34 124.343V490.657C1039.34 512.748 1057.25 530.657 1079.34 530.657H1445.66C1467.75 530.657 1485.66 512.749 1485.66 490.657V124.343C1485.66 102.251 1467.75 84.3428 1445.66 84.3428H1079.34Z"
+        ))}
+
+        {YELLOW_GOAL_PATH.map((p, i) => (
+          <rect
+            key={`yellow-goal-${i}`}
+            x={p.x - 45}
+            y={p.y - 45}
+            width="90"
+            height="90"
+            rx="15"
             fill="#EBE036"
           />
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M565.5 958C593.114 958 615.5 980.386 615.5 1008V1523C615.5 1550.61 593.114 1573 565.5 1573H50.5C22.8858 1573 0.5 1550.61 0.5 1523V1008C0.5 980.386 22.8858 958 50.5 958H565.5ZM124.843 1042.34C102.751 1042.34 84.8428 1060.25 84.8428 1082.34V1448.66C84.8428 1470.75 102.751 1488.66 124.843 1488.66H491.157C513.249 1488.66 531.157 1470.75 531.157 1448.66V1082.34C531.157 1060.25 513.249 1042.34 491.157 1042.34H124.843Z"
+        ))}
+
+        {RED_GOAL_PATH.map((p, i) => (
+          <rect
+            key={`red-goal-${i}`}
+            x={p.x - 45}
+            y={p.y - 45}
+            width="90"
+            height="90"
+            rx="15"
             fill="#DB5757"
           />
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M1520.5 958C1548.11 958 1570.5 980.386 1570.5 1008V1523C1570.5 1550.61 1548.11 1573 1520.5 1573H1005.5C977.886 1573 955.5 1550.61 955.5 1523V1008C955.5 980.386 977.886 958 1005.5 958H1520.5ZM1079.84 1042.34C1057.75 1042.34 1039.84 1060.25 1039.84 1082.34V1448.66C1039.84 1470.75 1057.75 1488.66 1079.84 1488.66H1446.16C1468.25 1488.66 1486.16 1470.75 1486.16 1448.66V1082.34C1486.16 1060.25 1468.25 1042.34 1446.16 1042.34H1079.84Z"
+        ))}
+
+        {GREEN_GOAL_PATH.map((p, i) => (
+          <rect
+            key={`green-goal-${i}`}
+            x={p.x - 45}
+            y={p.y - 45}
+            width="90"
+            height="90"
+            rx="15"
             fill="#57DB8F"
           />
+        ))}
 
-          <BoardCenter />
+        {NEST_SLOTS.map((p, i) => (
+          <rect
+            key={`nest-${i}`}
+            x={p.x - 66.3}
+            y={p.y - 66.3}
+            width="132.6"
+            height="132.6"
+            rx="20"
+            fill="#5B5B5B"
+          />
+        ))}
 
-          {GREY_TRACK.map((p, i) => (
-            <rect
-              key={`grey-${i}`}
-              x={p.x - 45}
-              y={p.y - 45}
-              width="90"
-              height="90"
-              rx="15"
-              fill="#5B5B5B"
-            />
-          ))}
+        {CLOCKWISE_TRACK.map((p, i) => (
+          <text
+            key={`debug-clock-${i}`}
+            x={p.x}
+            y={p.y}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+            fontSize="28"
+            fontWeight="bold"
+            className="pointer-events-none drop-shadow-md"
+          >
+            {i}
+          </text>
+        ))}
 
-          {BLUE_GOAL_PATH.map((p, i) => (
-            <rect
-              key={`blue-goal-${i}`}
-              x={p.x - 45}
-              y={p.y - 45}
-              width="90"
-              height="90"
-              rx="15"
-              fill="#577CDB"
-            />
-          ))}
+        {targetTile && (
+          <circle
+            cx={targetTile.x}
+            cy={targetTile.y}
+            r={36}
+            fill="rgba(255, 255, 255, 0.2)"
+            stroke="#282828"
+            strokeWidth="4"
+            strokeDasharray="16 8"
+            style={{
+              cursor: "pointer",
+              transformOrigin: `${targetTile.x}px ${targetTile.y}px`,
+              animation: "spin 4s linear infinite",
+            }}
+            onClick={handleMoveToTarget}
+          />
+        )}
 
-          {YELLOW_GOAL_PATH.map((p, i) => (
-            <rect
-              key={`yellow-goal-${i}`}
-              x={p.x - 45}
-              y={p.y - 45}
-              width="90"
-              height="90"
-              rx="15"
-              fill="#EBE036"
-            />
-          ))}
+        {figures.map((fig) => {
+          const coords =
+            fig.position === "nest"
+              ? NEST_SLOTS[fig.nestIndex]
+              : CLOCKWISE_TRACK[fig.position];
 
-          {RED_GOAL_PATH.map((p, i) => (
-            <rect
-              key={`red-goal-${i}`}
-              x={p.x - 45}
-              y={p.y - 45}
-              width="90"
-              height="90"
-              rx="15"
-              fill="#DB5757"
-            />
-          ))}
+          if (!coords) return null;
 
-          {GREEN_GOAL_PATH.map((p, i) => (
-            <rect
-              key={`green-goal-${i}`}
-              x={p.x - 45}
-              y={p.y - 45}
-              width="90"
-              height="90"
-              rx="15"
-              fill="#57DB8F"
-            />
-          ))}
-
-          {NEST_SLOTS.map((p, i) => (
-            <rect
-              key={`nest-${i}`}
-              x={p.x - 66.3}
-              y={p.y - 66.3}
-              width="132.6"
-              height="132.6"
-              rx="20"
-              fill="#5B5B5B"
-            />
-          ))}
-
-          {targetTile && (
-            <circle
-              cx={targetTile.x}
-              cy={targetTile.y}
-              r={36}
-              fill="rgba(255, 255, 255, 0.2)"
-              stroke="#FFFFFF"
-              strokeWidth="4"
-              strokeDasharray="16 8"
-              style={{
-                cursor: "pointer",
-                transformOrigin: `${targetTile.x}px ${targetTile.y}px`,
-                animation: "spin 4s linear infinite",
+          return (
+            <Figure
+              key={fig.id}
+              x={coords.x}
+              y={coords.y}
+              color={fig.color}
+              onClick={() => {
+                if (fig.position === "nest" && diceRoll !== 6) {
+                  alert("You need a 6 to leave the nest!");
+                  return;
+                }
+                setSelectedFigureId(
+                  fig.id === selectedFigureId ? null : fig.id,
+                );
               }}
-              onClick={handleMoveToTarget}
             />
-          )}
-
-          {REMAINING_NEST_INDICES.map((nestIndex) => {
-            const p = NEST_SLOTS[nestIndex];
-            return (
-              <Figure
-                key={`nest-fig-${nestIndex}`}
-                x={p.x}
-                y={p.y}
-                color={getFigureColor(p.x, p.y)}
-              />
-            );
-          })}
-
-          {figures.map((fig) => {
-            if (!CLOCKWISE_TRACK) return null;
-
-            const p = CLOCKWISE_TRACK[fig.trackIndex];
-            return (
-              <Figure
-                key={fig.id}
-                x={p.x}
-                y={p.y}
-                color={fig.color}
-                onClick={() => {
-                  setSelectedFigureId(
-                    fig.id === selectedFigureId ? null : fig.id,
-                  );
-
-                  console.log("Clicked figure:", fig.id);
-                }}
-              />
-            );
-          })}
-        </svg>
-      </div>
+          );
+        })}
+      </svg>
     </div>
   );
 }

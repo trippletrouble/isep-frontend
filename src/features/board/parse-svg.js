@@ -47,95 +47,67 @@ try {
       2,
     );
 
-  const allTrackTiles = tiles.filter((t) => t.w === 90);
-
-  const getSegment = (filterFn, sortFn) =>
-    allTrackTiles.filter(filterFn).sort(sortFn);
-
-  // 1. Left Arm (Top Row) -> moving Right
-  const s1 = getSegment(
-    (t) => t.y >= 680 && t.y <= 682 && t.x < 600,
-    (a, b) => a.x - b.x,
-  );
-  // 2. Top Arm (Left Col) -> moving Up
-  const s2 = getSegment(
-    (t) => t.x >= 679 && t.x <= 681 && t.y < 600,
-    (a, b) => b.y - a.y,
-  );
-  // 3. Top Arm (Tip) -> moving Right
-  const s3 = getSegment(
-    (t) => t.y >= 149 && t.y <= 151 && t.x > 681 && t.x < 890,
-    (a, b) => a.x - b.x,
-  );
-  // 4. Top Arm (Right Col) -> moving Down
-  const s4 = getSegment(
-    (t) => t.x >= 889 && t.x <= 891 && t.y < 600,
-    (a, b) => a.y - b.y,
-  );
-  // 5. Right Arm (Top Row) -> moving Right
-  const s5 = getSegment(
-    (t) => t.y >= 680 && t.y <= 682 && t.x > 900,
-    (a, b) => a.x - b.x,
-  );
-  // 6. Right Arm (Tip) -> moving Down
-  const s6 = getSegment(
-    (t) => t.x >= 1524 && t.x <= 1526 && t.y > 682 && t.y < 892,
-    (a, b) => a.y - b.y,
-  );
-  // 7. Right Arm (Bottom Row) -> moving Left
-  const s7 = getSegment(
-    (t) => t.y >= 891 && t.y <= 894 && t.x > 900,
-    (a, b) => b.x - a.x,
-  );
-  // 8. Bottom Arm (Right Col) -> moving Down
-  const s8 = getSegment(
-    (t) => t.x >= 889 && t.x <= 891 && t.y > 900,
-    (a, b) => a.y - b.y,
-  );
-  // 9. Bottom Arm (Tip) -> moving Left
-  const s9 = getSegment(
-    (t) => t.y >= 1527 && t.y <= 1529 && t.x < 890 && t.x > 681,
-    (a, b) => b.x - a.x,
-  );
-  // 10. Bottom Arm (Left Col) -> moving Up
-  const s10 = getSegment(
-    (t) => t.x >= 679 && t.x <= 681 && t.y > 900,
-    (a, b) => b.y - a.y,
-  );
-  // 11. Left Arm (Bottom Row) -> moving Left
-  const s11 = getSegment(
-    (t) => t.y >= 891 && t.y <= 894 && t.x < 600,
-    (a, b) => b.x - a.x,
-  );
-  // 12. Left Arm (Tip) -> moving Up
-  const s12 = getSegment(
-    (t) => t.x >= 44 && t.x <= 47 && t.y < 891 && t.y > 682,
-    (a, b) => b.y - a.y,
-  );
-
-  const clockwiseTrack = [
-    ...s1,
-    ...s2,
-    ...s3,
-    ...s4,
-    ...s5,
-    ...s6,
-    ...s7,
-    ...s8,
-    ...s9,
-    ...s10,
-    ...s11,
-    ...s12,
-  ];
-
-  const tsContent = `// Generated cleanly from board.svg
+  const tsContent = `// Generated from board.svg
 export interface Point {
   x: number;
   y: number;
 }
 
-// Your continuous 52-tile clockwise loop
-export const CLOCKWISE_TRACK: Point[] = ${serialize(clockwiseTrack)};
+// 52-tile clockwise loop
+export const CLOCKWISE_TRACK: Point[] = [
+  { x: 680.5, y: 1423 }, // Red Start (Index 0)
+  { x: 680.5, y: 1318 },
+  { x: 680.5, y: 1213 },
+  { x: 680.5, y: 1108 },
+  { x: 680.5, y: 1003 },
+  { x: 570.5, y: 892 },
+  { x: 465.5, y: 892 },
+  { x: 360.5, y: 892 },
+  { x: 255.5, y: 892 },
+  { x: 150.5, y: 892 },
+  { x: 45.5, y: 893 },
+  { x: 45.5, y: 787 },
+  { x: 45.5, y: 681 },
+  { x: 150.5, y: 680 }, // Blue Start (Index 13)
+  { x: 255.5, y: 680 },
+  { x: 360.5, y: 680 },
+  { x: 465.5, y: 680 },
+  { x: 570.5, y: 680 },
+  { x: 680, y: 570 },
+  { x: 680, y: 465 },
+  { x: 680, y: 360 },
+  { x: 680, y: 255 },
+  { x: 680, y: 150 },
+  { x: 680, y: 45 },
+  { x: 785, y: 45 },
+  { x: 890, y: 45 },
+  { x: 890, y: 150 }, // Yellow Start (Index 26)
+  { x: 890, y: 255 },
+  { x: 890, y: 360 },
+  { x: 890, y: 465 },
+  { x: 890, y: 570 },
+  { x: 1000.5, y: 681 },
+  { x: 1105.5, y: 681 },
+  { x: 1210.5, y: 680 },
+  { x: 1315.5, y: 680 },
+  { x: 1420.5, y: 680 },
+  { x: 1525.5, y: 680 },
+  { x: 1525.5, y: 786 },
+  { x: 1525.5, y: 892 },
+  { x: 1420.5, y: 892 }, // Green Start (Index 39)
+  { x: 1315.5, y: 892 },
+  { x: 1210.5, y: 892 },
+  { x: 1105.5, y: 893 },
+  { x: 1000.5, y: 893 },
+  { x: 890.5, y: 1003 },
+  { x: 890.5, y: 1108 },
+  { x: 890.5, y: 1213 },
+  { x: 890.5, y: 1318 },
+  { x: 890.5, y: 1423 },
+  { x: 890.5, y: 1528 },
+  { x: 785.5, y: 1528 },
+  { x: 680.5, y: 1528 },
+];
 
 export const GREY_TRACK: Point[] = ${serialize(trackTiles.filter((t) => t.fill === "#5B5B5B"))};
 export const RED_TILES: Point[] = ${serialize(trackTiles.filter((t) => t.fill === "#DB5757"))};
