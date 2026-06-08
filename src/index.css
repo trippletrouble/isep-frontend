@@ -8,6 +8,12 @@
   --color-primary: #282828;
   --color-secondary: #f59e0b;
   --color-accent: #acacac;
+
+  --color-blue: #577cdb;
+  --color-yellow: #ebe036;
+  --color-green: #57db8f;
+  --color-red: #db5757;
+
   --font-lilita: "Lilita One", sans-serif;
   --font-afacad: "Afacad", sans-serif;
 }

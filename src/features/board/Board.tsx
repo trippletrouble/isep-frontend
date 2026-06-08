@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   CLOCKWISE_TRACK,
   GREY_TRACK,
@@ -195,7 +196,7 @@ export default function Board({ diceRoll }: BoardProps) {
   };
 
   return (
-    <div className="w-full max-w-180 aspect-square relative">
+    <div className="h-full max-w-full aspect-square relative mx-auto">
       <svg
         viewBox="0 0 1571 1573"
         fill="none"
@@ -351,7 +352,7 @@ export default function Board({ diceRoll }: BoardProps) {
               color={fig.color}
               onClick={() => {
                 if (fig.position === "nest" && diceRoll !== 6) {
-                  alert("You need a 6 to leave the nest!");
+                  toast.error("You need a 6 to leave the nest!");
                   return;
                 }
                 setSelectedFigureId(
