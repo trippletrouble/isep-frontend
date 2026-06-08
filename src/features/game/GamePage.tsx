@@ -22,12 +22,12 @@ export const GamePage = () => {
 
   return (
     <div className="h-screen bg-primary flex flex-col p-4 lg:p-6 overflow-hidden">
-      <div className="w-full max-w-7xl mx-auto flex flex-col flex-1 min-h-0">
+      <div className="w-full max-w-[1440px] mx-auto flex flex-col flex-1 min-h-0">
         <GameSubHeader />
 
-        <div className="flex flex-col lg:flex-row w-full gap-8 lg:gap-12 items-center lg:items-start justify-center flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row w-full gap-8 lg:gap-12 items-center lg:items-center justify-center flex-1 min-h-0">
           <div className="w-full lg:w-[65%] h-full flex flex-col justify-start min-h-0">
-            <div className="flex-1 min-h-0 w-full flex justify-center items-start">
+            <div className="flex-1 min-h-0 w-full h-full flex justify-center items-center">
               <Board diceRoll={currentRoll} />
             </div>
 
@@ -39,7 +39,7 @@ export const GamePage = () => {
             </button>
           </div>
 
-          <div className="w-full lg:w-[35%] max-w-[350px] flex flex-col h-full relative">
+          <div className="w-full lg:w-[35%] max-w-[350px] flex flex-col relative">
             <NotificationPanel
               data={notification}
               onClose={() => setNotification(null)}

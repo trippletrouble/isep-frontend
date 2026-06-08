@@ -270,110 +270,52 @@ export const GREY_TRACK: Point[] = [
     y: 680,
   },
 ];
-export const RED_TILES: Point[] = [
-  {
-    x: 680.5,
-    y: 1423,
-  },
-  {
-    x: 785.5,
-    y: 1108,
-  },
-  {
-    x: 785.5,
-    y: 1003,
-  },
-  {
-    x: 785.5,
-    y: 1213,
-  },
-  {
-    x: 785.5,
-    y: 1318,
-  },
-  {
-    x: 785.5,
-    y: 1423,
-  },
-];
-export const YELLOW_TILES: Point[] = [
-  {
-    x: 785,
-    y: 465,
-  },
-  {
-    x: 785,
-    y: 570,
-  },
-  {
-    x: 785,
-    y: 150,
-  },
-  {
-    x: 785,
-    y: 255,
-  },
-  {
-    x: 785,
-    y: 360,
-  },
-  {
-    x: 890,
-    y: 150,
-  },
-];
-export const BLUE_TILES: Point[] = [
-  {
-    x: 465.5,
-    y: 786,
-  },
-  {
-    x: 570.5,
-    y: 786,
-  },
-  {
-    x: 360.5,
-    y: 786,
-  },
-  {
-    x: 255.5,
-    y: 786,
-  },
-  {
-    x: 150.5,
-    y: 786,
-  },
-  {
-    x: 150.5,
-    y: 680,
-  },
-];
-export const GREEN_TILES: Point[] = [
-  {
-    x: 1420.5,
-    y: 892,
-  },
-  {
-    x: 1420.5,
-    y: 786,
-  },
-  {
-    x: 1105.5,
-    y: 787,
-  },
-  {
-    x: 1000.5,
-    y: 787,
-  },
-  {
-    x: 1315.5,
-    y: 786,
-  },
-  {
-    x: 1210.5,
-    y: 786,
-  },
-];
+
+export interface ColoredTiles {
+  safeZone: Point;
+  goalPath: Point[];
+}
+
+export const RED_COLORED_TILES: ColoredTiles = {
+  safeZone: { x: 680.5, y: 1423 },
+  goalPath: [
+    { x: 785.5, y: 1423 },
+    { x: 785.5, y: 1318 },
+    { x: 785.5, y: 1213 },
+    { x: 785.5, y: 1108 },
+    { x: 785.5, y: 1003 },
+  ],
+};
+export const YELLOW_COLORED_TILES: ColoredTiles = {
+  safeZone: { x: 890, y: 150 },
+  goalPath: [
+    { x: 785, y: 150 },
+    { x: 785, y: 255 },
+    { x: 785, y: 360 },
+    { x: 785, y: 465 },
+    { x: 785, y: 570 },
+  ],
+};
+export const BLUE_COLORED_TILES: ColoredTiles = {
+  safeZone: { x: 150.5, y: 680 },
+  goalPath: [
+    { x: 150.5, y: 786 },
+    { x: 255.5, y: 786 },
+    { x: 360.5, y: 786 },
+    { x: 465.5, y: 786 },
+    { x: 570.5, y: 786 },
+  ],
+};
+export const GREEN_COLORED_TILES: ColoredTiles = {
+  safeZone: { x: 1420.5, y: 892 },
+  goalPath: [
+    { x: 1420.5, y: 786 },
+    { x: 1315.5, y: 786 },
+    { x: 1210.5, y: 786 },
+    { x: 1105.5, y: 787 },
+    { x: 1000.5, y: 787 },
+  ],
+};
 export const NEST_SLOTS: Point[] = [
   {
     x: 398.4,
