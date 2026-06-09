@@ -18,7 +18,7 @@ export function Dice({ value }: DiceProps) {
     return Array.from({ length: 9 }).map((_, index) => (
       <div key={index} className="flex justify-center items-center">
         {activeDots.includes(index) && (
-          <div className="w-5 h-5 bg-primary rounded-full" />
+          <div className="w-2 h-2 md:w-5 md:h-5 bg-primary rounded-full shrink-0 aspect-square" />
         )}
       </div>
     ));
@@ -26,7 +26,7 @@ export function Dice({ value }: DiceProps) {
 
   return (
     <div
-      className="w-30 h-30 bg-white rounded-3xl p-4 mb-10 grid grid-cols-3 grid-rows-3 gap-1 shadow-2xl"
+      className="w-14 md:w-30 h-14 md:h-30 bg-white rounded-2xl md:rounded-3xl p-4 mb-4 lg:mb-10 grid grid-cols-3 grid-rows-3 gap-1 shadow-2xl"
       style={{ boxShadow: "0 0 40px rgba(255, 255, 255, 0.25)" }}
     >
       {renderDots()}

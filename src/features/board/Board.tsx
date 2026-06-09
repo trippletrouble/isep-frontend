@@ -11,6 +11,7 @@ import {
   NEST_SLOTS,
 } from "./BoardPath";
 import { Figure } from "./Figure";
+import { X } from "lucide-react";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -401,12 +402,12 @@ export default function Board({ diceRoll }: BoardProps) {
   };
 
   return (
-    <div className="h-full max-w-full aspect-square relative mx-auto">
+    <div className="w-full h-full aspect-[1571/1573] relative mx-auto overflow-hidden">
       <svg
         viewBox="0 0 1571 1573"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full"
+        className="w-full h-full block"
         onClick={(e) => {
           const target = e.target as SVGElement;
           if (
@@ -699,7 +700,7 @@ export default function Board({ diceRoll }: BoardProps) {
               onClick={() => setActivePile(null)}
               className="text-white/40 hover:text-white transition-colors text-sm font-bold"
             >
-              ✕
+              <X />
             </button>
           </div>
           <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1">
