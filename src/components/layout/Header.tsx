@@ -1,5 +1,6 @@
 import { Settings, ChevronDown } from 'lucide-react'
 import logoImg from '@/assets/logo.png'
+import vector7 from '@/assets/vector7.png'
 
 export function Header() {
   return (
@@ -10,6 +11,7 @@ export function Header() {
         <button
           className="flex items-center gap-2 w-[196px] h-[55px] rounded-[40px] border border-[#797979] justify-center font-[family-name:var(--font-heading)] text-2xl text-white bg-transparent hover:bg-white/5 transition-colors"
         >
+          <img src={vector7} alt="" className="w-5 h-5 object-contain" />
           {/* Week 2: show real username from useAuthStore() */}
           Spieler
           <ChevronDown size={20} />

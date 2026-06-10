@@ -3,6 +3,8 @@ import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
+import { LevelSelectPage } from '@/features/level-select/LevelSelectPage'
+import { LobbyPage } from '@/features/lobby/LobbyPage'
 
 function App() {
   return (
@@ -12,8 +14,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
-            {/* feat/FE2-06-07-08-09-10-11-screens will add LevelSelectPage + LobbyPage here */}
-            <Route path="/" element={<div className="text-white text-2xl font-[family-name:var(--font-heading)]">SPIELLEVEL — coming soon</div>} />
+            <Route path="/" element={<LevelSelectPage />} />
+            <Route path="/lobby/:level" element={<LobbyPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
