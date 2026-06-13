@@ -59,7 +59,7 @@ export interface PlayerProfile {
 export interface Figure {
   id: number           // 0–15, global eindeutig
   playerId: string
-  position: number     // -1 = HOME, 0-39 = Hauptfeld, 40-55 = Zielgerade, 56 = GOAL
+  position: number     // -1 = HOME, 0-50 = Hauptfeld, 51-55 = Zielgerade, 56 = GOAL
   status: PieceStatus
 }
 
