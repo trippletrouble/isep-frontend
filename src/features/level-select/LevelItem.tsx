@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { ChevronRight, ScrollText } from 'lucide-react'
 
 interface MockLevel {
   id: number
@@ -41,12 +42,12 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
             onClick={() => navigate(`/lobby/${level.id}`)}
             className="w-[231px] h-[60px] bg-[#57DB8F] text-black hover:bg-[#47cb7f] font-[family-name:var(--font-nav)] font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2"
           >
-            Spielen <span className="text-xl">›</span>
+            Spielen <ChevronRight size={24} strokeWidth={2.5} />
           </button>
           <button
             className="w-[231px] h-[60px] bg-[#EBE036] text-black hover:bg-[#d4ca2e] font-[family-name:var(--font-nav)] font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2"
           >
-            Regeln <span className="text-lg">📄</span>
+            Regeln <ScrollText size={22} />
           </button>
         </div>
       )}
