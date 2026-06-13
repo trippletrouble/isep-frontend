@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 import Board from "../board/Board";
 import { DicePanel } from "../dice/DicePanel";
-import { GameSubHeader } from "./GameSubHeader";
 import { LeaderboardPanel } from "./LeaderboardPanel";
 import { NotificationPanel, type NotificationData } from "./NotificationPanel";
+import { PageSubHeader } from "@/components/layout/PageSubHeader";
 
 export const GamePage = () => {
   const [currentRoll, setCurrentRoll] = useState(6);
@@ -31,7 +33,7 @@ export const GamePage = () => {
   };
 
   return (
-    <div className="h-screen bg-primary flex flex-col p-4 lg:p-6 overflow-hidden relative">
+    <div className="h-screen bg-primary flex flex-col overflow-hidden relative">
       <div className="fixed top-4 left-4 right-4 z-50 pointer-events-none lg:hidden">
         <div className="pointer-events-auto max-w-[450px] mx-auto">
           <NotificationPanel
@@ -41,9 +43,9 @@ export const GamePage = () => {
         </div>
       </div>
 
-      <div className="w-full max-w-[1440px] mx-auto flex flex-col flex-1 min-h-0 items-center justify-center">
-        <GameSubHeader />
+      <PageSubHeader center="LOBBY #42" />
 
+      <div className="w-full max-w-[1440px] mx-auto flex flex-col flex-1 min-h-0 items-center justify-center">
         <div className="flex flex-col lg:flex-row w-full gap-8 lg:gap-12 items-center md:justify-center flex-1 min-h-0 mx-auto">
           <div className="flex flex-col justify-center items-center shrink min-w-0 min-h-0 order-2 lg:order-1">
             <div className="w-[80vw] h-[80vw] max-w-[80vh] max-h-[80vh] flex justify-center items-center">

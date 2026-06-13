@@ -1,21 +1,25 @@
-import { LevelItem } from './LevelItem'
+import { LevelItem } from "./LevelItem";
 
 interface MockLevel {
-  id: number
-  name: string
-  description: string
+  id: number;
+  name: string;
+  description: string;
 }
 
 interface LevelAccordionProps {
-  levels: MockLevel[]
-  activeLevel: number
-  onLevelChange: (id: number) => void
+  levels: MockLevel[];
+  activeLevel: number;
+  onLevelChange: (id: number) => void;
 }
 
-export function LevelAccordion({ levels, activeLevel, onLevelChange }: LevelAccordionProps) {
+export function LevelAccordion({
+  levels,
+  activeLevel,
+  onLevelChange,
+}: LevelAccordionProps) {
   return (
-    <div className="flex flex-col gap-3">
-      {levels.map(level => (
+    <div className="flex flex-col gap-4 w-full">
+      {levels.map((level) => (
         <LevelItem
           key={level.id}
           level={level}
@@ -24,5 +28,5 @@ export function LevelAccordion({ levels, activeLevel, onLevelChange }: LevelAcco
         />
       ))}
     </div>
-  )
+  );
 }

@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
-import { AppShell } from '@/components/layout/AppShell'
-import { LoginPage } from '@/features/auth/LoginPage'
-import { RegisterPage } from '@/features/auth/RegisterPage'
-import { LevelSelectPage } from '@/features/level-select/LevelSelectPage'
-import { LobbyPage } from '@/features/lobby/LobbyPage'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { AppShell } from "@/components/layout/AppShell";
+import { LoginPage } from "@/features/auth/LoginPage";
+import { RegisterPage } from "@/features/auth/RegisterPage";
+import { LevelSelectPage } from "@/features/level-select/LevelSelectPage";
+import { LobbyPage } from "@/features/lobby/LobbyPage";
+import { GamePage } from "@/features/game/GamePage";
 
 function App() {
   return (
@@ -16,12 +17,13 @@ function App() {
           <Route element={<AppShell />}>
             <Route path="/" element={<LevelSelectPage />} />
             <Route path="/lobby/:level" element={<LobbyPage />} />
+            <Route path="/game/:id" element={<GamePage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
