@@ -2,7 +2,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
 @theme {
   --color-primary: #282828;
@@ -13,15 +12,24 @@
   --color-yellow: #ebe036;
   --color-green: #57db8f;
   --color-red: #db5757;
-
   --font-lilita: "Lilita One", sans-serif;
-  --font-afacad: "Afacad", sans-serif;
+  --font-sans: "Afacad", sans-serif;
 }
 
 @layer base {
   body {
     background-color: var(--color-primary);
     color: white;
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-lilita);
   }
 }
 
