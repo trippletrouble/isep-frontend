@@ -42,7 +42,7 @@ export const LeaderboardPanel = ({
         <div className="w-full flex flex-col justify-center gap-2 lg:gap-4">
           {players.map((p, i) => (
             <div key={i} className="flex justify-between items-center shrink-0">
-              <span className="font-semibold text-sm lg:text-2xl tracking-wide whitespace-nowrap">
+              <span className="font-semibold text-sm md:text-xl lg:text-2xl tracking-wide whitespace-nowrap">
                 {p.name}
               </span>
               <div className="flex gap-1 lg:gap-2">
@@ -51,7 +51,7 @@ export const LeaderboardPanel = ({
                   return (
                     <div
                       key={dotIdx}
-                      className={`w-3 h-3 lg:w-6 lg:h-6 border-2 border-primary rounded-full ${
+                      className={`w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 border-2 border-primary rounded-full ${
                         isFilled
                           ? `${p.color} shadow-[0px_6px_22.2px_rgba(255,255,255,0.05)]`
                           : "bg-transparent"

@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
 import Board from "../board/Board";
 import { DicePanel } from "../dice/DicePanel";
 import { LeaderboardPanel } from "./LeaderboardPanel";
@@ -12,6 +10,14 @@ export const GamePage = () => {
   const [notification, setNotification] = useState<NotificationData | null>(
     null,
   );
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkViewport = () => setIsDesktop(window.innerWidth >= 1024);
+    checkViewport();
+    window.addEventListener("resize", checkViewport);
+    return () => window.removeEventListener("resize", checkViewport);
+  }, []);
 
   useEffect(() => {
     if (!notification) return;
@@ -33,9 +39,9 @@ export const GamePage = () => {
   };
 
   return (
-    <div className="h-screen bg-primary flex flex-col overflow-hidden relative">
-      <div className="fixed top-4 left-4 right-4 z-50 pointer-events-none lg:hidden">
-        <div className="pointer-events-auto max-w-[450px] mx-auto">
+    <div className="w-full h-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center justify-center relative">
+      <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
+        <div className="pointer-events-auto max-w-[380px] mx-auto">
           <NotificationPanel
             data={notification}
             onClose={() => setNotification(null)}
@@ -45,22 +51,26 @@ export const GamePage = () => {
 
       <PageSubHeader center="LOBBY #42" />
 
-      <div className="w-full max-w-[1440px] mx-auto flex flex-col flex-1 min-h-0 items-center justify-center">
-        <div className="flex flex-col lg:flex-row w-full gap-8 lg:gap-12 items-center md:justify-center flex-1 min-h-0 mx-auto">
-          <div className="flex flex-col justify-center items-center shrink min-w-0 min-h-0 order-2 lg:order-1">
-            <div className="w-[80vw] h-[80vw] max-w-[80vh] max-h-[80vh] flex justify-center items-center">
+      <div className="w-full flex flex-col items-center justify-center flex-1">
+        <div className="flex flex-col lg:flex-row w-full gap-6 lg:gap-8 items-center justify-center flex-1 mx-auto">
+          <div className="flex flex-col order-2 lg:order-1 items-center justify-center">
+            <div className="w-[70vw] h-[70vw] max-w-[70vh] max-h-[70vh] flex justify-center items-center">
               <Board diceRoll={currentRoll} />
             </div>
 
             <button
               onClick={triggerTestNotification}
-              className="mt-4 shrink-0 text-white underline opacity-50 hover:opacity-100 font-afacad"
+              className="mt-3 shrink-0 text-sm text-white underline opacity-50 hover:opacity-100 font-afacad"
             >
               Test Notification Bounce
             </button>
           </div>
 
-          <div className="w-[80vw] max-w-[80vh] lg:w-[350px] lg:max-w-none shrink-0 flex flex-row lg:flex-col gap-4 items-stretch justify-center order-1 lg:order-2">
+          <div
+            className={`w-[70vw] max-w-[70vh] lg:w-[290px] lg:max-w-none shrink-0 flex flex-row lg:flex-col gap-3 items-stretch justify-center order-1 lg:order-2 transition-all h-[180px] sm:h-[240px] ${
+              notification ? "lg:h-auto" : "lg:h-auto"
+            }`}
+          >
             <div className="hidden lg:block w-full">
               <NotificationPanel
                 data={notification}
@@ -69,7 +79,7 @@ export const GamePage = () => {
             </div>
 
             <LeaderboardPanel
-              isSquished={!!notification}
+              isSquished={!!notification && isDesktop}
               className="flex-1 lg:flex-none"
             />
 

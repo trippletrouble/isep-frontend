@@ -19,11 +19,11 @@ export const NotificationPanel = ({
   const renderIcon = (type?: string) => {
     switch (type) {
       case "CAPTURE":
-        return <span className="text-2xl drop-shadow-md">⚔️</span>;
+        return <span className="text-xl drop-shadow-md">⚔️</span>;
       case "WIN":
-        return <span className="text-2xl drop-shadow-md">🏆</span>;
+        return <span className="text-xl drop-shadow-md">🏆</span>;
       case "INFO":
-        return <span className="text-2xl drop-shadow-md">💡</span>;
+        return <span className="text-xl drop-shadow-md">💡</span>;
       default:
         return null;
     }
@@ -38,31 +38,31 @@ export const NotificationPanel = ({
       }`}
     >
       <div className="w-full h-full flex flex-col">
-        <div className="bg-primary border border-accent hover:border-white rounded-4xl p-6 w-full h-full flex flex-col relative drop-shadow-lg">
+        <div className="bg-primary border border-accent hover:border-white rounded-3xl p-4 w-full h-full flex flex-col relative drop-shadow-lg">
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 text-white/50 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
             aria-label="Schließen"
           >
-            <X />
+            <X size={18} />
           </button>
 
           <div className="flex flex-col justify-center items-center gap-4 h-full">
-            <h3 className="text-2xl text-white font-lilita tracking-[0.02em] uppercase pr-4">
+            <h3 className="text-lg lg:text-3xl text-white font-lilita tracking-[0.02em] uppercase pr-4">
               {data?.title || "\u00A0"}
             </h3>
 
             <div>
-              <p className="text-lg text-center text-white font-afacad leading-tight opacity-90 px-4">
+              <p className="font-medium text-sm md:text-xl text-center text-white font-afacad leading-tight opacity-90 px-4">
                 {data?.message}
               </p>
             </div>
 
             {(data?.iconType || data?.extraText) && (
-              <div className="flex items-center gap-3 bg-white/10 p-3 rounded-2xl w-max">
+              <div className="flex items-center gap-2 bg-white/10 py-2 px-4 rounded-xl w-max">
                 {renderIcon(data?.iconType)}
                 {data?.extraText && (
-                  <span className="text-white font-bold font-afacad tracking-wide uppercase">
+                  <span className="text-base text-white font-bold font-afacad tracking-wide uppercase">
                     {data.extraText}
                   </span>
                 )}

@@ -15,9 +15,9 @@ export function DicePanel({ currentRoll, onRoll, className }: DicePanelProps) {
 
   return (
     <div
-      className={`bg-primary border border-accent hover:border-white rounded-2xl lg:rounded-4xl py-4 lg:py-8 px-3 lg:px-6 flex flex-col items-center justify-center w-full h-full lg:h-auto mx-auto shrink-0 min-w-0 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] ${className}`}
+      className={`bg-primary border border-accent hover:border-white rounded-xl lg:rounded-3xl py-2 sm:py-3 lg:py-5 px-3 lg:px-4 flex flex-col items-center justify-center w-full h-full lg:h-auto mx-auto shrink-0 min-w-0 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] ${className}`}
     >
-      <h2 className="text-lg lg:text-3xl text-white font-lilita uppercase tracking-[0.02em] mb-3 lg:mb-6 drop-shadow-md">
+      <h2 className="text-lg lg:text-3xl text-white font-lilita uppercase tracking-[0.02em] mb-1 sm:mb-2 lg:mb-4 drop-shadow-md">
         Würfel
       </h2>
       <Dice value={currentRoll} />
