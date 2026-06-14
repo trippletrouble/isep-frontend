@@ -54,7 +54,7 @@ export const GamePage = () => {
       <div className="w-full flex flex-col items-center justify-center flex-1">
         <div className="flex flex-col lg:flex-row w-full gap-6 lg:gap-8 items-center justify-center flex-1 mx-auto">
           <div className="flex flex-col order-2 lg:order-1 items-center justify-center">
-            <div className="w-[70vw] h-[70vw] max-w-[70vh] max-h-[70vh] flex justify-center items-center">
+            <div className="w-[80vw] h-[70vw] max-w-[70vh] max-h-[70vh] flex justify-center items-center">
               <Board diceRoll={currentRoll} />
             </div>
 
@@ -66,11 +66,7 @@ export const GamePage = () => {
             </button>
           </div>
 
-          <div
-            className={`w-[70vw] max-w-[70vh] lg:w-[290px] lg:max-w-none shrink-0 flex flex-row lg:flex-col gap-3 items-stretch justify-center order-1 lg:order-2 transition-all h-[180px] sm:h-[240px] ${
-              notification ? "lg:h-auto" : "lg:h-auto"
-            }`}
-          >
+          <div className="w-[70vw] max-w-[70vh] lg:w-[290px] lg:max-w-none shrink-0 flex flex-row lg:flex-col gap-3 items-stretch justify-center order-1 lg:order-2 transition-all h-[180px] sm:h-[240px] lg:h-[480px]">
             <div className="hidden lg:block w-full">
               <NotificationPanel
                 data={notification}

@@ -23,7 +23,7 @@ export const LeaderboardPanel = ({
       }`}
     >
       <h2
-        className={`text-lg lg:text-3xl text-white font-lilita uppercase tracking-[0.02em] text-center drop-shadow-md shrink-0 transition-all ${
+        className={`text-sm sm:text-base md:text-xl lg:text-2xl text-white font-lilita uppercase tracking-[0.02em] text-center drop-shadow-md shrink-0 truncate transition-all ${
           isSquished
             ? "mb-3 lg:mb-0 duration-[800ms]"
             : "mb-3 lg:mb-6 duration-[500ms]"
@@ -42,10 +42,10 @@ export const LeaderboardPanel = ({
         <div className="w-full flex flex-col justify-center gap-2 lg:gap-4">
           {players.map((p, i) => (
             <div key={i} className="flex justify-between items-center shrink-0">
-              <span className="font-semibold text-sm md:text-xl lg:text-2xl tracking-wide whitespace-nowrap">
+              <span className="font-semibold text-xs sm:text-sm md:text-lg lg:text-2xl tracking-wide truncate min-w-0">
                 {p.name}
               </span>
-              <div className="flex gap-1 lg:gap-2">
+              <div className="flex gap-1 lg:gap-2 shrink-0">
                 {Array.from({ length: 4 }).map((_, dotIdx) => {
                   const isFilled = dotIdx < p.score;
                   return (

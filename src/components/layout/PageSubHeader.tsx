@@ -22,7 +22,7 @@ export function PageSubHeader({ backTo, center, right }: PageSubHeaderProps) {
     "flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors";
 
   return (
-    <div className="w-full flex items-center relative mb-8 text-accent font-afacad tracking-[0.02em]">
+    <div className="w-full flex items-center relative mb-4 text-accent font-afacad tracking-[0.02em]">
       <div className="flex-1 flex justify-start z-10">
         {backTo ? (
           <Link to={backTo} className={backClasses}>
