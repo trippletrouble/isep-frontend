@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useAuthStore } from '../stores/auth.store'
 import { useGameStore } from '../stores/game.store'
 import { useUIStore } from '../stores/ui.store'
-import { rollDice as rollDiceApi, moveFigure as moveFigureApi } from '../api/gameplay.api'
-import { getErrorMessage } from '../lib/errorMessages'
+import { rollDice as rollDiceApi, createMove } from '../api/gameplay.api'
 
 export function useGameActions(): {
   rollDice: (sessionId: string) => Promise<void>
@@ -19,18 +18,11 @@ export function useGameActions(): {
     if (!user) return
     try {
       setIsRolling(true)
-      const result = await rollDiceApi(sessionId, user.userId)
+      const result = await rollDiceApi(sessionId)
       useGameStore.getState().setDiceResult(result)
-
-      if (result.turnForfeit) {
-        useUIStore.getState().addToast({ type: 'warning', title: '3× Sechs!', message: 'Zug verfällt – nächster Spieler ist dran.' })
-      } else if (result.rollAgain) {
-        useUIStore.getState().addToast({ type: 'info', title: 'Nochmal würfeln!', message: 'Du hast eine 6 gewürfelt.' })
-      } else if (!result.hasMoves) {
-        useUIStore.getState().addToast({ type: 'info', title: 'Kein Zug möglich', message: 'Runde wird automatisch weitergegeben.' })
-      }
     } catch (err: unknown) {
-      useUIStore.getState().addToast({ type: 'error', title: 'Würfeln fehlgeschlagen', message: getErrorMessage(err) })
+      const message = err instanceof Error ? err.message : 'Würfeln fehlgeschlagen'
+      useUIStore.getState().addToast({ type: 'error', title: 'Würfeln fehlgeschlagen', message })
     } finally {
       setIsRolling(false)
     }
@@ -41,10 +33,11 @@ export function useGameActions(): {
     if (!user) return
     try {
       setIsMoving(true)
-      const result = await moveFigureApi(sessionId, { playerId: user.userId, figureId, targetFieldId })
+      const result = await createMove(sessionId, { figureId, toPosition: targetFieldId })
       useGameStore.getState().setMoveResult(result)
     } catch (err: unknown) {
-      useUIStore.getState().addToast({ type: 'error', title: 'Zug fehlgeschlagen', message: getErrorMessage(err) })
+      const message = err instanceof Error ? err.message : 'Zug fehlgeschlagen'
+      useUIStore.getState().addToast({ type: 'error', title: 'Zug fehlgeschlagen', message })
     } finally {
       setIsMoving(false)
     }

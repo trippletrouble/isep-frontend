@@ -1,184 +1,177 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import Board from '../board/Board'
-import { DicePanel } from '../dice/DicePanel'
-import { LeaderboardPanel } from './LeaderboardPanel'
-import { NotificationPanel, type NotificationData } from './NotificationPanel'
-import { PageSubHeader } from '@/components/layout/PageSubHeader'
-import { LobbyWaitingRoom } from '@/features/lobby/LobbyWaitingRoom'
-import { useGameStore } from '@/stores/game.store'
-import { useAuthStore } from '@/stores/auth.store'
-import { useUIStore } from '@/stores/ui.store'
-import { useGameActions } from '@/hooks/useGameActions'
-import { useSSE } from '@/hooks/useSSE'
-import { getSession } from '@/api/sessions.api'
-import { getPossibleMoves } from '@/api/gameplay.api'
-import { ApiError } from '@/api/client'
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import Board from "../board/Board";
+import { DicePanel } from "../dice/DicePanel";
+import { LeaderboardPanel } from "./LeaderboardPanel";
+import { NotificationPanel, type NotificationData } from "./NotificationPanel";
+import { PageSubHeader } from "@/components/layout/PageSubHeader";
+import { useGameStore } from "@/stores/game.store";
+import { useGameActions } from "@/hooks/useGameActions";
+import { useAuthStore } from "@/stores/auth.store";
+import { useSSE } from "@/hooks/useSSE";
+import { getSessionState, reconnectSession } from "@/api/sessions.api";
+import { getSessionResults } from "@/api/gameplay.api";
+import type { GameResults } from "@/api/types";
+import { Trophy, Home } from "lucide-react";
 
 export const GamePage = () => {
-  const { id: sessionId } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const gameState = useGameStore((state) => state.gameState);
+  const lastDiceValue = useGameStore((state) => state.lastDiceValue);
+  const gameStore = useGameStore();
+  const { rollDice } = useGameActions();
 
-  const {
-    gameState, setGameState, status,
-    figures, possibleMoves, lastDiceValue,
-    handleGameStarted, handleMoveExecuted, handleTurnChanged, handleGameEnded,
+  const [notification, setNotification] = useState<NotificationData | null>(null);
+  const [results, setResults] = useState<GameResults[] | null>(null);
 
-  } = useGameStore()
-
-  const { moveFigure, isMoving } = useGameActions()
-
-  const [notification, setNotification] = useState<NotificationData | null>(null)
-  const [isDesktop, setIsDesktop] = useState(false)
-  const [reconnectCount] = useState(0)
-
-  // Viewport detection
+  // Load initial game state and handle reconnect/results on mount
   useEffect(() => {
-    const checkViewport = () => setIsDesktop(window.innerWidth >= 1024)
-    checkViewport()
-    window.addEventListener('resize', checkViewport)
-    return () => window.removeEventListener('resize', checkViewport)
-  }, [])
-
-  // Auto-dismiss notification
-  useEffect(() => {
-    if (!notification) return
-    const timer = setTimeout(() => setNotification(null), 5000)
-    return () => clearTimeout(timer)
-  }, [notification])
-
-  // Initial load
-  useEffect(() => {
-    if (!sessionId) return
-    getSession(sessionId)
-      .then((state) => {
-        setGameState(state)
-        // Nachladen der möglichen Züge falls zwischen Würfeln und Ziehen neu geladen
-        if (state.diceRolledThisTurn && user) {
-          getPossibleMoves(sessionId, user.userId)
-            .then((r) => useGameStore.getState().setPossibleMoves(r.possibleMoves))
-            .catch(() => {}) // DICE_NOT_ROLLED ignorieren
+    if (!id) return;
+    const loadGame = async () => {
+      try {
+        const state = await getSessionState(id);
+        gameStore.setGameState(state);
+        if (state.status === "IN_PROGRESS") {
+          await reconnectSession(id);
+        } else if (state.status === "FINISHED") {
+          const res = await getSessionResults(id);
+          setResults(res);
         }
-        if (state.status === 'FINISHED') {
-          navigate(`/game/${sessionId}/results`, { replace: true })
-        }
-      })
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 404) {
-          useUIStore.getState().addToast({ type: 'error', title: 'Session nicht gefunden' })
-          navigate('/')
-        }
-      })
-  }, [sessionId])
-
-  // SSE
-  const { isConnected } = useSSE(sessionId ?? null, {
-    onGameStarted: (data) => handleGameStarted(data),
-    onMoveExecuted: (data) => {
-      handleMoveExecuted(data)
-      if (data.outcome === 'CAPTURED' && data.capturedFigure) {
-        setNotification({
-          title: 'SCHLAG!',
-          message: `Eine Figur wurde vom Feld geworfen!`,
-          iconType: 'CAPTURE',
-        })
-      } else if (data.outcome === 'GAME_WON') {
-        setNotification({ title: 'GEWONNEN! 🏆', message: 'Alle Figuren im Ziel!', iconType: 'WIN' })
+      } catch (err) {
+        console.error("Failed to load game session", err);
       }
-    },
-    onTurnChanged: (data) => handleTurnChanged(data),
-    onGameEnded: (data) => {
-      handleGameEnded(data)
-      navigate(`/game/${sessionId}/results`)
-    },
-    onConnected: () => {
-      if (sessionId) getSession(sessionId).then(setGameState).catch(() => {})
-    },
-    onError: () => {
-      useUIStore.getState().addToast({
-        type: 'error',
-        title: 'Verbindung verloren',
-        message: 'Bitte Seite neu laden.',
-        duration: 0,
-      })
-    },
-  })
+    };
+    loadGame();
+  }, [id, gameStore]);
 
-  // Reconnect toast
+  // Load results if game transitions to finished
   useEffect(() => {
-    if (reconnectCount === 3) {
-      useUIStore.getState().addToast({
-        type: 'warning',
-        title: 'Verbindung unterbrochen',
-        message: 'Verbindung wird wiederhergestellt...',
-      })
+    if (gameState?.status === "FINISHED" && id && !results) {
+      getSessionResults(id)
+        .then(setResults)
+        .catch((err) => console.error("Failed to load results", err));
     }
-  }, [reconnectCount])
+  }, [gameState?.status, id, results]);
 
-  // Lobby waiting room
-  if (!gameState || status === 'WAITING' || status === null) {
-    if (!sessionId) return null
-    return <LobbyWaitingRoom sessionId={sessionId} />
-  }
+  // Setup notification timer
+  useEffect(() => {
+    if (!notification) return;
+    const timer = setTimeout(() => {
+      setNotification(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [notification]);
 
-  // Loading state (gameState exists but still fetching)
-  if (!figures.length && status === 'IN_PROGRESS') {
-    return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <span className="text-white text-2xl font-lilita">Spiel wird geladen...</span>
-      </div>
-    )
-  }
+  // SSE subscription to sync state in real time
+  useSSE(id || null, {
+    onGameStarted: gameStore.handleGameStarted,
+    onMoveExecuted: (data) => {
+      gameStore.handleMoveExecuted(data);
+      let actionMsg = `Figur ${data.figureId} wurde bewegt.`;
+      if (data.outcome === "CAPTURED") {
+        actionMsg = `Figur ${data.figureId} wurde geschlagen!`;
+      } else if (data.outcome === "GOAL") {
+        actionMsg = `Figur ${data.figureId} ist im Ziel!`;
+      } else if (data.outcome === "GAME_WON") {
+        actionMsg = `Das Spiel wurde gewonnen!`;
+      }
+      setNotification({
+        title: data.outcome === "CAPTURED" ? "SCHLAG!" : data.outcome === "GOAL" ? "ZIEL!" : "ZUG",
+        message: actionMsg,
+        iconType: data.outcome === "CAPTURED" ? "CAPTURE" : data.outcome === "GAME_WON" ? "WIN" : "INFO",
+      });
+    },
+    onTurnChanged: gameStore.handleTurnChanged,
+    onGameEnded: (data) => {
+      gameStore.handleGameEnded(data);
+    },
+  });
 
-  const handleMoveFigure = async (figureId: number, toPosition: number) => {
-    if (!sessionId) return
-    await moveFigure(sessionId, figureId, toPosition)
-  }
+  const isMyTurn = gameState && user && gameState.currentPlayerId === user.id;
+  const canRoll = isMyTurn && !gameState.diceRolledThisTurn;
 
-  const shortId = sessionId ? `#${sessionId.slice(0, 8).toUpperCase()}` : ''
+  const handleRoll = () => {
+    if (id) rollDice(id);
+  };
 
   return (
-    <div className="w-full h-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center justify-center relative">
-      {/* Mobile notification */}
-      <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
-        <div className="pointer-events-auto max-w-[380px] mx-auto">
-          <NotificationPanel data={notification} onClose={() => setNotification(null)} />
+    <div className="h-screen bg-primary flex flex-col overflow-hidden relative">
+      <div className="fixed top-4 left-4 right-4 z-50 pointer-events-none lg:hidden">
+        <div className="pointer-events-auto max-w-[450px] mx-auto">
+          <NotificationPanel
+            data={notification}
+            onClose={() => setNotification(null)}
+          />
         </div>
       </div>
 
-      <PageSubHeader
-        center={`LOBBY ${shortId}`}
-        right={
-          <span className={`w-2 h-2 rounded-full inline-block ${isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} title={isConnected ? 'Verbunden' : 'Getrennt'} />
-        }
-      />
+      <PageSubHeader center={`SPIEL #${id || ""}`} />
 
-      <div className="w-full flex flex-col items-center justify-center flex-1">
-        <div className="flex flex-col lg:flex-row w-full gap-6 lg:gap-8 items-center justify-center flex-1 mx-auto">
-          <div className="flex flex-col order-2 lg:order-1 items-center justify-center">
-            <div className="w-[80vw] h-[70vw] max-w-[70vh] max-h-[70vh] flex justify-center items-center">
-              <Board
-                diceRoll={lastDiceValue ?? 1}
-                apiFigures={figures}
-                possibleMoves={possibleMoves}
-                onMoveFigure={handleMoveFigure}
-                isMoving={isMoving}
-              />
+      {gameState?.status === "FINISHED" && results && results.length > 0 && (
+        <div className="absolute inset-0 bg-primary/95 z-50 flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
+          <div className="max-w-md w-full bg-[#292929] border border-accent rounded-[40px] p-8 shadow-2xl flex flex-col items-center gap-6">
+            <Trophy size={64} className="text-yellow animate-bounce" />
+            <h2 className="font-lilita text-4xl text-center uppercase tracking-wide">
+              Spiel Beendet
+            </h2>
+            <div className="w-full flex flex-col gap-3 my-4">
+              {results[0]?.placements?.map((p) => (
+                <div
+                  key={p.playerId}
+                  className="flex items-center justify-between bg-primary/50 border border-accent p-4 rounded-2xl"
+                >
+                  <span className="font-bold text-lg">
+                    {p.rank}. {p.username}
+                  </span>
+                  <span className="text-accent font-bold">
+                    {p.figuresInGoal} / 4 im Ziel
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => navigate("/")}
+              className="w-full h-[60px] bg-green hover:opacity-90 text-primary font-lilita text-xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
+            >
+              <Home size={20} />
+              Hauptmenü
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="w-full max-w-[1440px] mx-auto flex flex-col flex-1 min-h-0 items-center justify-center">
+        <div className="flex flex-col lg:flex-row w-full gap-8 lg:gap-12 items-center md:justify-center flex-1 min-h-0 mx-auto">
+          <div className="flex flex-col justify-center items-center shrink min-w-0 min-h-0 order-2 lg:order-1">
+            <div className="w-[80vw] h-[80vw] max-w-[80vh] max-h-[80vh] flex justify-center items-center">
+              <Board diceRoll={lastDiceValue ?? 1} />
             </div>
           </div>
 
-          <div className="w-[70vw] max-w-[70vh] lg:w-[290px] lg:max-w-none shrink-0 flex flex-row lg:flex-col gap-3 items-stretch justify-center order-1 lg:order-2 transition-all h-[180px] sm:h-[240px] lg:h-[480px]">
+          <div className="w-[80vw] max-w-[80vh] lg:w-[350px] lg:max-w-none shrink-0 flex flex-row lg:flex-col gap-4 items-stretch justify-center order-1 lg:order-2">
             <div className="hidden lg:block w-full">
-              <NotificationPanel data={notification} onClose={() => setNotification(null)} />
+              <NotificationPanel
+                data={notification}
+                onClose={() => setNotification(null)}
+              />
             </div>
 
-            <LeaderboardPanel isSquished={!!notification && isDesktop} className="flex-1 lg:flex-none" />
+            <LeaderboardPanel
+              isSquished={!!notification}
+              className="flex-1 lg:flex-none"
+            />
 
-            <DicePanel sessionId={sessionId!} className="flex-1 lg:flex-none" />
+            <DicePanel
+              currentRoll={lastDiceValue ?? 1}
+              onRoll={handleRoll}
+              disabled={!canRoll}
+              className="flex-1 lg:flex-none"
+            />
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

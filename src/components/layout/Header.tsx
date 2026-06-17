@@ -1,19 +1,10 @@
-import { Settings, ChevronDown, LogOut, User } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import logoImg from '@/assets/logo.png'
-import vector7 from '@/assets/vector7.png'
-import { useAuth } from '@/hooks/useAuth'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Settings, ChevronDown } from "lucide-react";
+import logoImg from "@/assets/logo.png";
+import vector7 from "@/assets/vector7.png";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Header() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, logout } = useAuth();
 
   return (
     <div className="w-full px-4 pt-6 flex justify-center">
@@ -21,38 +12,18 @@ export function Header() {
         <img
           src={logoImg}
           alt="LUDO 2.0"
-          className="h-12 w-auto object-contain select-none cursor-pointer"
-          onClick={() => navigate('/')}
+          className="h-12 w-auto object-contain select-none"
         />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 py-2 px-8 rounded-[40px] border font-lilita border-accent justify-center text-2xl text-white bg-transparent hover:bg-white/5 transition-colors">
-              <img src={vector7} alt="" className="w-5 h-5 object-contain" />
-              {user?.username ?? 'Spieler'}
-              <ChevronDown size={20} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="bg-primary border-accent text-white min-w-[180px]">
-            {user && (
-              <DropdownMenuItem
-                className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
-                onClick={() => navigate(`/profile/${user.userId}`)}
-              >
-                <User size={16} className="mr-2" />
-                Mein Profil
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator className="bg-accent" />
-            <DropdownMenuItem
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-red-400"
-              onClick={logout}
-            >
-              <LogOut size={16} className="mr-2" />
-              Abmelden
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <button
+          onClick={logout}
+          title="Abmelden"
+          className="flex items-center gap-2 py-2 px-8 rounded-[40px] border font-lilita border-accent justify-center text-2xl text-white bg-transparent hover:bg-white/5 transition-colors"
+        >
+          <img src={vector7} alt="" className="w-5 h-5 object-contain" />
+          {user?.username || "Spieler"}
+          <ChevronDown size={20} />
+        </button>
 
         <button
           aria-label="Einstellungen"
@@ -62,5 +33,5 @@ export function Header() {
         </button>
       </header>
     </div>
-  )
+  );
 }

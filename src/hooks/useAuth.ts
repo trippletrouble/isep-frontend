@@ -1,8 +1,5 @@
 import { useAuthStore } from '../stores/auth.store'
-import { useGameStore } from '../stores/game.store'
-import { useLobbyStore } from '../stores/lobby.store'
 import { getOAuthUrl } from '../api/auth.api'
-import { useUIStore } from '../stores/ui.store'
 import type { SessionUser } from '../api/types'
 
 export function useAuth(): {
@@ -19,9 +16,6 @@ export function useAuth(): {
 
   const logout = async () => {
     await useAuthStore.getState().logout()
-    useLobbyStore.getState().reset()
-    useGameStore.getState().reset()
-    useUIStore.getState().addToast({ type: 'success', title: 'Abgemeldet' })
     window.location.href = '/login'
   }
 
