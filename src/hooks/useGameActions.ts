@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuthStore } from '../stores/auth.store'
 import { useGameStore } from '../stores/game.store'
 import { useUIStore } from '../stores/ui.store'
-import { rollDice as rollDiceApi, moveFigure as moveFigureApi } from '../api/gameplay.api'
+import { rollDice as rollDiceApi, createMove } from '../api/gameplay.api'
 
 export function useGameActions(): {
   rollDice: (sessionId: string) => Promise<void>
@@ -18,7 +18,7 @@ export function useGameActions(): {
     if (!user) return
     try {
       setIsRolling(true)
-      const result = await rollDiceApi(sessionId, user.userId)
+      const result = await rollDiceApi(sessionId)
       useGameStore.getState().setDiceResult(result)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Würfeln fehlgeschlagen'
@@ -33,7 +33,7 @@ export function useGameActions(): {
     if (!user) return
     try {
       setIsMoving(true)
-      const result = await moveFigureApi(sessionId, { playerId: user.userId, figureId, targetFieldId })
+      const result = await createMove(sessionId, { figureId, toPosition: targetFieldId })
       useGameStore.getState().setMoveResult(result)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Zug fehlgeschlagen'

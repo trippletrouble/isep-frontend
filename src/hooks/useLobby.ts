@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/auth.store'
 import { useUIStore } from '../stores/ui.store'
 import { createSession, startSession } from '../api/sessions.api'
 import { joinSession, leaveSession, generateInvite as generateInviteApi } from '../api/lobby.api'
-import type { LobbySettings, SessionSummary, Lobby, Player, JoinGameRequest, GameStatus } from '../api/types'
+import type { LobbySettings, SessionSummary, Lobby, Player, JoinSessionRequest } from '../api/types'
 
 export function useLobby(): {
   sessions: SessionSummary[]
@@ -11,10 +11,10 @@ export function useLobby(): {
   players: Player[]
   isLoading: boolean
   error: string | null
-  fetchSessions: (params?: { status?: GameStatus; page?: number; size?: number }) => Promise<void>
+  fetchSessions: (params?: { page?: number; size?: number }) => Promise<void>
   fetchLobby: (sessionId: string) => Promise<void>
   createLobby: (settings: LobbySettings) => Promise<Lobby>
-  joinLobby: (sessionId: string, body: JoinGameRequest) => Promise<void>
+  joinLobby: (sessionId: string, body: JoinSessionRequest) => Promise<void>
   leaveLobby: (sessionId: string) => Promise<void>
   startGame: (sessionId: string) => Promise<void>
   generateInvite: (sessionId: string) => Promise<{ inviteToken: string; inviteUrl: string; expiresAt: string }>
@@ -30,7 +30,7 @@ export function useLobby(): {
     try {
       const user = useAuthStore.getState().user
       if (!user) throw new Error('Nicht eingeloggt')
-      const lobby = await createSession({ hostId: user.userId, settings })
+      const lobby = await createSession({ settings })
       useLobbyStore.getState().setCurrentLobby(lobby)
       return lobby
     } catch (err) {
@@ -39,10 +39,10 @@ export function useLobby(): {
     }
   }
 
-  const joinLobby = async (sessionId: string, body: JoinGameRequest): Promise<void> => {
+  const joinLobby = async (sessionId: string, body: JoinSessionRequest): Promise<void> => {
     try {
-      const lobby = await joinSession(sessionId, body)
-      useLobbyStore.getState().setCurrentLobby(lobby)
+      await joinSession(sessionId, body)
+      await useLobbyStore.getState().fetchLobby(sessionId)
     } catch (err) {
       handleLobbyError(err)
       throw err

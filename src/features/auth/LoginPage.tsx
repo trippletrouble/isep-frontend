@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AuthForm } from './AuthForm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { getOAuthUrl } from '@/api/auth.api'
 import vector7 from '@/assets/vector7.png'
 
 export function LoginPage() {
@@ -11,7 +12,7 @@ export function LoginPage() {
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    // Week 2: useAuthStore().login(username, password)
+    window.location.href = getOAuthUrl()
   }
 
   return (

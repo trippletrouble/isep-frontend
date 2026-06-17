@@ -3,16 +3,12 @@ import { DiceButton } from "./DiceButton";
 
 interface DicePanelProps {
   currentRoll: number;
-  onRoll: (roll: number) => void;
+  onRoll: () => void;
+  disabled?: boolean;
   className?: string;
 }
 
-export function DicePanel({ currentRoll, onRoll, className }: DicePanelProps) {
-  const handleRollClick = () => {
-    const newRoll = Math.floor(Math.random() * 6) + 1;
-    onRoll(newRoll);
-  };
-
+export function DicePanel({ currentRoll, onRoll, disabled, className }: DicePanelProps) {
   return (
     <div
       className={`bg-primary border border-accent hover:border-white rounded-2xl lg:rounded-4xl py-4 lg:py-8 px-3 lg:px-6 flex flex-col items-center justify-center w-full h-full lg:h-auto mx-auto shrink-0 min-w-0 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] ${className}`}
@@ -21,7 +17,7 @@ export function DicePanel({ currentRoll, onRoll, className }: DicePanelProps) {
         Würfel
       </h2>
       <Dice value={currentRoll} />
-      <DiceButton onClick={handleRollClick} />
+      <DiceButton onClick={onRoll} disabled={disabled} />
     </div>
   );
 }

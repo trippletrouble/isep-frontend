@@ -1,8 +1,15 @@
 import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLobby } from "@/hooks/useLobby";
+import type { AdditionalRule } from "@/api/types";
 
 export function CreateLobbyCard() {
+  const { level } = useParams<{ level: string }>();
+  const navigate = useNavigate();
+  const { createLobby } = useLobby();
+
   const [playerName, setPlayerName] = useState("");
   const [playerCount, setPlayerCount] = useState<number>(4);
   const [againstAI, setAgainstAI] = useState(false);
@@ -10,8 +17,28 @@ export function CreateLobbyCard() {
     "klassisch",
   );
 
-  function handleCreate() {
-    // Week 2: POST /sessions with { level, playerCount, againstAI, gameMode }
+  async function handleCreate() {
+    const rules: AdditionalRule[] = [];
+    if (level === "1") {
+      rules.push("THROW_AGAIN_ON_6");
+    } else if (level === "2") {
+      rules.push("THREE_SIXES_LOSE_TURN");
+    } else if (level === "3") {
+      rules.push("THROW_AGAIN_ON_6", "THREE_SIXES_LOSE_TURN");
+    }
+
+    try {
+      const lobby = await createLobby({
+        numberOfPlayers: playerCount,
+        mode: "CLASSIC",
+        boardTheme: "CLASSIC",
+        isPrivate: false,
+        additionalRules: rules,
+      });
+      navigate(`/lobby/${lobby.sessionId}`);
+    } catch (err) {
+      console.error("Failed to create lobby", err);
+    }
   }
 
   return (

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   type Point,
@@ -12,8 +13,9 @@ import {
 } from "./BoardPath";
 import { Figure } from "./Figure";
 import { X } from "lucide-react";
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { useGameStore } from "@/stores/game.store";
+import { useGameActions } from "@/hooks/useGameActions";
+import type { Figure as BackendFigure } from "@/api/types";
 
 type FigureState = {
   id: string;
@@ -149,13 +151,62 @@ interface BoardProps {
 }
 
 export default function Board({ diceRoll }: BoardProps) {
-  const [figures, setFigures] = useState(INITIAL_FIGURES);
+  const { id: sessionId } = useParams<{ id: string }>();
+  const gameState = useGameStore((state) => state.gameState);
+  const possibleMoves = useGameStore((state) => state.possibleMoves);
+  const { moveFigure } = useGameActions();
+
   const [selectedFigureId, setSelectedFigureId] = useState<string | null>(null);
   const [activePile, setActivePile] = useState<{
     x: number;
     y: number;
     figures: FigureState[];
   } | null>(null);
+
+  const mapBackendFigureToFrontend = (backendFig: BackendFigure): FigureState => {
+    const id = backendFig.id;
+    let color = "#DB5757";
+    let startTrackIndex = 0;
+    const nestIndex = id;
+
+    if (id >= 0 && id <= 3) {
+      color = "#DB5757";
+      startTrackIndex = 0;
+    } else if (id >= 4 && id <= 7) {
+      color = "#57DB8F";
+      startTrackIndex = 39;
+    } else if (id >= 8 && id <= 11) {
+      color = "#EBE036";
+      startTrackIndex = 26;
+    } else if (id >= 12 && id <= 15) {
+      color = "#577CDB";
+      startTrackIndex = 13;
+    }
+
+    let position: "nest" | number | string = "nest";
+    if (backendFig.position === -1) {
+      position = "nest";
+    } else if (backendFig.position >= 0 && backendFig.position <= 50) {
+      position = backendFig.position;
+    } else if (backendFig.position >= 51 && backendFig.position <= 55) {
+      position = `goal_${backendFig.position - 51}`;
+    } else if (backendFig.position === 56) {
+      position = "center";
+    }
+
+    return {
+      id: String(id),
+      color,
+      position,
+      nestIndex,
+      startTrackIndex,
+    };
+  };
+
+  const figures =
+    gameState && gameState.figures && gameState.figures.length > 0
+      ? gameState.figures.map(mapBackendFigureToFrontend)
+      : INITIAL_FIGURES;
 
   const activeFigure = figures.find((f) => f.id === selectedFigureId);
 
@@ -211,144 +262,40 @@ export default function Board({ diceRoll }: BoardProps) {
     return null;
   };
 
-  const calculateTargetPosition = (
-    fig: FigureState,
-    roll: number,
-  ): { position: "nest" | number | string; tile: Point | null } | null => {
-    if (fig.position === "nest") {
-      if (roll === 6) {
-        const targetPos = fig.startTrackIndex;
-        return { position: targetPos, tile: CLOCKWISE_TRACK[targetPos] };
-      }
-      return null;
-    }
+  const activeMove = possibleMoves.find(
+    (m) => String(m.figureId) === selectedFigureId
+  );
 
-    if (typeof fig.position === "number") {
-      const currentSteps = (fig.position - fig.startTrackIndex + 52) % 52;
-      const nextSteps = currentSteps + roll;
+  const targetResult = activeMove
+    ? (() => {
+        const toPos = activeMove.toPosition;
+        let position: "nest" | number | string = "nest";
+        if (toPos === -1) position = "nest";
+        else if (toPos >= 0 && toPos <= 50) position = toPos;
+        else if (toPos >= 51 && toPos <= 55) position = `goal_${toPos - 51}`;
+        else if (toPos === 56) position = "center";
 
-      if (nextSteps <= 51) {
-        const targetPos = (fig.position + roll) % 52;
-        return { position: targetPos, tile: CLOCKWISE_TRACK[targetPos] };
-      } else {
-        const goalIdx = nextSteps - 52;
-        if (goalIdx <= 4) {
-          const targetPos = `goal_${goalIdx}`;
-          return {
-            position: targetPos,
-            tile: getGoalPathCoordinates(fig.color, goalIdx),
-          };
-        } else if (goalIdx === 5) {
-          const targetPos = "center";
-          return { position: targetPos, tile: getCenterCoordinates(fig.color) };
-        }
-        return null;
-      }
-    }
+        const tile = (() => {
+          if (toPos >= 0 && toPos <= 50) return CLOCKWISE_TRACK[toPos];
+          if (toPos >= 51 && toPos <= 55) return getGoalPathCoordinates(activeFigure!.color, toPos - 51);
+          if (toPos === 56) return getCenterCoordinates(activeFigure!.color);
+          return null;
+        })();
 
-    if (typeof fig.position === "string" && fig.position.startsWith("goal_")) {
-      const currentGoalIdx = parseInt(fig.position.split("_")[1], 10);
-      const nextGoalIdx = currentGoalIdx + roll;
-
-      if (nextGoalIdx <= 4) {
-        const targetPos = `goal_${nextGoalIdx}`;
-        return {
-          position: targetPos,
-          tile: getGoalPathCoordinates(fig.color, nextGoalIdx),
-        };
-      } else if (nextGoalIdx === 5) {
-        const targetPos = "center";
-        return { position: targetPos, tile: getCenterCoordinates(fig.color) };
-      }
-      return null;
-    }
-
-    return null;
-  };
-
-  const targetResult = activeFigure
-    ? calculateTargetPosition(activeFigure, diceRoll)
+        return { position, tile };
+      })()
     : null;
+
   const targetTile = targetResult?.tile || null;
 
-  const getPathOfPositions = (
-    startPos: "nest" | number | string,
-    targetPos: "nest" | number | string,
-    roll: number,
-    fig: FigureState,
-  ): Array<"nest" | number | string> => {
-    if (startPos === "nest") {
-      return [targetPos];
-    }
-
-    const path: Array<"nest" | number | string> = [];
-
-    if (typeof startPos === "number") {
-      const currentSteps = (startPos - fig.startTrackIndex + 52) % 52;
-      let curr = startPos;
-      for (let step = 1; step <= roll; step++) {
-        const stepsFromStart = currentSteps + step;
-        if (stepsFromStart <= 51) {
-          curr = (curr + 1) % 52;
-          path.push(curr);
-        } else {
-          const goalIdx = stepsFromStart - 52;
-          if (goalIdx <= 4) {
-            path.push(`goal_${goalIdx}`);
-          } else if (goalIdx === 5) {
-            path.push("center");
-          }
-        }
-      }
-    } else if (typeof startPos === "string" && startPos.startsWith("goal_")) {
-      const startGoalIdx = parseInt(startPos.split("_")[1], 10);
-      for (let step = 1; step <= roll; step++) {
-        const goalIdx = startGoalIdx + step;
-        if (goalIdx <= 4) {
-          path.push(`goal_${goalIdx}`);
-        } else if (goalIdx === 5) {
-          path.push("center");
-        }
-      }
-    }
-
-    return path;
-  };
-
   const handleMoveToTarget = async () => {
-    if (!activeFigure || !targetResult) return;
-
-    const targetPos = targetResult.position;
-    setSelectedFigureId(null);
-
-    const path = getPathOfPositions(
-      activeFigure.position,
-      targetPos,
-      diceRoll,
-      activeFigure,
-    );
-
-    for (const pos of path) {
-      setFigures((prev) =>
-        prev.map((fig) =>
-          fig.id === activeFigure.id ? { ...fig, position: pos } : fig,
-        ),
-      );
-      await sleep(250);
-    }
-
-    if (typeof targetPos === "number") {
-      setFigures((prev) =>
-        prev.map((fig) => {
-          if (fig.color !== activeFigure.color && fig.position === targetPos) {
-            toast.warning(
-              `⚔️ Schlag! Figur ${fig.id.toUpperCase()} wurde heimgeschickt!`,
-            );
-            return { ...fig, position: "nest" };
-          }
-          return fig;
-        }),
-      );
+    if (!activeMove || !sessionId) return;
+    try {
+      await moveFigure(sessionId, activeMove.figureId, activeMove.toPosition);
+      setSelectedFigureId(null);
+      setActivePile(null);
+    } catch (err) {
+      console.error("Move figure error", err);
     }
   };
 

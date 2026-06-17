@@ -13,13 +13,13 @@ export type GameHistoryActionType = 'ROLL' | 'MOVE' | 'CAPTURE' | 'GOAL' | 'GAME
 
 // ─── RESPONSE WRAPPER ─────────────────────────────────────────────────────
 
-export interface ApiSuccessResponse<T> {
+export interface SuccessResponse<T = undefined> {
   status: 'success'
   timestamp: string
-  data: T
+  data?: T
 }
 
-export interface ApiErrorResponse {
+export interface ErrorResponse {
   status: 'error'
   code: string
   message: string
@@ -27,12 +27,15 @@ export interface ApiErrorResponse {
   timestamp: string
 }
 
+export type ApiSuccessResponse<T> = SuccessResponse<T>;
+export type ApiErrorResponse = ErrorResponse;
+
 // ─── AUTH ─────────────────────────────────────────────────────────────────
 
 export interface SessionUser {
-  userId: string
+  id: string
   username: string
-  roles: string[]
+  role: string
 }
 
 // ─── USERS ────────────────────────────────────────────────────────────────
@@ -150,9 +153,8 @@ export interface DiceRollResult {
 }
 
 export interface MoveRequest {
-  playerId: string
   figureId: number
-  targetFieldId: number
+  toPosition: number
 }
 
 export interface CapturedFigure {
@@ -200,12 +202,14 @@ export interface GameHistoryEvent {
 // ─── REQUESTS ─────────────────────────────────────────────────────────────
 
 export interface CreateSessionRequest {
-  hostId: string
   settings: LobbySettings
 }
 
-export interface JoinGameRequest {
-  playerId: string
-  preferredColor?: PlayerColor
+export interface JoinSessionRequest {
+  color?: PlayerColor
   inviteToken?: string
+}
+
+export interface StartSessionResult {
+  gameState: GameState
 }

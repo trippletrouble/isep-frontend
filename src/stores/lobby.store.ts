@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { listSessions } from '../api/sessions.api'
-import { getLobby, getPlayers } from '../api/lobby.api'
-import type { SessionSummary, Lobby, Player, GameStatus } from '../api/types'
+import { getLobby, getSessionPlayers } from '../api/lobby.api'
+import type { SessionSummary, Lobby, Player } from '../api/types'
 
 interface LobbyState {
   sessions: SessionSummary[]
@@ -12,7 +12,7 @@ interface LobbyState {
   totalCount: number
   page: number
 
-  fetchSessions: (params?: { status?: GameStatus; page?: number; size?: number }) => Promise<void>
+  fetchSessions: (params?: { page?: number; size?: number }) => Promise<void>
   fetchLobby: (sessionId: string) => Promise<void>
   fetchPlayers: (sessionId: string) => Promise<void>
   setCurrentLobby: (lobby: Lobby | null) => void
@@ -70,7 +70,7 @@ export const useLobbyStore = create<LobbyState>((set) => ({
   fetchPlayers: async (sessionId) => {
     set({ isLoading: true, error: null })
     try {
-      const result = await getPlayers(sessionId)
+      const result = await getSessionPlayers(sessionId)
       set({ players: result })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'

@@ -1,3 +1,5 @@
+import { useGameStore } from "@/stores/game.store";
+
 interface LeaderboardPanelProps {
   isSquished?: boolean;
   className?: string;
@@ -7,12 +9,28 @@ export const LeaderboardPanel = ({
   isSquished,
   className = "",
 }: LeaderboardPanelProps) => {
-  const players = [
-    { name: "Spieler 2", color: "bg-yellow", score: 3 },
-    { name: "Spieler 1", color: "bg-red", score: 2 },
-    { name: "Spieler 3", color: "bg-blue", score: 1 },
-    { name: "Spieler 4", color: "bg-green", score: 0 },
-  ];
+  const storePlayers = useGameStore((state) => state.players);
+
+  const colorClassMap: Record<string, string> = {
+    RED: "bg-red",
+    BLUE: "bg-blue",
+    GREEN: "bg-green",
+    YELLOW: "bg-yellow",
+  };
+
+  const players =
+    storePlayers && storePlayers.length > 0
+      ? storePlayers.map((p) => ({
+          name: p.username,
+          color: colorClassMap[p.color] || "bg-red",
+          score: p.figuresInGoal,
+        }))
+      : [
+          { name: "Spieler 2", color: "bg-yellow", score: 3 },
+          { name: "Spieler 1", color: "bg-red", score: 2 },
+          { name: "Spieler 3", color: "bg-blue", score: 1 },
+          { name: "Spieler 4", color: "bg-green", score: 0 },
+        ];
 
   return (
     <div

@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { API_BASE_URL } from '../api/client'
-import type { GameState, MoveResult, GameResults } from '../api/types'
 
-interface UseSSEOptions {
-  onGameStarted?: (data: GameState) => void
-  onMoveExecuted?: (data: MoveResult) => void
-  onTurnChanged?: (data: { currentPlayerId: string; turnNumber: number }) => void
-  onGameEnded?: (data: GameResults) => void
+interface UseSessionUpdatesOptions {
+  onUpdate?: (data: unknown) => void
   onError?: (error: Event) => void
   onConnected?: () => void
 }
 
-export function useSSE(
+export function useSessionUpdates(
   sessionId: string | null,
-  options: UseSSEOptions
+  options: UseSessionUpdatesOptions
 ): { isConnected: boolean; reconnectCount: number; disconnect: () => void } {
   const [isConnected, setIsConnected] = useState(false)
   const [reconnectCount, setReconnectCount] = useState(0)
@@ -29,7 +25,6 @@ export function useSSE(
   })
 
   const connect = useCallback(() => {
-    // Schließe bestehende Verbindung falls vorhanden
     if (eventSourceRef.current) {
       eventSourceRef.current.close()
     }
@@ -39,7 +34,7 @@ export function useSSE(
 
     if (!sessionId) return
 
-    const url = `${API_BASE_URL}/sessions/${sessionId}/live`
+    const url = `${API_BASE_URL}/sessions/${sessionId}/updates`
     const es = new EventSource(url, { withCredentials: true })
     eventSourceRef.current = es
 
@@ -65,34 +60,13 @@ export function useSSE(
       }, delay)
     }
 
-    es.addEventListener('game_started', (e: MessageEvent) => {
+    es.onmessage = (e: MessageEvent) => {
       try {
-        optionsRef.current.onGameStarted?.(JSON.parse(e.data))
-      } catch (err) {
-        console.error('Error parsing game_started SSE data', err)
+        optionsRef.current.onUpdate?.(JSON.parse(e.data))
+      } catch {
+        optionsRef.current.onUpdate?.(e.data)
       }
-    })
-    es.addEventListener('move_executed', (e: MessageEvent) => {
-      try {
-        optionsRef.current.onMoveExecuted?.(JSON.parse(e.data))
-      } catch (err) {
-        console.error('Error parsing move_executed SSE data', err)
-      }
-    })
-    es.addEventListener('turn_changed', (e: MessageEvent) => {
-      try {
-        optionsRef.current.onTurnChanged?.(JSON.parse(e.data))
-      } catch (err) {
-        console.error('Error parsing turn_changed SSE data', err)
-      }
-    })
-    es.addEventListener('game_ended', (e: MessageEvent) => {
-      try {
-        optionsRef.current.onGameEnded?.(JSON.parse(e.data))
-      } catch (err) {
-        console.error('Error parsing game_ended SSE data', err)
-      }
-    })
+    }
   }, [sessionId])
 
   useEffect(() => {

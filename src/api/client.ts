@@ -1,4 +1,4 @@
-import type { ApiSuccessResponse, ApiErrorResponse } from './types';
+import type { SuccessResponse, ErrorResponse } from './types';
 
 const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:8080/api/v1';
 export const API_BASE_URL: string = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
@@ -40,14 +40,14 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T
     if (!text) {
       return undefined as unknown as T;
     }
-    const json = JSON.parse(text) as ApiSuccessResponse<T>;
-    return json.data;
+    const json = JSON.parse(text) as SuccessResponse<T>;
+    return json.data as T;
   } else {
-    let errorJson: ApiErrorResponse | null = null;
+    let errorJson: ErrorResponse | null = null;
     try {
       const text = await response.text();
       if (text) {
-        errorJson = JSON.parse(text) as ApiErrorResponse;
+        errorJson = JSON.parse(text) as ErrorResponse;
       }
     } catch {
       // JSON parsing failed
