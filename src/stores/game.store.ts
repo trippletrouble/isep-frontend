@@ -64,21 +64,58 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   setDiceResult: (result: DiceRollResult) => {
-    get().setGameState(result.gameState)
+    get().setGameState(result.gameState) // setzt diceRolledThisTurn korrekt aus gameState
     set({
       lastDiceValue: result.value,
       possibleMoves: result.possibleMoves,
       consecutiveSixes: result.consecutiveSixes,
-      diceRolledThisTurn: true,
     })
   },
 
   setMoveResult: (result: MoveResult) => {
-    get().setGameState(result.gameState)
-    set({
-      possibleMoves: [],
-      diceRolledThisTurn: false,
-    })
+    // Wenn das Backend den kompletten State mitschickt, nutzen wir den
+    if (result.gameState) {
+      get().setGameState(result.gameState);
+      set({
+        possibleMoves: [],
+        diceRolledThisTurn: false,
+      });
+      return;
+    }
+
+    // --- FIX: Wenn kein gameState da ist, updaten wir die Figur händisch! ---
+    set((state) => {
+      // 1. Finde und aktualisiere die Figur im globalen figures-Array
+      const updatedFigures = state.figures.map((fig) => {
+        // Prüfe, ob die IDs matchen (Achtung: Manchmal ist eins Number und eins String, daher ==)
+        if (fig.id == result.figureId) {
+          return {
+            ...fig,
+            position: result.toPosition ?? fig.position, // Die neue Position vom Backend
+            status: result.outcome === 'GOAL' ? 'GOAL' : (result.toPosition === -1 ? 'HOME' : 'ACTIVE')
+          };
+        }
+
+        // Optionale Zusatz-Logik: Wurde diese Figur geschlagen? 
+        // Falls dein Backend eine 'wasCapturedId' oder ähnliches im result mitschickt,
+        // müsste man die hier auf position: -1 zurücksetzen.
+
+        return fig;
+      });
+
+      // 2. Baue den neuen GameState zusammen, damit das Board ihn sauber rendert
+      const updatedGameState = state.gameState ? {
+        ...state.gameState,
+        figures: updatedFigures,
+      } : null;
+
+      return {
+        figures: updatedFigures,
+        gameState: updatedGameState,
+        possibleMoves: [],
+        diceRolledThisTurn: false,
+      };
+    });
   },
 
   setPossibleMoves: (moves: PossibleMove[]) => {
@@ -98,13 +135,29 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   handleTurnChanged: (data: { currentPlayerId: string; turnNumber: number }) => {
-    set({
-      currentPlayerId: data.currentPlayerId,
-      turnNumber: data.turnNumber,
-      diceRolledThisTurn: false,
-      possibleMoves: [],
-      consecutiveSixes: 0,
-    })
+    set((state) => {
+      const updatedPlayers = state.gameState?.players?.map((player) => ({
+        ...player,
+        isCurrentTurn: player.id === data.currentPlayerId,
+      })) || [];
+
+      return {
+        currentPlayerId: data.currentPlayerId,
+        turnNumber: data.turnNumber,
+        diceRolledThisTurn: false,
+        possibleMoves: [],
+        consecutiveSixes: 0,
+        players: updatedPlayers,
+        gameState: state.gameState ? {
+          ...state.gameState,
+          currentPlayerId: data.currentPlayerId,
+          turnNumber: data.turnNumber,
+          diceRolledThisTurn: false,
+          consecutiveSixes: 0,
+          players: updatedPlayers,
+        } : null,
+      };
+    });
   },
 
   handleGameEnded: (data: GameResults) => {

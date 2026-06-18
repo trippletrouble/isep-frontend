@@ -11,7 +11,7 @@ import { useGameStore } from '@/stores/game.store'
 import { useUIStore } from '@/stores/ui.store'
 import { useSSE } from '@/hooks/useSSE'
 import { getErrorMessage } from '@/lib/errorMessages'
-import { startSession, getSession } from '@/api/sessions.api'
+import { startSession } from '@/api/sessions.api'
 import type { PlayerColor, AdditionalRule } from '@/api/types'
 
 const COLOR_HEX: Record<PlayerColor, string> = {
@@ -50,26 +50,26 @@ export function LobbyWaitingRoom({ sessionId }: LobbyWaitingRoomProps) {
   const [inviteData, setInviteData] = useState<{ inviteToken: string; inviteUrl: string; expiresAt: string } | null>(null)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
+  // Polling: kein SSE-Event für player_joined → alle 3s Lobby neu laden
   useEffect(() => {
     fetchLobby(sessionId)
+    const interval = setInterval(() => fetchLobby(sessionId), 3000)
+    return () => clearInterval(interval)
   }, [sessionId])
 
   useSSE(sessionId, {
-    onGameStarted: (data) => {
-      setGameState(data)
-    },
-    onConnected: () => {
-      getSession(sessionId).then(setGameState).catch(() => {})
-    },
+    // game_state kommt vom Backend auf SSE-Connect als initialer Snapshot
+    onGameState: (data) => setGameState(data),
+    onGameStarted: (data) => setGameState(data),
   })
 
-  const isHost = currentLobby?.hostId === user?.userId
+  const isHost = currentLobby?.hostId === user?.id
 
   const handleStart = async () => {
     setIsStarting(true)
     try {
-      const state = await startSession(sessionId)
-      setGameState(state)
+      await startSession(sessionId)
+      navigate(`/game/${sessionId}`)
     } catch (err) {
       useUIStore.getState().addToast({ type: 'error', title: 'Starten fehlgeschlagen', message: getErrorMessage(err) })
     } finally {
@@ -146,7 +146,7 @@ export function LobbyWaitingRoom({ sessionId }: LobbyWaitingRoomProps) {
                     {p.id === currentLobby?.hostId && (
                       <span className="text-xs text-[#57DB8F] font-afacad">Host</span>
                     )}
-                    {p.id === user?.userId && (
+                    {p.id === user?.id && (
                       <span className="text-xs text-[#ACACAC] font-afacad">(Du)</span>
                     )}
                   </div>

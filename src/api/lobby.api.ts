@@ -1,8 +1,10 @@
 import { api } from './client'
+import { normalizeLobby, normalizeGameState } from './normalizers'
 import type { Lobby, Player, LobbySettings, GameState, JoinSessionRequest } from './types'
 
 export async function getLobby(sessionId: string): Promise<Lobby> {
-  return api.get<Lobby>(`/sessions/${sessionId}/lobby`)
+  const raw = await api.get<any>(`/sessions/${sessionId}/lobby`)
+  return normalizeLobby(raw)
 }
 
 export async function updateLobbySettings(sessionId: string, settings: LobbySettings): Promise<LobbySettings> {
@@ -10,16 +12,27 @@ export async function updateLobbySettings(sessionId: string, settings: LobbySett
 }
 
 export async function getSessionPlayers(sessionId: string): Promise<Player[]> {
-  return api.get<Player[]>(`/sessions/${sessionId}/players`)
+  const raw = await api.get<any[]>(`/sessions/${sessionId}/players`)
+  // PlayerResponseDto hat userId (user ID), id (participant ID)
+  return (raw ?? []).map((p: any) => ({
+    id: p.userId ?? p.id,
+    username: p.username ?? '',
+    color: p.color,
+    type: p.type ?? 'HUMAN',
+    isCurrentTurn: p.isCurrentTurn ?? false,
+    hasFinished: p.hasFinished ?? false,
+    figuresInGoal: p.figuresInGoal ?? 0,
+  }))
 }
 
 export async function joinSession(
   sessionId: string,
   body?: JoinSessionRequest,
-  inviteToken?: string
+  inviteToken?: string,
 ): Promise<GameState> {
   const query = inviteToken ? `?inviteToken=${encodeURIComponent(inviteToken)}` : ''
-  return api.post<GameState>(`/sessions/${sessionId}/join${query}`, body)
+  const raw = await api.post<any>(`/sessions/${sessionId}/join${query}`, body)
+  return normalizeGameState(raw)
 }
 
 export async function leaveSession(sessionId: string): Promise<{ message: string }> {
@@ -31,9 +44,9 @@ export async function generateInvite(sessionId: string): Promise<{
   inviteUrl: string
   expiresAt: string
 }> {
-  return api.post<{
-    inviteToken: ***ENTFERNT***
-    inviteUrl: string
-    expiresAt: string
-  }>(`/sessions/${sessionId}/invite`)
+  // generateInvite ist der EINZIGE Endpoint der manuell { status, data } zurückgibt
+  // client.ts erkennt das und gibt bereits data zurück
+  return api.post<{ inviteToken: string; inviteUrl: string; expiresAt: string }>(
+    `/sessions/${sessionId}/invite`,
+  )
 }

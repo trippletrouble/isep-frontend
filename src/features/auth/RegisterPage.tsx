@@ -1,21 +1,9 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { AuthForm } from './AuthForm'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { getOAuthUrl } from '@/api/auth.api'
 import vector7 from '@/assets/vector7.png'
 
 export function RegisterPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [passwordRepeat, setPasswordRepeat] = useState('')
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    window.location.href = getOAuthUrl()
-  }
-
   return (
     <AuthForm>
       <div className="flex items-center gap-3 mb-8">
@@ -24,41 +12,15 @@ export function RegisterPage() {
           REGISTRIEREN
         </h2>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input
-          type="text"
-          placeholder="Benutzername"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          className="bg-[#383838] border-[#797979] text-white placeholder:text-[#ACACAC] h-12 rounded-xl"
-        />
-        <Input
-          type="password"
-          placeholder="Passwort"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="bg-[#383838] border-[#797979] text-white placeholder:text-[#ACACAC] h-12 rounded-xl"
-        />
-        <Input
-          type="password"
-          placeholder="Passwort wiederholen"
-          value={passwordRepeat}
-          onChange={e => setPasswordRepeat(e.target.value)}
-          className="bg-[#383838] border-[#797979] text-white placeholder:text-[#ACACAC] h-12 rounded-xl"
-        />
-        <Button
-          type="submit"
-          className="w-full mt-2 font-[family-name:var(--font-heading)] text-xl tracking-widest bg-[#57DB8F] text-[#292929] hover:bg-[#47cb7f] h-14 rounded-[20px] uppercase"
-        >
-          Registrieren
-        </Button>
-      </form>
-      <p className="mt-6 text-center text-sm text-[#ACACAC]">
-        Bereits ein Konto?{' '}
-        <Link to="/login" className="text-[#57DB8F] hover:underline font-medium">
-          Anmelden
-        </Link>
+      <p className="text-[#ACACAC] text-sm mb-6 text-center">
+        Registrierung und Anmeldung erfolgen über unser Keycloak-Portal.
       </p>
+      <Button
+        onClick={() => { window.location.href = getOAuthUrl() }}
+        className="w-full mt-2 font-[family-name:var(--font-heading)] text-xl tracking-widest bg-[#57DB8F] text-[#292929] hover:bg-[#47cb7f] h-14 rounded-[20px] uppercase"
+      >
+        Mit Keycloak registrieren
+      </Button>
     </AuthForm>
   )
 }

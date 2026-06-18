@@ -27,7 +27,7 @@ export function Dice({ value }: DiceProps) {
   return (
     <div
       className="w-14 md:w-30 h-14 md:h-30 bg-white rounded-2xl md:rounded-3xl p-4 mb-4 lg:mb-10 grid grid-cols-3 grid-rows-3 gap-1 shadow-2xl"
-      style={{ boxShadow: "0 0 40px rgba(255, 255, 255, 0.25)" }}
+      style={{ boxShadow: value > 0 ? "0 0 30px rgba(255, 255, 255, 0.2)" : "none" }}
     >
       {renderDots()}
     </div>

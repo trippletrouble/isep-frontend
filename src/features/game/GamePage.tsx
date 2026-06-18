@@ -21,6 +21,7 @@ export const GamePage = () => {
   const gameState = useGameStore((state) => state.gameState);
   const lastDiceValue = useGameStore((state) => state.lastDiceValue);
   const gameStore = useGameStore();
+  const setGameState = useGameStore((s) => s.setGameState);
   const { rollDice } = useGameActions();
 
   const [notification, setNotification] = useState<NotificationData | null>(null);
@@ -32,7 +33,7 @@ export const GamePage = () => {
     const loadGame = async () => {
       try {
         const state = await getSessionState(id);
-        gameStore.setGameState(state);
+        setGameState(state);
         if (state.status === "IN_PROGRESS") {
           await reconnectSession(id);
         } else if (state.status === "FINISHED") {
@@ -44,7 +45,7 @@ export const GamePage = () => {
       }
     };
     loadGame();
-  }, [id, gameStore]);
+  }, [id, setGameState]); // setGameState ist stabile Zustand-Action
 
   // Load results if game transitions to finished
   useEffect(() => {
@@ -66,9 +67,10 @@ export const GamePage = () => {
 
   // SSE subscription to sync state in real time
   useSSE(id || null, {
-    onGameStarted: gameStore.handleGameStarted,
+    onGameState: (data) => useGameStore.getState().handleGameStarted(data), // Immer die frischeste Funktion ausführen
+    onGameStarted: (data) => useGameStore.getState().handleGameStarted(data),
     onMoveExecuted: (data) => {
-      gameStore.handleMoveExecuted(data);
+      useGameStore.getState().handleMoveExecuted(data); // Auch hier absichern
       let actionMsg = `Figur ${data.figureId} wurde bewegt.`;
       if (data.outcome === "CAPTURED") {
         actionMsg = `Figur ${data.figureId} wurde geschlagen!`;
@@ -83,9 +85,15 @@ export const GamePage = () => {
         iconType: data.outcome === "CAPTURED" ? "CAPTURE" : data.outcome === "GAME_WON" ? "WIN" : "INFO",
       });
     },
-    onTurnChanged: gameStore.handleTurnChanged,
+
+    // KORREKTUR: Erzwingt, dass Spieler 2 das Event über den aktuellen Zustand des Stores verarbeitet!
+    onTurnChanged: (data) => {
+      console.log("Turn changed Event empfangen für Spieler ID:", data.currentPlayerId);
+      useGameStore.getState().handleTurnChanged(data);
+    },
+
     onGameEnded: (data) => {
-      gameStore.handleGameEnded(data);
+      useGameStore.getState().handleGameEnded(data);
     },
   });
 
@@ -164,7 +172,7 @@ export const GamePage = () => {
             />
 
             <DicePanel
-              currentRoll={lastDiceValue ?? 1}
+              currentRoll={lastDiceValue}
               onRoll={handleRoll}
               disabled={!canRoll}
               className="flex-1 lg:flex-none"

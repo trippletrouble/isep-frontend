@@ -8,6 +8,7 @@ import { useLobby } from "@/hooks/useLobby";
 import { useAuthStore } from "@/stores/auth.store";
 import { useSSE } from "@/hooks/useSSE";
 import { toast } from "sonner";
+import { ApiError } from "@/api/client";
 
 export function LobbyPage() {
   const { level } = useParams<{ level: string }>();
@@ -29,9 +30,18 @@ export function LobbyPage() {
 
   // Sync lobby details if path is a sessionId
   useEffect(() => {
-    if (isSessionId && level) {
-      fetchLobby(level);
-    }
+    if (!isSessionId || !level) return;
+    fetchLobby(level);
+    const interval = setInterval(async () => {
+      try {
+        await fetchLobby(level);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          navigate(`/game/${level}`);
+        }
+      }
+    }, 3000);
+    return () => clearInterval(interval);
   }, [isSessionId, level, fetchLobby]);
 
   // Redirect to game page if the game is already in progress
@@ -41,10 +51,14 @@ export function LobbyPage() {
     }
   }, [currentLobby, navigate]);
 
-  // Connect SSE to listen for game_started broadcasted event
+
+  // SSE: game_started (host startet) oder game_state mit IN_PROGRESS (user_2 joint SSE später)
   useSSE(isSessionId && level ? level : null, {
-    onGameStarted: (state) => {
-      navigate(`/game/${state.sessionId}`);
+    onGameState: (state) => {
+      if (state.status === 'IN_PROGRESS') navigate(`/game/${level}`);
+    },
+    onGameStarted: () => {
+      navigate(`/game/${level}`);
     },
   });
 
@@ -74,7 +88,7 @@ export function LobbyPage() {
     if (level) {
       try {
         const result = await generateInvite(level);
-        setInviteInfo(result);
+        setInviteInfo(result.data);
         await navigator.clipboard.writeText(result.inviteUrl);
         toast.success("Einladungslink in die Zwischenablage kopiert!");
       } catch (err) {

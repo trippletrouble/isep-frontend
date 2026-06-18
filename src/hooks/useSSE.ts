@@ -3,7 +3,8 @@ import { API_BASE_URL } from '../api/client'
 import type { GameState, MoveResult, GameResults } from '../api/types'
 
 interface UseSSEOptions {
-  onGameStarted?: (data: GameState) => void
+  onGameState?: (data: GameState) => void       // initial snapshot on SSE connect
+  onGameStarted?: (data: GameState) => void    // game transitioned to IN_PROGRESS
   onMoveExecuted?: (data: MoveResult) => void
   onTurnChanged?: (data: { currentPlayerId: string; turnNumber: number }) => void
   onGameEnded?: (data: GameResults) => void
@@ -65,34 +66,34 @@ export function useSSE(
       }, delay)
     }
 
-    es.addEventListener('game_started', (e: MessageEvent) => {
+    // NestJS @Sse() sendet generische message-Events mit { type, data } im Body,
+    // keine named events — daher onmessage statt addEventListener(name)
+    es.onmessage = (e: MessageEvent) => {
       try {
-        optionsRef.current.onGameStarted?.(JSON.parse(e.data))
+        const { type, data } = JSON.parse(e.data)
+        switch (type) {
+          case 'game_state':
+            optionsRef.current.onGameState?.(data)
+            break
+          case 'game_started':
+            optionsRef.current.onGameStarted?.(data)
+            break
+          case 'move_executed':
+            optionsRef.current.onMoveExecuted?.(data)
+            break
+          case 'turn_changed':
+            optionsRef.current.onTurnChanged?.(data)
+            break
+          case 'game_ended':
+            optionsRef.current.onGameEnded?.(data)
+            break
+          case 'heartbeat':
+            break
+        }
       } catch (err) {
-        console.error('Error parsing game_started SSE data', err)
+        console.error('SSE parse error', err)
       }
-    })
-    es.addEventListener('move_executed', (e: MessageEvent) => {
-      try {
-        optionsRef.current.onMoveExecuted?.(JSON.parse(e.data))
-      } catch (err) {
-        console.error('Error parsing move_executed SSE data', err)
-      }
-    })
-    es.addEventListener('turn_changed', (e: MessageEvent) => {
-      try {
-        optionsRef.current.onTurnChanged?.(JSON.parse(e.data))
-      } catch (err) {
-        console.error('Error parsing turn_changed SSE data', err)
-      }
-    })
-    es.addEventListener('game_ended', (e: MessageEvent) => {
-      try {
-        optionsRef.current.onGameEnded?.(JSON.parse(e.data))
-      } catch (err) {
-        console.error('Error parsing game_ended SSE data', err)
-      }
-    })
+    }
   }, [sessionId])
 
   useEffect(() => {

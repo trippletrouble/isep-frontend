@@ -1,4 +1,5 @@
 import { api } from './client'
+import { normalizeResults, normalizeHistoryEvent } from './normalizers'
 import type { DiceRollResult, MoveResult, MoveRequest, PossibleMove, GameResults, GameHistoryEvent } from './types'
 
 export async function rollDice(sessionId: string): Promise<DiceRollResult> {
@@ -9,12 +10,8 @@ export async function createMove(sessionId: string, body: MoveRequest): Promise<
   return api.post<MoveResult>(`/sessions/${sessionId}/moves`, body)
 }
 
-export async function getPossibleMoves(
-  sessionId: string
-): Promise<{ diceValue: number; possibleMoves: PossibleMove[] }> {
-  return api.get<{ diceValue: number; possibleMoves: PossibleMove[] }>(
-    `/sessions/${sessionId}/possible-moves`
-  )
+export async function getPossibleMoves(sessionId: string): Promise<{ diceValue: number; possibleMoves: PossibleMove[] }> {
+  return api.get<{ diceValue: number; possibleMoves: PossibleMove[] }>(`/sessions/${sessionId}/possible-moves`)
 }
 
 export async function getSessionResults(sessionId: string): Promise<GameResults[]> {
@@ -22,5 +19,15 @@ export async function getSessionResults(sessionId: string): Promise<GameResults[
 }
 
 export async function getSessionHistory(sessionId: string): Promise<GameHistoryEvent[]> {
-  return api.get<GameHistoryEvent[]>(`/sessions/${sessionId}/history`)
+  const raw = await api.get<any[]>(`/sessions/${sessionId}/history`)
+  return (raw ?? []).map(normalizeHistoryEvent)
 }
+
+// Aliases für GameResultsPage
+export async function getResults(sessionId: string): Promise<GameResults> {
+  const raw = await api.get<any>(`/sessions/${sessionId}/results`)
+  const arr = Array.isArray(raw) ? raw : [raw]
+  return normalizeResults(arr)
+}
+
+export const getHistory = getSessionHistory
