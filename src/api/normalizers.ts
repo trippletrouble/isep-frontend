@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Lobby, GameState, GameResults, GameHistoryEvent, SessionSummary, PaginatedSessionList } from './types'
 
-// ── Lobby ─────────────────────────────────────────────────────────────────────
-// createSession gibt raw Prisma Session zurück (id, flat settings, kein players-Array)
-// getLobby gibt LobbyDto zurück (sessionId, settings nested, players als LobbyPlayerDto)
 export function normalizeLobby(raw: any): Lobby {
   const settings = raw.settings ?? {
     numberOfPlayers: raw.numberOfPlayers,
@@ -13,9 +10,7 @@ export function normalizeLobby(raw: any): Lobby {
     turnTimeLimitSeconds: raw.turnTimeLimitSeconds ?? null,
     additionalRules: raw.additionalRules ?? [],
   }
-
-  // LobbyPlayerDto hat id=participantId, userId=userId — für Vergleiche mit user.id
-  // wird userId als Player.id gesetzt
+  
   const players = (raw.players ?? []).map((p: any) => ({
     id: p.userId ?? p.id,
     username: p.username,
@@ -37,8 +32,6 @@ export function normalizeLobby(raw: any): Lobby {
   }
 }
 
-// ── GameState ─────────────────────────────────────────────────────────────────
-// GameStateType vom Backend passt weitgehend, nur lastUpdatedAt/updatedAt
 export function normalizeGameState(raw: any): GameState {
   return {
     sessionId: raw.sessionId ?? raw.id,
@@ -59,9 +52,6 @@ export function normalizeGameState(raw: any): GameState {
   }
 }
 
-// ── SessionSummary ─────────────────────────────────────────────────────────────
-// listSessions gibt ListSessionsResponseDto zurück: { items: Session[], total, page, size }
-// items sind raw Prisma Session ohne playerCount/hostUsername
 export function normalizeSessionList(raw: any): PaginatedSessionList {
   const items: any[] = raw.items ?? raw.sessions ?? []
   return {
@@ -82,9 +72,6 @@ export function normalizeSessionList(raw: any): PaginatedSessionList {
   }
 }
 
-// ── GameResults ────────────────────────────────────────────────────────────────
-// Backend gibt GameResultDto[]: { placement, userId, color, figuresInGoal, figuresCaptured }
-// Kein username, sessionId, totalTurns, durationSeconds, finishedAt im Response
 export function normalizeResults(raw: any): GameResults {
   const arr: any[] = Array.isArray(raw) ? raw : [raw]
   return {
@@ -101,8 +88,6 @@ export function normalizeResults(raw: any): GameResults {
   }
 }
 
-// ── GameHistoryEvent ───────────────────────────────────────────────────────────
-// Backend gibt GameHistoryEventDto: id, participantId, createdAt (andere Feldnamen)
 export function normalizeHistoryEvent(raw: any): GameHistoryEvent {
   return {
     eventId: raw.id ?? raw.eventId,

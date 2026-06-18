@@ -10,7 +10,6 @@ interface DicePanelProps {
 
 export function DicePanel({ currentRoll, onRoll, disabled, className }: DicePanelProps) {
   const shouldPulse = !disabled;
-  // Würfel ist sichtbar, wenn ein Wurf existiert
   const isVisible = currentRoll !== null;
 
   return (
@@ -21,9 +20,8 @@ export function DicePanel({ currentRoll, onRoll, disabled, className }: DicePane
         Würfel
       </h2>
       
-      {/* Würfel bleibt im Layout durch 'invisible', wenn er nicht da ist */}
       <div className={`transition-all duration-300 ${shouldPulse ? "scale-105" : ""} ${!isVisible ? "invisible" : ""}`}>
-        <Dice value={currentRoll} />
+        <Dice value={currentRoll ?? 0} />
       </div>
 
       <DiceButton onClick={onRoll} disabled={disabled} shouldPulse={shouldPulse} />

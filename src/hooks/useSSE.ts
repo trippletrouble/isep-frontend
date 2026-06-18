@@ -30,7 +30,6 @@ export function useSSE(
   })
 
   const connect = useCallback(() => {
-    // Schließe bestehende Verbindung falls vorhanden
     if (eventSourceRef.current) {
       eventSourceRef.current.close()
     }
@@ -65,9 +64,6 @@ export function useSSE(
         connectRef.current()
       }, delay)
     }
-
-    // NestJS @Sse() sendet generische message-Events mit { type, data } im Body,
-    // keine named events — daher onmessage statt addEventListener(name)
     es.onmessage = (e: MessageEvent) => {
       try {
         const { type, data } = JSON.parse(e.data)

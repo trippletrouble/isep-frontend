@@ -62,7 +62,7 @@ export const useLobbyStore = create<LobbyState>((set) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       set({ error: message })
-      throw err  // Caller (useLobby, LobbyPage) kann den Fehler behandeln
+      throw err
     } finally {
       set({ isLoading: false })
     }

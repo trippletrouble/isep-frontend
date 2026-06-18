@@ -41,7 +41,6 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T
       return undefined as unknown as T;
     }
     const json = JSON.parse(text);
-    // Backend gibt entweder { status: 'success', data: {...} } oder direkt das Objekt zurück
     if (json && typeof json === 'object' && json.status === 'success' && 'data' in json) {
       return json.data as T;
     }

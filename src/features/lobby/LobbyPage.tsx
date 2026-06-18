@@ -28,7 +28,6 @@ export function LobbyPage() {
 
   const isSessionId = level ? level.length > 5 : false;
 
-  // Sync lobby details if path is a sessionId
   useEffect(() => {
     if (!isSessionId || !level) return;
     fetchLobby(level);
@@ -44,15 +43,12 @@ export function LobbyPage() {
     return () => clearInterval(interval);
   }, [isSessionId, level, fetchLobby]);
 
-  // Redirect to game page if the game is already in progress
   useEffect(() => {
     if (currentLobby?.status === "IN_PROGRESS") {
       navigate(`/game/${currentLobby.sessionId}`);
     }
   }, [currentLobby, navigate]);
 
-
-  // SSE: game_started (host startet) oder game_state mit IN_PROGRESS (user_2 joint SSE später)
   useSSE(isSessionId && level ? level : null, {
     onGameState: (state) => {
       if (state.status === 'IN_PROGRESS') navigate(`/game/${level}`);
@@ -88,7 +84,7 @@ export function LobbyPage() {
     if (level) {
       try {
         const result = await generateInvite(level);
-        setInviteInfo(result.data);
+        setInviteInfo(result);
         await navigator.clipboard.writeText(result.inviteUrl);
         toast.success("Einladungslink in die Zwischenablage kopiert!");
       } catch (err) {

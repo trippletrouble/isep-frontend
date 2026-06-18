@@ -23,7 +23,6 @@ export async function getSessionHistory(sessionId: string): Promise<GameHistoryE
   return (raw ?? []).map(normalizeHistoryEvent)
 }
 
-// Aliases für GameResultsPage
 export async function getResults(sessionId: string): Promise<GameResults> {
   const raw = await api.get<any>(`/sessions/${sessionId}/results`)
   const arr = Array.isArray(raw) ? raw : [raw]

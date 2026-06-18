@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GameState, Figure, Player, PossibleMove, DiceRollResult, MoveResult, GameResults, GameStatus } from '../api/types'
+import type { GameState, Figure, Player, PossibleMove, DiceRollResult, MoveResult, GameResults, GameStatus, PieceStatus } from '../api/types'
 
 interface GameStoreState {
   gameState: GameState | null
@@ -64,7 +64,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   setDiceResult: (result: DiceRollResult) => {
-    get().setGameState(result.gameState) // setzt diceRolledThisTurn korrekt aus gameState
+    get().setGameState(result.gameState)
     set({
       lastDiceValue: result.value,
       possibleMoves: result.possibleMoves,
@@ -73,7 +73,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   setMoveResult: (result: MoveResult) => {
-    // Wenn das Backend den kompletten State mitschickt, nutzen wir den
     if (result.gameState) {
       get().setGameState(result.gameState);
       set({
@@ -83,27 +82,22 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       return;
     }
 
-    // --- FIX: Wenn kein gameState da ist, updaten wir die Figur händisch! ---
     set((state) => {
-      // 1. Finde und aktualisiere die Figur im globalen figures-Array
       const updatedFigures = state.figures.map((fig) => {
-        // Prüfe, ob die IDs matchen (Achtung: Manchmal ist eins Number und eins String, daher ==)
-        if (fig.id == result.figureId) {
+        if (fig.id === result.figureId) {
+          const newStatus = (result.outcome === 'GOAL'
+            ? 'GOAL'
+            : (result.toPosition === -1 ? 'HOME' : 'ACTIVE')) as PieceStatus;
+
           return {
             ...fig,
-            position: result.toPosition ?? fig.position, // Die neue Position vom Backend
-            status: result.outcome === 'GOAL' ? 'GOAL' : (result.toPosition === -1 ? 'HOME' : 'ACTIVE')
+            position: result.toPosition ?? fig.position,
+            status: newStatus
           };
         }
-
-        // Optionale Zusatz-Logik: Wurde diese Figur geschlagen? 
-        // Falls dein Backend eine 'wasCapturedId' oder ähnliches im result mitschickt,
-        // müsste man die hier auf position: -1 zurücksetzen.
-
         return fig;
       });
 
-      // 2. Baue den neuen GameState zusammen, damit das Board ihn sauber rendert
       const updatedGameState = state.gameState ? {
         ...state.gameState,
         figures: updatedFigures,

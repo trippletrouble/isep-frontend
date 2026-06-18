@@ -26,7 +26,6 @@ export async function deleteSession(id: string): Promise<void> {
 }
 
 export async function startSession(id: string): Promise<void> {
-  // Backend gibt StartSessionInfoType zurück (kein GameState) — Navigation via SSE
   await api.post<any>(`/sessions/${id}/start`)
 }
 
@@ -34,5 +33,4 @@ export async function reconnectSession(id: string): Promise<void> {
   return api.post<void>(`/sessions/${id}/reconnect`)
 }
 
-// Alias: LobbyWaitingRoom importiert getSession aus sessions.api
 export const getSession = getSessionState

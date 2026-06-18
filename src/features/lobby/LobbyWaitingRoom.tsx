@@ -50,7 +50,6 @@ export function LobbyWaitingRoom({ sessionId }: LobbyWaitingRoomProps) {
   const [inviteData, setInviteData] = useState<{ inviteToken: string; inviteUrl: string; expiresAt: string } | null>(null)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
-  // Polling: kein SSE-Event für player_joined → alle 3s Lobby neu laden
   useEffect(() => {
     fetchLobby(sessionId)
     const interval = setInterval(() => fetchLobby(sessionId), 3000)
@@ -58,7 +57,6 @@ export function LobbyWaitingRoom({ sessionId }: LobbyWaitingRoomProps) {
   }, [sessionId])
 
   useSSE(sessionId, {
-    // game_state kommt vom Backend auf SSE-Connect als initialer Snapshot
     onGameState: (data) => setGameState(data),
     onGameStarted: (data) => setGameState(data),
   })

@@ -20,14 +20,12 @@ export const GamePage = () => {
   const user = useAuthStore((state) => state.user);
   const gameState = useGameStore((state) => state.gameState);
   const lastDiceValue = useGameStore((state) => state.lastDiceValue);
-  const gameStore = useGameStore();
   const setGameState = useGameStore((s) => s.setGameState);
   const { rollDice } = useGameActions();
 
   const [notification, setNotification] = useState<NotificationData | null>(null);
   const [results, setResults] = useState<GameResults[] | null>(null);
 
-  // Load initial game state and handle reconnect/results on mount
   useEffect(() => {
     if (!id) return;
     const loadGame = async () => {
@@ -45,9 +43,8 @@ export const GamePage = () => {
       }
     };
     loadGame();
-  }, [id, setGameState]); // setGameState ist stabile Zustand-Action
+  }, [id, setGameState]);
 
-  // Load results if game transitions to finished
   useEffect(() => {
     if (gameState?.status === "FINISHED" && id && !results) {
       getSessionResults(id)
@@ -56,7 +53,6 @@ export const GamePage = () => {
     }
   }, [gameState?.status, id, results]);
 
-  // Setup notification timer
   useEffect(() => {
     if (!notification) return;
     const timer = setTimeout(() => {
@@ -65,12 +61,11 @@ export const GamePage = () => {
     return () => clearTimeout(timer);
   }, [notification]);
 
-  // SSE subscription to sync state in real time
   useSSE(id || null, {
-    onGameState: (data) => useGameStore.getState().handleGameStarted(data), // Immer die frischeste Funktion ausführen
+    onGameState: (data) => useGameStore.getState().handleGameStarted(data),
     onGameStarted: (data) => useGameStore.getState().handleGameStarted(data),
     onMoveExecuted: (data) => {
-      useGameStore.getState().handleMoveExecuted(data); // Auch hier absichern
+      useGameStore.getState().handleMoveExecuted(data);
       let actionMsg = `Figur ${data.figureId} wurde bewegt.`;
       if (data.outcome === "CAPTURED") {
         actionMsg = `Figur ${data.figureId} wurde geschlagen!`;
@@ -86,7 +81,6 @@ export const GamePage = () => {
       });
     },
 
-    // KORREKTUR: Erzwingt, dass Spieler 2 das Event über den aktuellen Zustand des Stores verarbeitet!
     onTurnChanged: (data) => {
       console.log("Turn changed Event empfangen für Spieler ID:", data.currentPlayerId);
       useGameStore.getState().handleTurnChanged(data);

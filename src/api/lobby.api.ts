@@ -13,7 +13,6 @@ export async function updateLobbySettings(sessionId: string, settings: LobbySett
 
 export async function getSessionPlayers(sessionId: string): Promise<Player[]> {
   const raw = await api.get<any[]>(`/sessions/${sessionId}/players`)
-  // PlayerResponseDto hat userId (user ID), id (participant ID)
   return (raw ?? []).map((p: any) => ({
     id: p.userId ?? p.id,
     username: p.username ?? '',
@@ -44,8 +43,6 @@ export async function generateInvite(sessionId: string): Promise<{
   inviteUrl: string
   expiresAt: string
 }> {
-  // generateInvite ist der EINZIGE Endpoint der manuell { status, data } zurückgibt
-  // client.ts erkennt das und gibt bereits data zurück
   return api.post<{ inviteToken: string; inviteUrl: string; expiresAt: string }>(
     `/sessions/${sessionId}/invite`,
   )

@@ -50,11 +50,6 @@ const GOAL_START_FIELDS: Record<string, number> = {
 const FINAL_GOAL_POSITIONS: Record<string, number> = {
   RED: 72, BLUE: 73, YELLOW: 74, GREEN: 75
 };
-const ID_TO_COLOR = {
-  72: "RED", 73: "BLUE", 74: "YELLOW", 75: "GREEN"
-};
-
-const GOAL_BASES: Record<string, number> = { RED: 72, BLUE: 73, YELLOW: 74, GREEN: 75 };
 const HEX_TO_COLOR: Record<string, string> = {
   "#DB5757": "RED", "#577CDB": "BLUE", "#EBE036": "YELLOW", "#57DB8F": "GREEN",
 };
