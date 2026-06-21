@@ -5,6 +5,7 @@ interface DiceProps {
 export function Dice({ value }: DiceProps) {
   const renderDots = () => {
     const dotPositions: Record<number, number[]> = {
+      0: [],
       1: [4],
       2: [0, 8],
       3: [0, 4, 8],

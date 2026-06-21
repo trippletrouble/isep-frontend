@@ -225,12 +225,12 @@ export default function Board({ diceRoll }: BoardProps) {
   };
 
   return (
-    <div className="w-full h-full aspect-[1571/1573] relative mx-auto overflow-hidden">
+    <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
       <svg
         viewBox="0 0 1571 1573"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full block"
+        className="max-w-full max-h-full block select-none"
         onClick={(e) => {
           const target = e.target as SVGElement;
           if (target.tagName === "svg" || target.tagName === "path" || target.tagName === "rect" || target.tagName === "g") {

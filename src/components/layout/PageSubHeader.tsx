@@ -14,15 +14,15 @@ export function PageSubHeader({ backTo, center, right }: PageSubHeaderProps) {
 
   const backContent = (
     <>
-      <ChevronLeft className="w-6" strokeWidth={2.5} /> Zurück
+      <ChevronLeft className="w-4 lg:w-6" strokeWidth={2.5} /> Zurück
     </>
   );
 
   const backClasses =
-    "flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors";
+    "flex items-center gap-1 text-sm lg:text-xl font-bold hover:text-white transition-colors";
 
   return (
-    <div className="w-full flex items-center relative mb-8 text-accent font-afacad tracking-[0.02em]">
+    <div className="w-full flex items-center relative mb-4 lg:mb-8 text-accent font-afacad tracking-[0.02em]">
       <div className="flex-1 flex justify-start z-10">
         {backTo ? (
           <Link to={backTo} className={backClasses}>
@@ -35,8 +35,8 @@ export function PageSubHeader({ backTo, center, right }: PageSubHeaderProps) {
         )}
       </div>
 
-      <div className="absolute inset-x-0 flex justify-center text-2xl font-bold uppercase z-0 pointer-events-none">
-        <span className="pointer-events-auto text-[24px]">{center}</span>
+      <div className="absolute inset-x-0 flex justify-center z-0 pointer-events-none">
+        <span className="pointer-events-auto text-sm lg:text-xl font-bold uppercase">{center}</span>
       </div>
 
       <div className="flex-1 flex justify-end z-10">{right}</div>

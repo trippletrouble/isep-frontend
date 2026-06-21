@@ -55,9 +55,7 @@ export const GamePage = () => {
 
   useEffect(() => {
     if (!notification) return;
-    const timer = setTimeout(() => {
-      setNotification(null);
-    }, 5000);
+    const timer = setTimeout(() => setNotification(null), 5000);
     return () => clearTimeout(timer);
   }, [notification]);
 
@@ -80,12 +78,10 @@ export const GamePage = () => {
         iconType: data.outcome === "CAPTURED" ? "CAPTURE" : data.outcome === "GAME_WON" ? "WIN" : "INFO",
       });
     },
-
     onTurnChanged: (data) => {
       console.log("Turn changed Event empfangen für Spieler ID:", data.currentPlayerId);
       useGameStore.getState().handleTurnChanged(data);
     },
-
     onGameEnded: (data) => {
       useGameStore.getState().handleGameEnded(data);
     },
@@ -98,19 +94,30 @@ export const GamePage = () => {
     if (id) rollDice(id);
   };
 
+  const gamePhase = !isMyTurn
+    ? "warten"
+    : !gameState?.diceRolledThisTurn
+      ? "würfeln"
+      : "bewegen";
+
+  const phaseConfig = {
+    warten: { label: "Warte auf anderen Spieler...", color: "text-white/40" },
+    würfeln: { label: "🎲 Würfeln!", color: "text-white" },
+    bewegen: { label: "♟ Figur bewegen!", color: "text-white" },
+  };
+
   return (
-    <div className="h-screen bg-primary flex flex-col overflow-hidden relative">
-      <div className="fixed top-4 left-4 right-4 z-50 pointer-events-none lg:hidden">
-        <div className="pointer-events-auto max-w-[450px] mx-auto">
-          <NotificationPanel
-            data={notification}
-            onClose={() => setNotification(null)}
-          />
+    <div className="w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
+      <PageSubHeader center={`SPIEL #${id || ""}`} />
+
+      {/* Mobile: Notification fixiert oben */}
+      <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
+        <div className="pointer-events-auto max-w-sm mx-auto">
+          <NotificationPanel data={notification} onClose={() => setNotification(null)} />
         </div>
       </div>
 
-      <PageSubHeader center={`SPIEL #${id || ""}`} />
-
+      {/* Game Over Overlay */}
       {gameState?.status === "FINISHED" && results && results.length > 0 && (
         <div className="absolute inset-0 bg-primary/95 z-50 flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
           <div className="max-w-md w-full bg-[#292929] border border-accent rounded-[40px] p-8 shadow-2xl flex flex-col items-center gap-6">
@@ -144,35 +151,30 @@ export const GamePage = () => {
         </div>
       )}
 
-      <div className="w-full max-w-[1440px] mx-auto flex flex-col flex-1 min-h-0 items-center justify-center">
-        <div className="flex flex-col lg:flex-row w-full gap-8 lg:gap-12 items-center md:justify-center flex-1 min-h-0 mx-auto">
-          <div className="flex flex-col justify-center items-center shrink min-w-0 min-h-0 order-2 lg:order-1">
-            <div className="w-[80vw] h-[80vw] max-w-[80vh] max-h-[80vh] flex justify-center items-center">
-              <Board diceRoll={lastDiceValue ?? 1} />
-            </div>
-          </div>
+      {/* Haupt-Layout */}
+      <div className="w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 lg:gap-12 p-4">
 
-          <div className="w-[80vw] max-w-[80vh] lg:w-[350px] lg:max-w-none shrink-0 flex flex-row lg:flex-col gap-4 items-stretch justify-center order-1 lg:order-2">
-            <div className="hidden lg:block w-full">
-              <NotificationPanel
-                data={notification}
-                onClose={() => setNotification(null)}
-              />
-            </div>
-
-            <LeaderboardPanel
-              isSquished={!!notification}
-              className="flex-1 lg:flex-none"
-            />
-
-            <DicePanel
-              currentRoll={lastDiceValue}
-              onRoll={handleRoll}
-              disabled={!canRoll}
-              className="flex-1 lg:flex-none"
-            />
-          </div>
+        {/* Mobile: Leaderboard oben */}
+        <div className="w-full lg:hidden">
+          <LeaderboardPanel />
         </div>
+
+        {/* Board */}
+        <div className="w-full max-w-[min(80vw,80vh,600px)] aspect-square flex-shrink-0">
+          <Board diceRoll={lastDiceValue ?? 0} />
+        </div>
+
+        {/* Mobile: Dice drunter */}
+        <div className="w-full lg:hidden">
+          <DicePanel currentRoll={lastDiceValue} onRoll={handleRoll} disabled={!canRoll} phase={phaseConfig[gamePhase].label} />
+        </div>
+
+        {/* Desktop: Side Panel rechts */}
+        <div className="hidden lg:flex w-[350px] flex-shrink-0 flex-col gap-4">
+          <LeaderboardPanel />
+          <DicePanel currentRoll={lastDiceValue} onRoll={handleRoll} disabled={!canRoll} phase={phaseConfig[gamePhase].label} />
+        </div>
+
       </div>
     </div>
   );

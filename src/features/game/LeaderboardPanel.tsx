@@ -1,12 +1,12 @@
 import { useGameStore } from "@/stores/game.store";
 
 interface LeaderboardPanelProps {
-  isSquished?: boolean;
+  // isSquished?: boolean;
   className?: string;
 }
 
 export const LeaderboardPanel = ({
-  isSquished,
+  // isSquished,
   className = "",
 }: LeaderboardPanelProps) => {
   const storePlayers = useGameStore((state) => state.players);
@@ -28,67 +28,67 @@ export const LeaderboardPanel = ({
   const players =
     storePlayers && storePlayers.length > 0
       ? storePlayers.map((p) => ({
-        name: p.username,
-        color: colorClassMap[p.color] || "bg-red",
-        score: p.figuresInGoal,
-        isCurrentTurn: p.isCurrentTurn,
-        rawColor: p.color,
-      }))
+          name: p.username,
+          color: colorClassMap[p.color] || "bg-red",
+          score: p.figuresInGoal,
+          isCurrentTurn: p.isCurrentTurn,
+          rawColor: p.color,
+        }))
       : [
-        { name: "jan", color: "bg-red", score: 0, isCurrentTurn: true, rawColor: "RED" },
-        { name: "sarah", color: "bg-blue", score: 0, isCurrentTurn: false, rawColor: "BLUE" },
-      ];
+          { name: "jan", color: "bg-red", score: 0, isCurrentTurn: true, rawColor: "RED" },
+          { name: "sarah", color: "bg-blue", score: 0, isCurrentTurn: false, rawColor: "BLUE" },
+        ];
 
   return (
     <div
-      className={`border border-accent hover:border-white rounded-2xl lg:rounded-4xl flex flex-col w-full transition-all duration-500 overflow-hidden ${className} ${isSquished ? "p-4 lg:p-6 h-auto" : "p-4 lg:p-8 h-auto"
-        }`}
+      className={`border border-accent hover:border-white rounded-2xl lg:rounded-4xl flex flex-col w-full transition-all duration-500 p-3 lg:p-8 ${className}`}
     >
-      <h2 className="text-lg lg:text-3xl text-white font-lilita uppercase tracking-[0.02em] text-center drop-shadow-md mb-3 lg:mb-6">
+      <h2 className="text-sm lg:text-3xl text-white font-lilita uppercase tracking-[0.02em] text-center drop-shadow-md mb-2 lg:mb-6">
         Leaderboard
       </h2>
 
-      {/* h-auto und overflow-hidden töten die hässliche Scrollbar permanent */}
-      <div className="flex flex-col font-afacad text-base lg:text-xl text-white w-full h-auto overflow-hidden">
-        <div className="w-full flex flex-col gap-2 lg:gap-3 py-1">
-          {players.map((p, i) => (
-            <div
-              key={i}
-              className={`flex justify-between items-center p-2 px-3 rounded-xl border border-transparent transition-all duration-300 ${p.isCurrentTurn
-                  ? `${activeShadowMap[p.rawColor]} scale-[1.02]`
-                  : "opacity-60"
-                }`}
-            >
-              <div className="flex items-center gap-2 lg:gap-3">
-                {p.isCurrentTurn && (
-                  <span className="relative flex h-2.5 w-2.5 lg:h-3.5 lg:w-3.5">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${p.color}`}></span>
-                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 lg:h-3.5 lg:w-3.5 ${p.color}`}></span>
-                  </span>
-                )}
-
-                <span className={`font-semibold text-sm lg:text-2xl tracking-wide whitespace-nowrap ${p.isCurrentTurn ? "text-white font-bold" : "text-white/80"}`}>
-                  {p.name}
+      <div className="flex flex-col font-afacad text-white w-full gap-1 lg:gap-3">
+        {players.map((p, i) => (
+          <div
+            key={i}
+            className={`flex justify-between items-center px-2 py-1 lg:p-2 lg:px-3 rounded-xl border border-transparent transition-all duration-300 ${
+              p.isCurrentTurn
+                ? `${activeShadowMap[p.rawColor]} scale-[1.02]`
+                : "opacity-60"
+            }`}
+          >
+            {/* Name + Ping */}
+            <div className="flex items-center gap-1.5 lg:gap-3 min-w-0">
+              {p.isCurrentTurn && (
+                <span className="relative flex h-2 w-2 lg:h-3.5 lg:w-3.5 shrink-0">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${p.color}`} />
+                  <span className={`relative inline-flex rounded-full h-2 w-2 lg:h-3.5 lg:w-3.5 ${p.color}`} />
                 </span>
-              </div>
-
-              <div className="flex gap-1 lg:gap-2">
-                {Array.from({ length: 4 }).map((_, dotIdx) => {
-                  const isFilled = dotIdx < p.score;
-                  return (
-                    <div
-                      key={dotIdx}
-                      className={`w-3 h-3 lg:w-6 lg:h-6 border-2 border-primary rounded-full transition-all duration-300 ${isFilled
-                          ? `${p.color} shadow-[0px_6px_22.2px_rgba(255,255,255,0.05)]`
-                          : "bg-transparent"
-                        }`}
-                    />
-                  );
-                })}
-              </div>
+              )}
+              <span
+                className={`font-semibold text-xs lg:text-2xl tracking-wide truncate ${
+                  p.isCurrentTurn ? "text-white font-bold" : "text-white/80"
+                }`}
+              >
+                {p.name}
+              </span>
             </div>
-          ))}
-        </div>
+
+            {/* Score dots */}
+            <div className="flex gap-1 lg:gap-2 shrink-0">
+              {Array.from({ length: 4 }).map((_, dotIdx) => (
+                <div
+                  key={dotIdx}
+                  className={`w-2 h-2 lg:w-6 lg:h-6 border-2 border-primary rounded-full transition-all duration-300 ${
+                    dotIdx < p.score
+                      ? `${p.color} shadow-[0px_6px_22.2px_rgba(255,255,255,0.05)]`
+                      : "bg-transparent"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
