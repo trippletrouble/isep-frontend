@@ -28,28 +28,36 @@ export const GamePage = () => {
 
   useEffect(() => {
     if (!id) return;
+    let isMounted = true;
+
     const loadGame = async () => {
       try {
         const state = await getSessionState(id);
+        if (!isMounted) return;
+
         setGameState(state);
         if (state.status === "IN_PROGRESS") {
           await reconnectSession(id);
         } else if (state.status === "FINISHED") {
           const res = await getSessionResults(id);
-          setResults(res);
+          if (isMounted) setResults(res);
         }
       } catch (err) {
         console.error("Failed to load game session", err);
       }
     };
     loadGame();
+
+    return () => { isMounted = false; };
   }, [id, setGameState]);
 
   useEffect(() => {
     if (gameState?.status === "FINISHED" && id && !results) {
+      let isMounted = true;
       getSessionResults(id)
-        .then(setResults)
+        .then((res) => { if (isMounted) setResults(res); })
         .catch((err) => console.error("Failed to load results", err));
+      return () => { isMounted = false; };
     }
   }, [gameState?.status, id, results]);
 
@@ -79,7 +87,6 @@ export const GamePage = () => {
       });
     },
     onTurnChanged: (data) => {
-      console.log("Turn changed Event empfangen für Spieler ID:", data.currentPlayerId);
       useGameStore.getState().handleTurnChanged(data);
     },
     onGameEnded: (data) => {
@@ -110,7 +117,7 @@ export const GamePage = () => {
     <div className="w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
       <PageSubHeader center={`SPIEL #${id || ""}`} />
 
-      {/* Mobile: Notification fixiert oben */}
+      {/* Mobile Notification */}
       <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
         <div className="pointer-events-auto max-w-sm mx-auto">
           <NotificationPanel data={notification} onClose={() => setNotification(null)} />
@@ -151,30 +158,58 @@ export const GamePage = () => {
         </div>
       )}
 
-      {/* Haupt-Layout */}
-      <div className="w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 lg:gap-12 p-4">
+      {/* Layout Wrapper */}
+      <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 lg:p-4 mt-4">
 
-        {/* Mobile: Leaderboard oben */}
-        <div className="w-full lg:hidden">
-          <LeaderboardPanel />
+        {/* CSS-Grid Spielfeld-Layout */}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,380px)] gap-4 lg:gap-10 items-stretch justify-center">
+
+          {/* LINKER CONTAINER: Spielfeld */}
+          <div className="w-full flex flex-col items-center justify-center">
+            <div className="w-full lg:hidden mb-4">
+              <LeaderboardPanel />
+            </div>
+
+            {/* SPIELBRETT-CONTAINER:
+          Nutzt auf Mobile max 90vw/90vh. Auf Desktop (lg:) heben wir die restriktive 
+          Kombination auf und erlauben ihm, sich bis zu einer gesunden vertikalen Grenze (82vh) 
+          maximal aufzublasen, um die linke Spalte komplett auszufüllen. */}
+            <div className="w-full max-w-[min(90vw,90vh)] lg:max-w-[82vh] aspect-square flex-shrink-0">
+              <Board diceRoll={lastDiceValue ?? 1} />
+            </div>
+
+            <div className="w-full lg:hidden mt-4">
+              <DicePanel currentRoll={lastDiceValue} onRoll={handleRoll} disabled={!canRoll} phase={phaseConfig[gamePhase].label} />
+            </div>
+          </div>
+
+          {/* RECHTER CONTAINER (Desktop Side Panel):
+        Passt sich durch "items-stretch" im Grid automatisch der neuen, größeren Höhe des Boards an! */}
+          <div className="hidden lg:flex w-full flex-col h-full min-h-0 gap-4">
+
+            {/* LEADERBOARD PANEL */}
+            <div className="flex-1 min-h-0 flex flex-col">
+              <LeaderboardPanel />
+            </div>
+
+            {/* NOTIFICATION SLOT */}
+            <div className="h-14 w-full flex-shrink-0 flex items-center justify-center">
+              <div
+                className={`w-full transition-all duration-300 ease-in-out ${notification ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+                  }`}
+              >
+                <NotificationPanel data={notification} onClose={() => setNotification(null)} />
+              </div>
+            </div>
+
+            {/* DICE PANEL */}
+            <div className="flex-1 min-h-0 flex flex-col">
+              <DicePanel currentRoll={lastDiceValue} onRoll={handleRoll} disabled={!canRoll} phase={phaseConfig[gamePhase].label} />
+            </div>
+
+          </div>
+
         </div>
-
-        {/* Board */}
-        <div className="w-full max-w-[min(80vw,80vh,600px)] aspect-square flex-shrink-0">
-          <Board diceRoll={lastDiceValue ?? 0} />
-        </div>
-
-        {/* Mobile: Dice drunter */}
-        <div className="w-full lg:hidden">
-          <DicePanel currentRoll={lastDiceValue} onRoll={handleRoll} disabled={!canRoll} phase={phaseConfig[gamePhase].label} />
-        </div>
-
-        {/* Desktop: Side Panel rechts */}
-        <div className="hidden lg:flex w-[350px] flex-shrink-0 flex-col gap-4">
-          <LeaderboardPanel />
-          <DicePanel currentRoll={lastDiceValue} onRoll={handleRoll} disabled={!canRoll} phase={phaseConfig[gamePhase].label} />
-        </div>
-
       </div>
     </div>
   );

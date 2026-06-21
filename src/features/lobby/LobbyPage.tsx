@@ -39,7 +39,7 @@ export function LobbyPage() {
           navigate(`/game/${level}`);
         }
       }
-    }, 3000);
+    }, 1000);
     return () => clearInterval(interval);
   }, [isSessionId, level, fetchLobby]);
 
