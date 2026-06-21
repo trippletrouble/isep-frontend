@@ -17,6 +17,8 @@ import { useGameStore } from "@/stores/game.store";
 import { useGameActions } from "@/hooks/useGameActions";
 import type { Figure as BackendFigure } from "@/api/types";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 type FigureState = {
   id: string;
   color: string;
@@ -73,6 +75,9 @@ export default function Board({ diceRoll }: BoardProps) {
     figures: FigureState[];
   } | null>(null);
 
+  // Lokaler State, um die schrittweise Animation zu überschreiben, während sie läuft
+  const [animatedPositions, setAnimatedPositions] = useState<Record<string, "nest" | number | string>>({});
+
   const mapBackendFigureToFrontend = (backendFig: BackendFigure): FigureState => {
     const id = backendFig.id;
     const player = gameState?.players?.find(p => p.id === backendFig.playerId);
@@ -103,6 +108,11 @@ export default function Board({ diceRoll }: BoardProps) {
     } else if (backendFig.position >= 52 && backendFig.position <= 71) {
       const goalStart = GOAL_START_FIELDS[playerColor];
       position = `goal_${backendFig.position - goalStart}`;
+    }
+
+    // Wenn für diese Figur gerade eine Animation läuft, nutzen wir die animierte Position
+    if (animatedPositions[String(id)] !== undefined) {
+      position = animatedPositions[String(id)];
     }
 
     return { id: String(id), color, position, nestIndex, startTrackIndex };
@@ -180,14 +190,101 @@ export default function Board({ diceRoll }: BoardProps) {
 
   const targetTile = targetResult?.tile || null;
 
+  // Berechnet die einzelnen Zwischenschritte für die hüpfende Animation basierend auf dem Backend-Ziel
+  const getPathOfPositions = (
+    startPos: "nest" | number | string,
+    targetPos: "nest" | number | string,
+    fig: FigureState
+  ): Array<"nest" | number | string> => {
+    if (startPos === "nest") return [targetPos];
+
+    const path: Array<"nest" | number | string> = [];
+    const colorName = HEX_TO_COLOR[fig.color] ?? "RED";
+    const goalStart = GOAL_START_FIELDS[colorName];
+    const finalGoalPos = FINAL_GOAL_POSITIONS[colorName];
+
+    // Ermittle das numerische Ziel aus dem targetResult String/Zahl-Format
+    let targetNumeric = 0;
+    if (typeof targetPos === "number") targetNumeric = targetPos;
+    else if (targetPos === "center") targetNumeric = finalGoalPos;
+    else if (targetPos.startsWith("goal_")) targetNumeric = goalStart + parseInt(targetPos.split("_")[1], 10);
+
+    if (typeof startPos === "number") {
+      let curr = startPos;
+      // Berechne Distanz auf der Standard-Schleife
+      const trackDistance = (targetNumeric - startPos + 52) % 52;
+      
+      // Falls das Ziel im Haus liegt, berechnen wir die Schritte bis zum Hauseingang
+      const stepsToGoalStart = (goalStart - startPos + 52) % 52;
+      const willEnterHouse = targetNumeric >= goalStart;
+
+      const stepsOnTrack = willEnterHouse ? stepsToGoalStart : trackDistance;
+
+      for (let i = 1; i <= stepsOnTrack; i++) {
+        curr = (curr + 1) % 52;
+        path.push(curr);
+      }
+
+      if (willEnterHouse) {
+        const houseSteps = targetNumeric - goalStart;
+        for (let i = 0; i < houseSteps; i++) {
+          if (goalStart + i === finalGoalPos - 1) {
+            path.push("center");
+          } else {
+            path.push(`goal_${i}`);
+          }
+        }
+        if (targetNumeric === finalGoalPos && !path.includes("center")) {
+          path.push("center");
+        }
+      }
+    } else if (typeof startPos === "string" && startPos.startsWith("goal_")) {
+      const startGoalIdx = parseInt(startPos.split("_")[1], 10);
+      const endGoalIdx = targetPos === "center" ? 5 : parseInt((targetPos as string).split("_")[1], 10);
+
+      for (let idx = startGoalIdx + 1; idx <= endGoalIdx; idx++) {
+        if (idx === 5 || goalStart + idx === finalGoalPos) {
+          path.push("center");
+        } else {
+          path.push(`goal_${idx}`);
+        }
+      }
+    }
+
+    return path;
+  };
+
   const handleMoveToTarget = async () => {
-    if (!activeMove || !sessionId) return;
+    if (!activeMove || !sessionId || !activeFigure || !targetResult) return;
+    
+    const targetPos = targetResult.position;
+    const figureId = activeMove.figureId;
+    const toPosition = activeMove.toPosition;
+
+    // 1. Berechne Animationspfad
+    const path = getPathOfPositions(activeFigure.position, targetPos, activeFigure);
+
+    setSelectedFigureId(null);
+    setActivePile(null);
+
+    // 2. Führe die schrittweise Animation lokal aus
+    for (const pos of path) {
+      setAnimatedPositions((prev) => ({ ...prev, [String(figureId)]: pos }));
+      await sleep(250);
+    }
+
+    // 3. Sende Bewegung ans Backend & klicke die temporäre Animationsüberschreibung weg
     try {
-      await moveFigure(sessionId, activeMove.figureId, activeMove.toPosition);
-      setSelectedFigureId(null);
-      setActivePile(null);
+      await moveFigure(sessionId, figureId, toPosition);
     } catch (err) {
       console.error("Move figure error", err);
+    } finally {
+      // Lösche die Animation aus dem lokalen State, damit wieder die echten Backend-Daten greifen
+      setAnimatedPositions((prev) => {
+        const copy = { ...prev };
+        delete copy[String(figureId)];
+        return copy;
+      });
     }
   };
 
