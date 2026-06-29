@@ -1,12 +1,22 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLobby } from "@/hooks/useLobby";
 
 export function JoinLobbyCard() {
+  const navigate = useNavigate();
+  const { joinLobby } = useLobby();
+
   const [lobbyCode, setLobbyCode] = useState("");
 
-  function handleJoin() {
-    // Week 2: POST /sessions/:id/join with lobby code
+  async function handleJoin() {
+    try {
+      await joinLobby(lobbyCode, {});
+      navigate(`/lobby/${lobbyCode}`);
+    } catch (err) {
+      console.error("Failed to join lobby", err);
+    }
   }
 
   return (

@@ -1,48 +1,48 @@
-import { create } from 'zustand'
-import { getSession, logout as logoutApi } from '../api/auth.api'
-import { ApiError } from '../api/client'
-import type { SessionUser } from '../api/types'
+import { create } from "zustand";
+import { getSession, logout as logoutApi } from "../api/auth.api";
+import { ApiError } from "../api/client";
+import type { SessionUser } from "../api/types";
 
 interface AuthState {
-  user: SessionUser | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  error: string | null
-  checkSession: () => Promise<void>
-  logout: () => Promise<void>
-  clearError: () => void
+  user: SessionUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  checkSession: () => Promise<void>;
+  logout: () => Promise<void>;
+  clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   error: null,
   checkSession: async () => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null });
     try {
-      const user = await getSession()
-      set({ user, isAuthenticated: true })
+      const user = await getSession();
+      set({ user, isAuthenticated: true });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        set({ user: null, isAuthenticated: false })
+        set({ user: null, isAuthenticated: false });
       } else {
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        set({ error: message })
+        const message = err instanceof Error ? err.message : "Unknown error";
+        set({ error: message });
       }
     } finally {
-      set({ isLoading: false })
+      set({ isLoading: false });
     }
   },
   logout: async () => {
     try {
-      await logoutApi()
+      await logoutApi();
     } catch {
       // ignore error
     }
-    set({ user: null, isAuthenticated: false })
+    set({ user: null, isAuthenticated: false });
   },
   clearError: () => {
-    set({ error: null })
+    set({ error: null });
   },
-}))
+}));

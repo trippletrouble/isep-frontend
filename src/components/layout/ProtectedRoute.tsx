@@ -1,8 +1,22 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { useEffect } from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuthStore } from "@/stores/auth.store";
 
 export function ProtectedRoute() {
-  // Week 2: const { isAuthenticated } = useAuthStore()
-  const isAuthenticated = true
-  if (!isAuthenticated) return <Navigate to="/login" replace />
-  return <Outlet />
+  const { isAuthenticated, isLoading, checkSession } = useAuthStore();
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-primary text-white font-lilita text-2xl uppercase tracking-widest">
+        Laden...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <Outlet />;
 }
