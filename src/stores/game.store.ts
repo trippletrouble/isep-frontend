@@ -1,31 +1,44 @@
-import { create } from 'zustand'
-import type { GameState, Figure, Player, PossibleMove, DiceRollResult, MoveResult, GameResults, GameStatus } from '../api/types'
+import { create } from "zustand";
+import type {
+  GameState,
+  Figure,
+  Player,
+  PossibleMove,
+  DiceRollResult,
+  MoveResult,
+  GameResults,
+  GameStatus,
+  PieceStatus,
+} from "../api/types";
 
 interface GameStoreState {
-  gameState: GameState | null
-  figures: Figure[]
-  players: Player[]
-  currentPlayerId: string | null
-  lastDiceValue: number | null
-  diceRolledThisTurn: boolean
-  possibleMoves: PossibleMove[]
-  consecutiveSixes: number
-  status: GameStatus | null
-  winnerId: string | null
-  turnNumber: number
-  isLoading: boolean
-  error: string | null
+  gameState: GameState | null;
+  figures: Figure[];
+  players: Player[];
+  currentPlayerId: string | null;
+  lastDiceValue: number | null;
+  diceRolledThisTurn: boolean;
+  possibleMoves: PossibleMove[];
+  consecutiveSixes: number;
+  status: GameStatus | null;
+  winnerId: string | null;
+  turnNumber: number;
+  isLoading: boolean;
+  error: string | null;
 
-  setGameState: (state: GameState) => void
-  setDiceResult: (result: DiceRollResult) => void
-  setMoveResult: (result: MoveResult) => void
-  setPossibleMoves: (moves: PossibleMove[]) => void
-  clearPossibleMoves: () => void
-  handleGameStarted: (data: GameState) => void
-  handleMoveExecuted: (data: MoveResult) => void
-  handleTurnChanged: (data: { currentPlayerId: string; turnNumber: number }) => void
-  handleGameEnded: (data: GameResults) => void
-  reset: () => void
+  setGameState: (state: GameState) => void;
+  setDiceResult: (result: DiceRollResult) => void;
+  setMoveResult: (result: MoveResult) => void;
+  setPossibleMoves: (moves: PossibleMove[]) => void;
+  clearPossibleMoves: () => void;
+  handleGameStarted: (data: GameState) => void;
+  handleMoveExecuted: (data: MoveResult) => void;
+  handleTurnChanged: (data: {
+    currentPlayerId: string;
+    turnNumber: number;
+  }) => void;
+  handleGameEnded: (data: GameResults) => void;
+  reset: () => void;
 }
 
 const initialState = {
@@ -42,7 +55,7 @@ const initialState = {
   turnNumber: 0,
   isLoading: false,
   error: null,
-}
+};
 
 export const useGameStore = create<GameStoreState>((set, get) => ({
   ...initialState,
@@ -60,61 +73,120 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       winnerId: state.winnerId ?? null,
       turnNumber: state.turnNumber,
       possibleMoves: [],
-    })
+    });
   },
 
   setDiceResult: (result: DiceRollResult) => {
-    get().setGameState(result.gameState)
+    get().setGameState(result.gameState);
     set({
       lastDiceValue: result.value,
       possibleMoves: result.possibleMoves,
       consecutiveSixes: result.consecutiveSixes,
-      diceRolledThisTurn: true,
-    })
+    });
   },
 
   setMoveResult: (result: MoveResult) => {
-    get().setGameState(result.gameState)
-    set({
-      possibleMoves: [],
-      diceRolledThisTurn: false,
-    })
+    if (result.gameState) {
+      get().setGameState(result.gameState);
+      set({
+        possibleMoves: [],
+        diceRolledThisTurn: false,
+      });
+      return;
+    }
+
+    set((state) => {
+      const updatedFigures = state.figures.map((fig) => {
+        if (fig.id === result.figureId) {
+          const newStatus = (
+            result.outcome === "GOAL"
+              ? "GOAL"
+              : result.toPosition === -1
+                ? "HOME"
+                : "ACTIVE"
+          ) as PieceStatus;
+
+          return {
+            ...fig,
+            position: result.toPosition ?? fig.position,
+            status: newStatus,
+          };
+        }
+        return fig;
+      });
+
+      const updatedGameState = state.gameState
+        ? {
+            ...state.gameState,
+            figures: updatedFigures,
+          }
+        : null;
+
+      return {
+        figures: updatedFigures,
+        gameState: updatedGameState,
+        possibleMoves: [],
+        diceRolledThisTurn: false,
+      };
+    });
   },
 
   setPossibleMoves: (moves: PossibleMove[]) => {
-    set({ possibleMoves: moves })
+    set({ possibleMoves: moves });
   },
 
   clearPossibleMoves: () => {
-    set({ possibleMoves: [] })
+    set({ possibleMoves: [] });
   },
 
   handleGameStarted: (data: GameState) => {
-    get().setGameState(data)
+    get().setGameState(data);
   },
 
   handleMoveExecuted: (data: MoveResult) => {
-    get().setMoveResult(data)
+    get().setMoveResult(data);
   },
 
-  handleTurnChanged: (data: { currentPlayerId: string; turnNumber: number }) => {
-    set({
-      currentPlayerId: data.currentPlayerId,
-      turnNumber: data.turnNumber,
-      diceRolledThisTurn: false,
-      possibleMoves: [],
-      consecutiveSixes: 0,
-    })
+  handleTurnChanged: (data: {
+    currentPlayerId: string;
+    turnNumber: number;
+  }) => {
+    set((state) => {
+      const updatedPlayers =
+        state.gameState?.players?.map((player) => ({
+          ...player,
+          isCurrentTurn: player.id === data.currentPlayerId,
+        })) || [];
+
+      return {
+        currentPlayerId: data.currentPlayerId,
+        turnNumber: data.turnNumber,
+        diceRolledThisTurn: false,
+        possibleMoves: [],
+        consecutiveSixes: 0,
+        players: updatedPlayers,
+        gameState: state.gameState
+          ? {
+              ...state.gameState,
+              currentPlayerId: data.currentPlayerId,
+              turnNumber: data.turnNumber,
+              diceRolledThisTurn: false,
+              consecutiveSixes: 0,
+              players: updatedPlayers,
+            }
+          : null,
+      };
+    });
   },
 
   handleGameEnded: (data: GameResults) => {
     set({
-      status: 'FINISHED',
+      status: "FINISHED",
       winnerId: data.placements?.[0]?.playerId ?? null,
-    })
+    });
   },
 
   reset: () => {
-    set(initialState)
+    set(initialState);
   },
-}))
+}));

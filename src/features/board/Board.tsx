@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   type Point,
@@ -12,6 +13,9 @@ import {
 } from "./BoardPath";
 import { Figure } from "./Figure";
 import { X } from "lucide-react";
+import { useGameStore } from "@/stores/game.store";
+import { useGameActions } from "@/hooks/useGameActions";
+import type { Figure as BackendFigure } from "@/api/types";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -52,8 +56,6 @@ const INITIAL_FIGURES: FigureState[] = [
     nestIndex: 15,
     startTrackIndex: 13,
   },
-
-  // Yellow (Start Index: 26)
   {
     id: "y1",
     color: "#EBE036",
@@ -82,8 +84,6 @@ const INITIAL_FIGURES: FigureState[] = [
     nestIndex: 11,
     startTrackIndex: 26,
   },
-
-  // Red (Start Index: 0)
   {
     id: "r1",
     color: "#DB5757",
@@ -112,8 +112,6 @@ const INITIAL_FIGURES: FigureState[] = [
     nestIndex: 3,
     startTrackIndex: 0,
   },
-
-  // Green (Start Index: 39)
   {
     id: "g1",
     color: "#57DB8F",
@@ -144,18 +142,115 @@ const INITIAL_FIGURES: FigureState[] = [
   },
 ];
 
+const GOAL_START_FIELDS: Record<string, number> = {
+  RED: 52,
+  BLUE: 57,
+  GREEN: 62,
+  YELLOW: 67,
+};
+const FINAL_GOAL_POSITIONS: Record<string, number> = {
+  RED: 72,
+  BLUE: 73,
+  YELLOW: 74,
+  GREEN: 75,
+};
+const HEX_TO_COLOR: Record<string, string> = {
+  "#DB5757": "RED",
+  "#577CDB": "BLUE",
+  "#EBE036": "YELLOW",
+  "#57DB8F": "GREEN",
+};
+
 interface BoardProps {
   diceRoll: number;
 }
 
 export default function Board({ diceRoll }: BoardProps) {
-  const [figures, setFigures] = useState(INITIAL_FIGURES);
+  const { id: sessionId } = useParams<{ id: string }>();
+
+  const storeFigures = useGameStore((state) => state.figures);
+  const gameState = useGameStore((state) => state.gameState);
+  const possibleMoves = useGameStore((state) => state.possibleMoves);
+  const { moveFigure } = useGameActions();
+
   const [selectedFigureId, setSelectedFigureId] = useState<string | null>(null);
   const [activePile, setActivePile] = useState<{
     x: number;
     y: number;
     figures: FigureState[];
   } | null>(null);
+
+  // Lokaler State, um die schrittweise Animation zu überschreiben, während sie läuft
+  const [animatedPositions, setAnimatedPositions] = useState<
+    Record<string, "nest" | number | string>
+  >({});
+
+  const mapBackendFigureToFrontend = (
+    backendFig: BackendFigure,
+  ): FigureState => {
+    const id = backendFig.id;
+    const player = gameState?.players?.find(
+      (p) => p.id === backendFig.playerId,
+    );
+    const playerColor = player ? player.color : "RED";
+
+    let color = "#DB5757";
+    let startTrackIndex = 0;
+    let nestBaseIndex = 0;
+
+    switch (playerColor) {
+      case "RED":
+        color = "#DB5757";
+        nestBaseIndex = 0;
+        startTrackIndex = 0;
+        break;
+      case "BLUE":
+        color = "#577CDB";
+        nestBaseIndex = 12;
+        startTrackIndex = 13;
+        break;
+      case "YELLOW":
+        color = "#EBE036";
+        nestBaseIndex = 8;
+        startTrackIndex = 26;
+        break;
+      case "GREEN":
+        color = "#57DB8F";
+        nestBaseIndex = 4;
+        startTrackIndex = 39;
+        break;
+    }
+
+    const relativeSlot = id % 4;
+    const nestIndex = nestBaseIndex + relativeSlot;
+
+    let position: "nest" | number | string = "nest";
+
+    if (backendFig.position === -1 || backendFig.status === "HOME") {
+      position = "nest";
+    } else if (backendFig.position >= 0 && backendFig.position <= 51) {
+      position = backendFig.position;
+    } else if (
+      Object.values(FINAL_GOAL_POSITIONS).includes(backendFig.position)
+    ) {
+      position = "center";
+    } else if (backendFig.position >= 52 && backendFig.position <= 71) {
+      const goalStart = GOAL_START_FIELDS[playerColor];
+      position = `goal_${backendFig.position - goalStart}`;
+    }
+
+    // Wenn für diese Figur gerade eine Animation läuft, nutzen wir die animierte Position
+    if (animatedPositions[String(id)] !== undefined) {
+      position = animatedPositions[String(id)];
+    }
+
+    return { id: String(id), color, position, nestIndex, startTrackIndex };
+  };
+
+  const figures =
+    storeFigures && storeFigures.length > 0
+      ? storeFigures.map(mapBackendFigureToFrontend)
+      : INITIAL_FIGURES;
 
   const activeFigure = figures.find((f) => f.id === selectedFigureId);
 
@@ -193,16 +288,10 @@ export default function Board({ diceRoll }: BoardProps) {
   };
 
   const getFigureCoordinates = (fig: FigureState): Point | null => {
-    if (fig.position === "nest") {
-      return NEST_SLOTS[fig.nestIndex];
-    }
-    if (typeof fig.position === "number") {
-      return CLOCKWISE_TRACK[fig.position];
-    }
+    if (fig.position === "nest") return NEST_SLOTS[fig.nestIndex];
+    if (typeof fig.position === "number") return CLOCKWISE_TRACK[fig.position];
     if (typeof fig.position === "string") {
-      if (fig.position === "center") {
-        return getCenterCoordinates(fig.color);
-      }
+      if (fig.position === "center") return getCenterCoordinates(fig.color);
       if (fig.position.startsWith("goal_")) {
         const idx = parseInt(fig.position.split("_")[1], 10);
         return getGoalPathCoordinates(fig.color, idx);
@@ -211,103 +300,109 @@ export default function Board({ diceRoll }: BoardProps) {
     return null;
   };
 
-  const calculateTargetPosition = (
-    fig: FigureState,
-    roll: number,
-  ): { position: "nest" | number | string; tile: Point | null } | null => {
-    if (fig.position === "nest") {
-      if (roll === 6) {
-        const targetPos = fig.startTrackIndex;
-        return { position: targetPos, tile: CLOCKWISE_TRACK[targetPos] };
-      }
-      return null;
-    }
+  const activeMove = possibleMoves.find(
+    (m) => String(m.figureId) === selectedFigureId,
+  );
 
-    if (typeof fig.position === "number") {
-      const currentSteps = (fig.position - fig.startTrackIndex + 52) % 52;
-      const nextSteps = currentSteps + roll;
+  const targetResult =
+    activeMove && activeFigure
+      ? (() => {
+          const pos = activeMove.toPosition;
+          const colorName = HEX_TO_COLOR[activeFigure.color] ?? "RED";
+          const goalStart = GOAL_START_FIELDS[colorName];
+          const finalGoalPos = FINAL_GOAL_POSITIONS[colorName];
 
-      if (nextSteps <= 51) {
-        const targetPos = (fig.position + roll) % 52;
-        return { position: targetPos, tile: CLOCKWISE_TRACK[targetPos] };
-      } else {
-        const goalIdx = nextSteps - 52;
-        if (goalIdx <= 4) {
-          const targetPos = `goal_${goalIdx}`;
-          return {
-            position: targetPos,
-            tile: getGoalPathCoordinates(fig.color, goalIdx),
-          };
-        } else if (goalIdx === 5) {
-          const targetPos = "center";
-          return { position: targetPos, tile: getCenterCoordinates(fig.color) };
-        }
-        return null;
-      }
-    }
+          let position: "nest" | number | string = "nest";
 
-    if (typeof fig.position === "string" && fig.position.startsWith("goal_")) {
-      const currentGoalIdx = parseInt(fig.position.split("_")[1], 10);
-      const nextGoalIdx = currentGoalIdx + roll;
+          if (pos === -1) {
+            position = "nest";
+          } else if (pos >= 0 && pos <= 51) {
+            position = pos;
+          } else if (pos >= goalStart && pos < finalGoalPos) {
+            position = `goal_${pos - goalStart}`;
+          } else if (pos === finalGoalPos) {
+            position = "center";
+          }
 
-      if (nextGoalIdx <= 4) {
-        const targetPos = `goal_${nextGoalIdx}`;
-        return {
-          position: targetPos,
-          tile: getGoalPathCoordinates(fig.color, nextGoalIdx),
-        };
-      } else if (nextGoalIdx === 5) {
-        const targetPos = "center";
-        return { position: targetPos, tile: getCenterCoordinates(fig.color) };
-      }
-      return null;
-    }
+          const tile = (() => {
+            if (pos >= 0 && pos <= 51) return CLOCKWISE_TRACK[pos];
+            if (pos >= goalStart && pos < finalGoalPos)
+              return getGoalPathCoordinates(
+                activeFigure.color,
+                pos - goalStart,
+              );
+            if (pos === finalGoalPos)
+              return getCenterCoordinates(activeFigure.color);
+            return null;
+          })();
 
-    return null;
-  };
+          return { position, tile };
+        })()
+      : null;
 
-  const targetResult = activeFigure
-    ? calculateTargetPosition(activeFigure, diceRoll)
-    : null;
   const targetTile = targetResult?.tile || null;
 
+  // Berechnet die einzelnen Zwischenschritte für die hüpfende Animation basierend auf dem Backend-Ziel
   const getPathOfPositions = (
     startPos: "nest" | number | string,
     targetPos: "nest" | number | string,
-    roll: number,
     fig: FigureState,
   ): Array<"nest" | number | string> => {
-    if (startPos === "nest") {
-      return [targetPos];
-    }
+    if (startPos === "nest") return [targetPos];
 
     const path: Array<"nest" | number | string> = [];
+    const colorName = HEX_TO_COLOR[fig.color] ?? "RED";
+    const goalStart = GOAL_START_FIELDS[colorName];
+    const finalGoalPos = FINAL_GOAL_POSITIONS[colorName];
+
+    // Ermittle das numerische Ziel aus dem targetResult String/Zahl-Format
+    let targetNumeric = 0;
+    if (typeof targetPos === "number") targetNumeric = targetPos;
+    else if (targetPos === "center") targetNumeric = finalGoalPos;
+    else if (targetPos.startsWith("goal_"))
+      targetNumeric = goalStart + parseInt(targetPos.split("_")[1], 10);
 
     if (typeof startPos === "number") {
-      const currentSteps = (startPos - fig.startTrackIndex + 52) % 52;
       let curr = startPos;
-      for (let step = 1; step <= roll; step++) {
-        const stepsFromStart = currentSteps + step;
-        if (stepsFromStart <= 51) {
-          curr = (curr + 1) % 52;
-          path.push(curr);
-        } else {
-          const goalIdx = stepsFromStart - 52;
-          if (goalIdx <= 4) {
-            path.push(`goal_${goalIdx}`);
-          } else if (goalIdx === 5) {
+      // Berechne Distanz auf der Standard-Schleife
+      const trackDistance = (targetNumeric - startPos + 52) % 52;
+
+      // Falls das Ziel im Haus liegt, berechnen wir die Schritte bis zum Hauseingang
+      const stepsToGoalStart = (goalStart - startPos + 52) % 52;
+      const willEnterHouse = targetNumeric >= goalStart;
+
+      const stepsOnTrack = willEnterHouse ? stepsToGoalStart : trackDistance;
+
+      for (let i = 1; i <= stepsOnTrack; i++) {
+        curr = (curr + 1) % 52;
+        path.push(curr);
+      }
+
+      if (willEnterHouse) {
+        const houseSteps = targetNumeric - goalStart;
+        for (let i = 0; i < houseSteps; i++) {
+          if (goalStart + i === finalGoalPos - 1) {
             path.push("center");
+          } else {
+            path.push(`goal_${i}`);
           }
+        }
+        if (targetNumeric === finalGoalPos && !path.includes("center")) {
+          path.push("center");
         }
       }
     } else if (typeof startPos === "string" && startPos.startsWith("goal_")) {
       const startGoalIdx = parseInt(startPos.split("_")[1], 10);
-      for (let step = 1; step <= roll; step++) {
-        const goalIdx = startGoalIdx + step;
-        if (goalIdx <= 4) {
-          path.push(`goal_${goalIdx}`);
-        } else if (goalIdx === 5) {
+      const endGoalIdx =
+        targetPos === "center"
+          ? 5
+          : parseInt((targetPos as string).split("_")[1], 10);
+
+      for (let idx = startGoalIdx + 1; idx <= endGoalIdx; idx++) {
+        if (idx === 5 || goalStart + idx === finalGoalPos) {
           path.push("center");
+        } else {
+          path.push(`goal_${idx}`);
         }
       }
     }
@@ -316,53 +411,47 @@ export default function Board({ diceRoll }: BoardProps) {
   };
 
   const handleMoveToTarget = async () => {
-    if (!activeFigure || !targetResult) return;
+    if (!activeMove || !sessionId || !activeFigure || !targetResult) return;
 
     const targetPos = targetResult.position;
-    setSelectedFigureId(null);
+    const figureId = activeMove.figureId;
+    const toPosition = activeMove.toPosition;
 
+    // 1. Berechne Animationspfad
     const path = getPathOfPositions(
       activeFigure.position,
       targetPos,
-      diceRoll,
       activeFigure,
     );
 
+    setSelectedFigureId(null);
+    setActivePile(null);
+
+    // 2. Führe die schrittweise Animation lokal aus
     for (const pos of path) {
-      setFigures((prev) =>
-        prev.map((fig) =>
-          fig.id === activeFigure.id ? { ...fig, position: pos } : fig,
-        ),
-      );
+      setAnimatedPositions((prev) => ({ ...prev, [String(figureId)]: pos }));
       await sleep(250);
     }
 
-    if (typeof targetPos === "number") {
-      setFigures((prev) =>
-        prev.map((fig) => {
-          if (fig.color !== activeFigure.color && fig.position === targetPos) {
-            toast.warning(
-              `⚔️ Schlag! Figur ${fig.id.toUpperCase()} wurde heimgeschickt!`,
-            );
-            return { ...fig, position: "nest" };
-          }
-          return fig;
-        }),
-      );
+    // 3. Sende Bewegung ans Backend & klicke die temporäre Animationsüberschreibung weg
+    try {
+      await moveFigure(sessionId, figureId, toPosition);
+    } catch (err) {
+      console.error("Move figure error", err);
+    } finally {
+      // Lösche die Animation aus dem lokalen State, damit wieder die echten Backend-Daten greifen
+      setAnimatedPositions((prev) => {
+        const copy = { ...prev };
+        delete copy[String(figureId)];
+        return copy;
+      });
     }
   };
 
   const getOffsetAndScale = (groupSize: number, index: number) => {
-    if (groupSize <= 1) {
-      return { dx: 0, dy: 0, scale: 1.0 };
-    }
-    if (groupSize === 2) {
-      return {
-        dx: index === 0 ? -18 : 18,
-        dy: 0,
-        scale: 0.75,
-      };
-    }
+    if (groupSize <= 1) return { dx: 0, dy: 0, scale: 1.0 };
+    if (groupSize === 2)
+      return { dx: index === 0 ? -18 : 18, dy: 0, scale: 0.75 };
     if (groupSize === 3) {
       if (index === 0) return { dx: -18, dy: 0, scale: 0.6 };
       if (index === 1) return { dx: 18, dy: 0, scale: 0.6 };
@@ -379,20 +468,16 @@ export default function Board({ diceRoll }: BoardProps) {
 
   const getPopoverStyles = () => {
     if (!activePile) return {};
-
     const SVG_OFFSET_X = 55;
     const SVG_OFFSET_Y = 45;
-
     const isRightHalf = activePile.x > 785;
     const isBottomArea = activePile.y > 1100;
-
     const anchorX = isRightHalf
       ? activePile.x - SVG_OFFSET_X
       : activePile.x + SVG_OFFSET_X;
     const anchorY = isBottomArea
       ? activePile.y + SVG_OFFSET_Y
       : activePile.y - SVG_OFFSET_Y;
-
     return {
       left: `${(anchorX / 1571) * 100}%`,
       top: `${(anchorY / 1573) * 100}%`,
@@ -402,12 +487,12 @@ export default function Board({ diceRoll }: BoardProps) {
   };
 
   return (
-    <div className="w-full h-full aspect-[1571/1573] relative mx-auto overflow-hidden">
+    <div className="w-full h-full relative flex items-center justify-center overflow-hidden">
       <svg
         viewBox="0 0 1571 1573"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full block"
+        className="max-w-full max-h-full block select-none"
         onClick={(e) => {
           const target = e.target as SVGElement;
           if (
@@ -459,7 +544,6 @@ export default function Board({ diceRoll }: BoardProps) {
             fill="#5B5B5B"
           />
         ))}
-
         {BLUE_COLORED_TILES.goalPath.map((p, i) => (
           <g key={`blue-goal-${i}`}>
             <rect
@@ -472,7 +556,6 @@ export default function Board({ diceRoll }: BoardProps) {
             />
           </g>
         ))}
-
         {YELLOW_COLORED_TILES.goalPath.map((p, i) => (
           <g key={`yellow-goal-${i}`}>
             <rect
@@ -485,7 +568,6 @@ export default function Board({ diceRoll }: BoardProps) {
             />
           </g>
         ))}
-
         {RED_COLORED_TILES.goalPath.map((p, i) => (
           <g key={`red-goal-${i}`}>
             <rect
@@ -498,7 +580,6 @@ export default function Board({ diceRoll }: BoardProps) {
             />
           </g>
         ))}
-
         {GREEN_COLORED_TILES.goalPath.map((p, i) => (
           <g key={`green-goal-${i}`}>
             <rect
@@ -511,7 +592,6 @@ export default function Board({ diceRoll }: BoardProps) {
             />
           </g>
         ))}
-
         {[
           RED_COLORED_TILES.safeZone,
           BLUE_COLORED_TILES.safeZone,
@@ -532,7 +612,6 @@ export default function Board({ diceRoll }: BoardProps) {
             </g>
           );
         })}
-
         {NEST_SLOTS.map((p, i) => (
           <rect
             key={`nest-${i}`}
@@ -707,13 +786,9 @@ export default function Board({ diceRoll }: BoardProps) {
             {activePile.figures.map((fig) => {
               const colorNameMap: Record<string, string> = {
                 "#577CDB": "Blau",
-                "bg-primary": "Blau",
                 "#EBE036": "Gelb",
-                "bg-yellow": "Gelb",
                 "#DB5757": "Rot",
-                "bg-red": "Rot",
                 "#57DB8F": "Grün",
-                "bg-green": "Grün",
               };
               const label = `${colorNameMap[fig.color] || "Spieler"} ${fig.id.toUpperCase()}`;
               const isSelected = fig.id === selectedFigureId;
@@ -739,11 +814,7 @@ export default function Board({ diceRoll }: BoardProps) {
                     );
                     setActivePile(null);
                   }}
-                  className={`flex items-center gap-3 w-full p-2 rounded-xl transition-all text-left font-afacad font-bold ${
-                    isSelected
-                      ? "bg-white/20 text-white"
-                      : "hover:bg-white/10 text-white/85"
-                  }`}
+                  className={`flex items-center gap-3 w-full p-2 rounded-xl transition-all text-left font-afacad font-bold ${isSelected ? "bg-white/20 text-white" : "hover:bg-white/10 text-white/85"}`}
                 >
                   <div
                     className="w-3.5 h-3.5 rounded-full shrink-0"

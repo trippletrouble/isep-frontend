@@ -8,6 +8,9 @@ FROM node:25-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# VITE_API_BASE_URL wird zur Build-Zeit eingebettet (kein Runtime-Env)
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
 FROM node:25-alpine AS runner
@@ -26,7 +29,7 @@ USER frontend
 EXPOSE 5173
 
 ENV PORT=5173
-
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
+

@@ -1,39 +1,50 @@
-import { api } from './client'
-import type { GameState, Lobby, PaginatedSessionList, GameStatus, CreateSessionRequest } from './types'
+import { api } from "./client";
+import {
+  normalizeLobby,
+  normalizeGameState,
+  normalizeSessionList,
+} from "./normalizers";
+import type {
+  GameState,
+  Lobby,
+  PaginatedSessionList,
+  CreateSessionRequest,
+} from "./types";
 
 export async function listSessions(params?: {
-  status?: GameStatus
-  page?: number
-  size?: number
+  page?: number;
+  size?: number;
 }): Promise<PaginatedSessionList> {
-  const queryParts: string[] = []
-  if (params) {
-    if (params.status !== undefined) {
-      queryParts.push(`status=${encodeURIComponent(params.status)}`)
-    }
-    if (params.page !== undefined) {
-      queryParts.push(`page=${encodeURIComponent(params.page)}`)
-    }
-    if (params.size !== undefined) {
-      queryParts.push(`size=${encodeURIComponent(params.size)}`)
-    }
-  }
-  const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : ''
-  return api.get<PaginatedSessionList>(`/sessions${queryString}`)
+  const queryParts: string[] = [];
+  if (params?.page !== undefined) queryParts.push(`page=${params.page}`);
+  if (params?.size !== undefined) queryParts.push(`size=${params.size}`);
+  const qs = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  const raw = await api.get<any>(`/sessions${qs}`);
+  return normalizeSessionList(raw);
 }
 
-export async function createSession(body: CreateSessionRequest): Promise<Lobby> {
-  return api.post<Lobby>('/sessions', body)
+export async function createSession(
+  body: CreateSessionRequest,
+): Promise<Lobby> {
+  const raw = await api.post<any>("/sessions", body);
+  return normalizeLobby(raw);
 }
 
-export async function getSession(id: string): Promise<GameState> {
-  return api.get<GameState>(`/sessions/${id}`)
+export async function getSessionState(id: string): Promise<GameState> {
+  const raw = await api.get<any>(`/sessions/${id}`);
+  return normalizeGameState(raw);
 }
 
 export async function deleteSession(id: string): Promise<void> {
-  return api.delete<void>(`/sessions/${id}`)
+  return api.delete<void>(`/sessions/${id}`);
 }
 
-export async function startSession(id: string): Promise<GameState> {
-  return api.post<GameState>(`/sessions/${id}/start`)
+export async function startSession(id: string): Promise<void> {
+  await api.post<any>(`/sessions/${id}/start`);
 }
+
+export async function reconnectSession(id: string): Promise<void> {
+  return api.post<void>(`/sessions/${id}/reconnect`);
+}
+
+export const getSession = getSessionState;
