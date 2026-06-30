@@ -6,6 +6,7 @@ import { RegisterPage } from "@/features/auth/RegisterPage";
 import { LevelSelectPage } from "@/features/level-select/LevelSelectPage";
 import { LobbyPage } from "@/features/lobby/LobbyPage";
 import { GamePage } from "@/features/game/GamePage";
+import { GameResultsPage } from "@/features/game/GameResultsPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route path="/" element={<LevelSelectPage />} />
             <Route path="/lobby/:level" element={<LobbyPage />} />
             <Route path="/game/:id" element={<GamePage />} />
+            <Route path="/results/:id" element={<GameResultsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
