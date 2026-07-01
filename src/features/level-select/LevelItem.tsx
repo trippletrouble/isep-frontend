@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ScrollText } from "lucide-react";
+import { RulesDialog } from "./RulesDialog";
 
 interface MockLevel {
   id: number;
@@ -17,6 +18,7 @@ interface LevelItemProps {
 export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
   const navigate = useNavigate();
   const itemRef = useRef<HTMLDivElement>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   useEffect(() => {
     if (isActive && itemRef.current) {
@@ -65,9 +67,13 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
               Spielen <ChevronRight size={24} strokeWidth={2.5} />
             </button>
 
-            <button className="flex-1 h-[60px] bg-yellow text-black hover:opacity-90 font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2 transition-opacity">
+            <button
+              onClick={() => setRulesOpen(true)}
+              className="flex-1 h-[60px] bg-yellow text-black hover:opacity-90 font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2 transition-opacity"
+            >
               Regeln <ScrollText size={22} />
             </button>
+            <RulesDialog levelId={level.id} open={rulesOpen} onOpenChange={setRulesOpen} />
           </div>
         </div>
       </div>

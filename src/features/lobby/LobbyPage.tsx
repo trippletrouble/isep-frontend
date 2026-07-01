@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollText, Copy, LogOut, Play, User } from "lucide-react";
+import { RulesDialog } from "@/features/level-select/RulesDialog";
 import { CreateLobbyCard } from "./CreateLobbyCard";
 import { JoinLobbyCard } from "./JoinLobbyCard";
 import { PageSubHeader } from "@/components/layout/PageSubHeader";
@@ -30,6 +31,8 @@ export function LobbyPage() {
   } | null>(null);
 
   const isSessionId = level ? level.length > 5 : false;
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const levelId = isSessionId ? 0 : Number(level ?? 0);
 
   useEffect(() => {
     if (!isSessionId || !level) return;
@@ -122,12 +125,16 @@ export function LobbyPage() {
     const isHost = currentLobby.hostId === user?.id;
 
     return (
+      <>
       <div className="max-w-6xl mx-auto p-4 md:p-8 w-full flex flex-col gap-6">
         <PageSubHeader
           backTo="/"
           center={`LOBBY`}
           right={
-            <button className="flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors">
+            <button
+              onClick={() => setRulesOpen(true)}
+              className="flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors"
+            >
               Regeln <ScrollText size={20} />
             </button>
           }
@@ -243,6 +250,8 @@ export function LobbyPage() {
           </div>
         </div>
       </div>
+      <RulesDialog levelId={levelId} open={rulesOpen} onOpenChange={setRulesOpen} />
+      </>
     );
   }
 
@@ -252,7 +261,10 @@ export function LobbyPage() {
         backTo="/"
         center={`LEVEL ${level}`}
         right={
-          <button className="flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors">
+          <button
+            onClick={() => setRulesOpen(true)}
+            className="flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors"
+          >
             Regeln <ScrollText size={20} />
           </button>
         }
@@ -266,6 +278,7 @@ export function LobbyPage() {
         <CreateLobbyCard />
         <JoinLobbyCard />
       </div>
+      <RulesDialog levelId={levelId} open={rulesOpen} onOpenChange={setRulesOpen} />
     </div>
   );
 }
