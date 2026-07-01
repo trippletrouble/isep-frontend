@@ -154,8 +154,7 @@ export const GamePage = () => {
     });
   };
 
-  const handleQuizAnswerSubmit = (answer: string) => {
-    console.log("Selected Answer String:", answer);
+  const handleQuizAnswerSubmit = () => {
     setTimeout(() => {
       setSimulatedQuiz(null);
     }, 1200);
@@ -287,7 +286,33 @@ export const GamePage = () => {
 
       {simulatedQuiz && (
         <QuizDuelView
-          activeQuiz={simulatedQuiz}
+          open={Boolean(simulatedQuiz)}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) setSimulatedQuiz(null);
+          }}
+          activeQuiz={
+            simulatedQuiz || {
+              id: "",
+              questionId: "",
+              category: "",
+              questionText: "",
+              options: [],
+              attackerId: "",
+              defenderId: "",
+              attackerColor: "BLUE",
+              defenderColor: "BLUE",
+              attackerAnswer: null,
+              defenderAnswer: null,
+              attackerCorrect: null,
+              defenderCorrect: null,
+              timeLimitSeconds: 10,
+              pendingFigureId: 0,
+              pendingFromPos: 0,
+              pendingToPos: 0,
+              diceValue: 0,
+              createdAt: "",
+            }
+          }
           currentUserId={user?.id || "player-1"}
           onSubmitAnswer={handleQuizAnswerSubmit}
         />

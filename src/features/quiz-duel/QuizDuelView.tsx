@@ -1,41 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { X } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { VersusLogo } from "@/components/ui/VS";
 import type { ActiveQuizType, PlayerColor } from "@/api/types";
 
 interface QuizDuelViewProps {
   activeQuiz: ActiveQuizType;
   currentUserId: string;
   onSubmitAnswer: (answer: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const COLOR_MAP: Record<PlayerColor, string> = {
-  BLUE: "fill-blue text-blue",
-  YELLOW: "fill-yellow text-yellow",
-  GREEN: "fill-green text-green",
-  RED: "fill-red text-red",
+const COLOR_HEX_MAP: Record<PlayerColor, string> = {
+  BLUE: "var(--color-blue)",
+  YELLOW: "var(--color-yellow)",
+  GREEN: "var(--color-green)",
+  RED: "var(--color-red)",
 };
-
-const LudoPieceSvg = ({ className }: { className: string }) => (
-  <svg
-    viewBox="0 0 24 32"
-    className={`w-8 h-10 ${className}`}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <circle cx="12" cy="7" r="5" />
-    <path d="M12 12c-4 0-7 3-7 8v2h14v-2c0-5-3-8-7-8z" />
-    <path d="M3 24h18v4H3z" rx="1" />
-  </svg>
-);
 
 export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
   activeQuiz,
   currentUserId,
   onSubmitAnswer,
+  open,
+  onOpenChange,
 }) => {
-  const TOTAL_TIME = activeQuiz.timeLimitSeconds || 18;
+  const TOTAL_TIME = activeQuiz.timeLimitSeconds || 10;
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+
+  const startTimeRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoCloseTriggeredRef = useRef<boolean>(false);
 
   const isAttacker = currentUserId === activeQuiz.attackerId;
   const hasAnswered = isAttacker
@@ -43,117 +43,159 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
     : !!activeQuiz.defenderAnswer;
 
   const category = activeQuiz.category || "KUNST & KULTUR";
-  const questionText =
-    activeQuiz.questionText ||
-    "WELCHER DIESER WELTBERÜHMTEN KOMPONISTEN WURDE ZULETZT GEBOREN?";
-  const options = activeQuiz.options || [
-    { key: "A", text: "WOLFGANG AMADEUS MOZART" },
-    { key: "B", text: "LUDWIG VAN BEETHOVEN" },
-    { key: "C", text: "JOHANNES BRAHMS" },
-    { key: "D", text: "ANTONIO VIVALDI" },
-  ];
+  const questionText = activeQuiz.questionText || "";
+  const options = activeQuiz.options || [];
 
   useEffect(() => {
-    if (timeLeft <= 0 || hasAnswered) return;
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft, hasAnswered]);
+    if (timeLeft <= 0) {
+      if (!hasAnswered && !autoCloseTriggeredRef.current) {
+        autoCloseTriggeredRef.current = true;
+        timeoutRef.current = setTimeout(() => {
+          onOpenChange(false);
+        }, 400000);
+      }
+      return;
+    }
+
+    if (hasAnswered) return;
+
+    const updateTimer = (timestamp: number) => {
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const elapsedSeconds = (timestamp - startTimeRef.current) / 1000;
+      const remaining = Math.max(TOTAL_TIME - elapsedSeconds, 0);
+
+      setTimeLeft(remaining);
+
+      if (remaining > 0) {
+        animationFrameRef.current = requestAnimationFrame(updateTimer);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(updateTimer);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [hasAnswered, timeLeft, TOTAL_TIME, onOpenChange]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleAnswerClick = (optionKey: string) => {
-    if (hasAnswered) return;
+    if (hasAnswered || timeLeft <= 0) return;
     setSelectedAnswer(optionKey);
     onSubmitAnswer(optionKey);
   };
 
-  const attackerColorClass =
-    COLOR_MAP[activeQuiz.attackerColor] || "fill-blue text-blue";
-  const defenderColorClass =
-    COLOR_MAP[activeQuiz.defenderColor] || "fill-yellow text-yellow";
-
-  const radius = 20;
-  const strokeWidth = 3;
+  const radius = 22;
+  const strokeWidth = 5;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset =
     circumference - (timeLeft / TOTAL_TIME) * circumference;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xl p-4 animate-fade-in font-sans">
-      <div className="relative w-full max-w-2xl bg-primary border border-accent text-white rounded-4xl p-6 md:p-8 shadow-2xl">
-        <div className="relative flex flex-col items-center text-center mt-2">
-          <h2 className="text-4xl md:text-5xl tracking-wider text-white select-none font-lilita uppercase">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton={false}
+        className="bg-primary border border-accent text-white rounded-4xl p-4 md:p-8 shadow-2xl w-[calc(100%-2rem)] max-w-4xl backdrop-blur-xl"
+      >
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute top-4 right-4 p-1 text-red hover:opacity-80 transition-opacity bg-transparent border-none outline-none z-10"
+          aria-label="Close Quiz Duel"
+        >
+          <X className="w-7 h-7 md:w-9 md:h-9 stroke-[2.5]" />
+        </button>
+
+        <div className="relative flex flex-col items-center text-center mt-1">
+          <h2 className="text-3xl md:text-6xl tracking-wider text-white select-none font-lilita uppercase mb-2 md:mb-4">
             QUIZDUELL
           </h2>
 
-          <div className="flex items-center gap-4 mt-2">
-            <LudoPieceSvg className={attackerColorClass} />
-            <span className="text-neutral-400 font-bold text-xs tracking-widest font-sans">
-              VS
-            </span>
-            <LudoPieceSvg className={defenderColorClass} />
-          </div>
-
-          <Badge className="mt-5 bg-[#736ced] hover:bg-[#736ced] text-white px-5 py-1 text-xs font-bold uppercase tracking-widest rounded-full border-none font-sans">
-            {category}
-          </Badge>
+          <VersusLogo
+            className="w-24 md:w-40 h-auto"
+            leftColor={
+              COLOR_HEX_MAP[activeQuiz.attackerColor] || "var(--color-blue)"
+            }
+            rightColor={
+              COLOR_HEX_MAP[activeQuiz.defenderColor] || "var(--color-blue)"
+            }
+          />
         </div>
 
-        <div className="relative mt-6 bg-primary border border-accent rounded-3xl p-6 flex flex-col items-center">
-          <div className="top-0 right-0 relative w-14 h-14 flex items-center justify-center">
-            <svg
-              className="w-full h-full transform -rotate-90"
-              viewBox="0 0 50 50"
-            >
-              <circle
-                cx="25"
-                cy="25"
-                r={radius}
-                strokeWidth={strokeWidth}
-                fill="transparent"
-              />
-              <circle
-                cx="25"
-                cy="25"
-                r={radius}
-                stroke="var(--color-green)"
-                strokeWidth={strokeWidth}
-                fill="transparent"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                className="transition-all duration-1000 ease-linear"
-              />
-            </svg>
-            <span className="absolute text-xl font-sans font-bold text-green">
-              {timeLeft}s
-            </span>
+        <div className="relative mt-8 md:mt-12 bg-primary border border-accent rounded-3xl p-4 md:p-8 flex flex-col items-center gap-4 md:gap-6">
+          <Badge className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#736ced] text-white p-4 text-lg font-bold uppercase tracking-widest rounded-full border-none font-sans whitespace-nowrap z-10">
+            {category}
+          </Badge>
+
+          <div className="pt-2 md:pt-4 w-full flex justify-center">
+            {timeLeft > 0 ? (
+              <div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center relative">
+                <svg
+                  className="w-full h-full transform -rotate-90"
+                  viewBox="0 0 60 60"
+                >
+                  <circle
+                    cx="30"
+                    cy="30"
+                    r={radius}
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="30"
+                    cy="30"
+                    r={radius}
+                    stroke="var(--color-green)"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="absolute text-sm md:text-base font-sans font-black text-green">
+                  {Math.ceil(timeLeft)}s
+                </span>
+              </div>
+            ) : (
+              <div className="bg-red-600 border border-red-500 mt-4 md:mt-0 px-4 py-1.5 md:px-6 md:py-2 rounded-xl text-white text-xs md:text-sm font-black tracking-wider uppercase">
+                ZEIT ABGELAUFEN!
+              </div>
+            )}
           </div>
 
-          <p className="text-center font-bold text-lg md:text-xl px-4 my-10 leading-snug max-w-md tracking-wide text-white">
+          <p className="text-center font-bold text-base md:text-2xl px-2 md:px-4 leading-snug max-w-2xl tracking-wide text-white">
             {questionText}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 w-full">
             {options.map((option) => {
               const isCurrentSelection = selectedAnswer === option.key;
 
               return (
                 <Button
                   key={option.key}
-                  disabled={hasAnswered}
+                  disabled={hasAnswered || timeLeft <= 0}
                   onClick={() => handleAnswerClick(option.key)}
-                  className={`h-16 flex items-center justify-start gap-4 px-5 rounded-xl text-left font-bold transition-all border-none shadow-sm font-sans
-                    ${
-                      isCurrentSelection
-                        ? "bg-indigo-600 text-white"
-                        : "bg-[#736ced] hover:bg-[#6159db] active:scale-[0.99] text-white"
-                    } disabled:opacity-60 disabled:pointer-events-none`}
+                  variant="ghost"
+                  className={`min-h-14 md:min-h-16 h-auto py-3 md:py-4 flex items-center justify-start gap-3 md:gap-4 px-4 md:px-5 rounded-xl text-left font-bold transition-all shadow-sm font-sans whitespace-normal break-words border-2
+                  ${
+                    isCurrentSelection
+                      ? "bg-[#6159db] border-accent text-white hover:bg-[#6159db] active:bg-[#6159db]"
+                      : "bg-[#736ced] border-transparent hover:bg-[#6159db] active:bg-[#6159db] text-white"
+                  } 
+                  disabled:opacity-60 disabled:pointer-events-none`}
                 >
-                  <div className="flex items-center justify-center min-w-[28px] min-h-[28px] rounded-full bg-primary text-white text-xs font-extrabold shadow-inner">
+                  <div className="flex items-center justify-center min-w-[24px] min-h-[24px] md:min-w-[28px] md:min-h-[28px] rounded-full bg-primary text-white text-xs font-extrabold shadow-inner shrink-0">
                     {option.key}
                   </div>
-                  <span className="text-xs md:text-sm tracking-wide truncate">
+                  <span className="text-base md:text-lg tracking-wide flex-1">
                     {option.text}
                   </span>
                 </Button>
@@ -161,7 +203,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
             })}
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
