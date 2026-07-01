@@ -2,20 +2,16 @@ import { useState } from "react";
 import { useAuthStore } from "../stores/auth.store";
 import { useGameStore } from "../stores/game.store";
 import { useUIStore } from "../stores/ui.store";
-import { rollDice as rollDiceApi, createMove } from "../api/gameplay.api";
+import {
+  rollDice as rollDiceApi,
+  createMove,
+  submitQuizAnswer,
+} from "../api/gameplay.api";
 
-export function useGameActions(): {
-  rollDice: (sessionId: string) => Promise<void>;
-  moveFigure: (
-    sessionId: string,
-    figureId: number,
-    targetFieldId: number,
-  ) => Promise<void>;
-  isRolling: boolean;
-  isMoving: boolean;
-} {
+export function useGameActions() {
   const [isRolling, setIsRolling] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
+  const [isAnswering, setIsAnswering] = useState(false);
 
   const rollDice = async (sessionId: string): Promise<void> => {
     const user = useAuthStore.getState().user;
@@ -29,7 +25,7 @@ export function useGameActions(): {
         err instanceof Error ? err.message : "Würfeln fehlgeschlagen";
       useUIStore
         .getState()
-        .addToast({ type: "error", title: "Würfeln fehlgeschlagen", message });
+        .addToast({ type: "error", title: "Fehler beim Würfeln", message });
     } finally {
       setIsRolling(false);
     }
@@ -59,10 +55,38 @@ export function useGameActions(): {
     }
   };
 
+  const answerQuiz = async (
+    sessionId: string,
+    answer: "A" | "B" | "C" | "D",
+  ): Promise<void> => {
+    const user = useAuthStore.getState().user;
+    if (!user) return;
+
+    try {
+      setIsAnswering(true);
+      const result = await submitQuizAnswer(sessionId, { answer });
+      useGameStore.getState().setGameState(result.gameState);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Antwort konnte nicht übermittelt werden";
+      useUIStore.getState().addToast({
+        type: "error",
+        title: "Übermittlung fehlgeschlagen",
+        message,
+      });
+    } finally {
+      setIsAnswering(false);
+    }
+  };
+
   return {
     rollDice,
     moveFigure,
+    answerQuiz,
     isRolling,
     isMoving,
+    isAnswering,
   };
 }

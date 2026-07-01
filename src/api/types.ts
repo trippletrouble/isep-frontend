@@ -107,6 +107,7 @@ export interface GameState {
   winnerId?: string | null;
   createdAt: string;
   lastUpdatedAt: string;
+  activeQuiz?: ActiveQuizType | null;
 }
 
 export interface Lobby {

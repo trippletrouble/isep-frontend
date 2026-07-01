@@ -41,10 +41,12 @@ interface GameStoreState {
     turnNumber: number;
   }) => void;
   handleGameEnded: (data: GameResults) => void;
-  reset: () => void;
 
+  handleQuizStarted: (quiz: ActiveQuizType) => void;
+  handleQuizResolved: (finalGameState: GameState) => void;
+
+  reset: () => void;
   setActiveQuiz: (quiz: ActiveQuizType | null) => void;
-  submitQuizAnswer: (answer: string) => void;
 }
 
 const initialState = {
@@ -61,7 +63,6 @@ const initialState = {
   turnNumber: 0,
   isLoading: false,
   error: null,
-
   activeQuiz: null,
 };
 
@@ -80,6 +81,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       status: state.status,
       winnerId: state.winnerId ?? null,
       turnNumber: state.turnNumber,
+      activeQuiz: state.activeQuiz ?? null,
       possibleMoves: [],
     });
   },
@@ -194,30 +196,23 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     });
   },
 
-  reset: () => {
-    set(initialState);
+  handleQuizStarted: (quiz: ActiveQuizType) => {
+    set({
+      activeQuiz: quiz,
+      status: "QUIZ_PENDING",
+    });
+  },
+
+  handleQuizResolved: (finalGameState: GameState) => {
+    get().setGameState(finalGameState);
+    set({ activeQuiz: null });
   },
 
   setActiveQuiz: (quiz) => {
     set({ activeQuiz: quiz });
   },
 
-  submitQuizAnswer: (answer) => {
-    console.log(`Submitting quiz answer to backend: ${answer}`);
-
-    set((state) => {
-      if (!state.activeQuiz) return {};
-
-      return {
-        activeQuiz: {
-          ...state.activeQuiz,
-          attackerAnswer: answer,
-        },
-      };
-    });
-
-    setTimeout(() => {
-      set({ activeQuiz: null });
-    }, 1500);
+  reset: () => {
+    set(initialState);
   },
 }));

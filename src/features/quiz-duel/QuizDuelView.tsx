@@ -9,7 +9,7 @@ import type { ActiveQuizType, PlayerColor } from "@/api/types";
 interface QuizDuelViewProps {
   activeQuiz: ActiveQuizType;
   currentUserId: string;
-  onSubmitAnswer: (answer: string) => void;
+  onSubmitAnswer: (answer: "A" | "B" | "C" | "D") => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -29,8 +29,11 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
   onOpenChange,
 }) => {
   const TOTAL_TIME = activeQuiz.timeLimitSeconds || 10;
+
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<
+    "A" | "B" | "C" | "D" | null
+  >(null);
 
   const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -52,7 +55,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
         autoCloseTriggeredRef.current = true;
         timeoutRef.current = setTimeout(() => {
           onOpenChange(false);
-        }, 400000);
+        }, 3000);
       }
       return;
     }
@@ -86,7 +89,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
     };
   }, []);
 
-  const handleAnswerClick = (optionKey: string) => {
+  const handleAnswerClick = (optionKey: "A" | "B" | "C" | "D") => {
     if (hasAnswered || timeLeft <= 0) return;
     setSelectedAnswer(optionKey);
     onSubmitAnswer(optionKey);
@@ -176,13 +179,14 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 w-full">
             {options.map((option) => {
-              const isCurrentSelection = selectedAnswer === option.key;
+              const optionKey = option.key as "A" | "B" | "C" | "D";
+              const isCurrentSelection = selectedAnswer === optionKey;
 
               return (
                 <Button
                   key={option.key}
                   disabled={hasAnswered || timeLeft <= 0}
-                  onClick={() => handleAnswerClick(option.key)}
+                  onClick={() => handleAnswerClick(optionKey)}
                   variant="ghost"
                   className={`min-h-14 md:min-h-16 h-auto py-3 md:py-4 flex items-center justify-start gap-3 md:gap-4 px-4 md:px-5 rounded-xl text-left font-bold transition-all shadow-sm font-sans whitespace-normal break-words border-2
                   ${

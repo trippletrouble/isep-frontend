@@ -5,6 +5,7 @@ import type {
   MoveResult,
   MoveRequest,
   PossibleMove,
+  GameState,
   GameResults,
   GameHistoryEvent,
 } from "./types";
@@ -25,6 +26,27 @@ export async function getPossibleMoves(
 ): Promise<{ diceValue: number; possibleMoves: PossibleMove[] }> {
   return api.get<{ diceValue: number; possibleMoves: PossibleMove[] }>(
     `/sessions/${sessionId}/possible-moves`,
+  );
+}
+
+export interface SubmitAnswerRequest {
+  answer: "A" | "B" | "C" | "D";
+}
+
+export interface QuizSubmissionResponse {
+  quizId: string;
+  playerId: string;
+  isCorrect: boolean | null;
+  gameState: GameState;
+}
+
+export async function submitQuizAnswer(
+  sessionId: string,
+  body: SubmitAnswerRequest,
+): Promise<QuizSubmissionResponse> {
+  return api.post<QuizSubmissionResponse>(
+    `/sessions/${sessionId}/quiz-answer`,
+    body,
   );
 }
 
