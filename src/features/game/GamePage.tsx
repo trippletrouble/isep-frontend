@@ -11,8 +11,9 @@ import { useAuthStore } from "@/stores/auth.store";
 import { useSSE } from "@/hooks/useSSE";
 import { getSessionState, reconnectSession } from "@/api/sessions.api";
 import { getSessionResults } from "@/api/gameplay.api";
-import type { GameResults } from "@/api/types";
-import { Trophy, Home } from "lucide-react";
+import type { GameResults, ActiveQuizType } from "@/api/types";
+import { QuizDuelView } from "../quiz-duel/QuizDuelView";
+import { Trophy, Home, Swords } from "lucide-react";
 
 export const GamePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +28,10 @@ export const GamePage = () => {
     null,
   );
   const [results, setResults] = useState<GameResults[] | null>(null);
+
+  const [simulatedQuiz, setSimulatedQuiz] = useState<ActiveQuizType | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -119,6 +124,43 @@ export const GamePage = () => {
     if (id) rollDice(id);
   };
 
+  const handleSimulateQuiz = () => {
+    setSimulatedQuiz({
+      id: "sim-quiz-123",
+      questionId: "q-789",
+      category: "KUNST & KULTUR",
+      questionText:
+        "WELCHER DIESER WELTBERÜHMTEN KOMPONISTEN WURDE ZULETZT GEBOREN?",
+      options: [
+        { key: "A", text: "WOLFGANG AMADEUS MOZART" },
+        { key: "B", text: "LUDWIG VAN BEETHOVEN" },
+        { key: "C", text: "JOHANNES BRAHMS" },
+        { key: "D", text: "ANTONIO VIVALDI" },
+      ],
+      attackerId: user?.id || "player-1",
+      defenderId: "opponent-id-999",
+      attackerColor: "BLUE",
+      defenderColor: "YELLOW",
+      attackerAnswer: null,
+      defenderAnswer: null,
+      attackerCorrect: null,
+      defenderCorrect: null,
+      timeLimitSeconds: 18,
+      pendingFigureId: 1,
+      pendingFromPos: 12,
+      pendingToPos: 18,
+      diceValue: 6,
+      createdAt: new Date().toISOString(),
+    });
+  };
+
+  const handleQuizAnswerSubmit = (answer: string) => {
+    console.log("Selected Answer String:", answer);
+    setTimeout(() => {
+      setSimulatedQuiz(null);
+    }, 1200);
+  };
+
   const gamePhase = !isMyTurn
     ? "warten"
     : !gameState?.diceRolledThisTurn
@@ -132,8 +174,16 @@ export const GamePage = () => {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
+    <div className="relative w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
       <PageSubHeader center={`SPIEL #${id || ""}`} />
+
+      <button
+        onClick={handleSimulateQuiz}
+        className="absolute top-4 right-4 z-40 bg-secondary hover:opacity-90 text-primary font-lilita px-4 py-2 rounded-xl text-sm uppercase flex items-center gap-2 shadow-lg transition-all"
+      >
+        <Swords size={16} />
+        Simulate Quiz Duel
+      </button>
 
       {/* Mobile Notification */}
       <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
@@ -181,7 +231,6 @@ export const GamePage = () => {
 
       {/* Layout Wrapper */}
       <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 lg:p-4 mt-4">
-        {/* CSS-Grid Spielfeld-Layout */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,380px)] gap-4 lg:gap-10 items-stretch justify-center">
           {/* LINKER CONTAINER: Spielfeld */}
           <div className="w-full flex flex-col items-center justify-center">
@@ -189,10 +238,6 @@ export const GamePage = () => {
               <LeaderboardPanel />
             </div>
 
-            {/* SPIELBRETT-CONTAINER:
-          Nutzt auf Mobile max 90vw/90vh. Auf Desktop (lg:) heben wir die restriktive 
-          Kombination auf und erlauben ihm, sich bis zu einer gesunden vertikalen Grenze (82vh) 
-          maximal aufzublasen, um die linke Spalte komplett auszufüllen. */}
             <div className="w-full max-w-[min(90vw,90vh)] lg:max-w-[82vh] aspect-square flex-shrink-0">
               <Board diceRoll={lastDiceValue ?? 1} />
             </div>
@@ -207,15 +252,12 @@ export const GamePage = () => {
             </div>
           </div>
 
-          {/* RECHTER CONTAINER (Desktop Side Panel):
-        Passt sich durch "items-stretch" im Grid automatisch der neuen, größeren Höhe des Boards an! */}
+          {/* RECHTER CONTAINER (Desktop Side Panel) */}
           <div className="hidden lg:flex w-full flex-col h-full min-h-0 gap-4">
-            {/* LEADERBOARD PANEL */}
             <div className="flex-1 min-h-0 flex flex-col">
               <LeaderboardPanel />
             </div>
 
-            {/* NOTIFICATION SLOT */}
             <div className="h-14 w-full flex-shrink-0 flex items-center justify-center">
               <div
                 className={`w-full transition-all duration-300 ease-in-out ${
@@ -231,7 +273,6 @@ export const GamePage = () => {
               </div>
             </div>
 
-            {/* DICE PANEL */}
             <div className="flex-1 min-h-0 flex flex-col">
               <DicePanel
                 currentRoll={lastDiceValue}
@@ -243,6 +284,14 @@ export const GamePage = () => {
           </div>
         </div>
       </div>
+
+      {simulatedQuiz && (
+        <QuizDuelView
+          activeQuiz={simulatedQuiz}
+          currentUserId={user?.id || "player-1"}
+          onSubmitAnswer={handleQuizAnswerSubmit}
+        />
+      )}
     </div>
   );
 };

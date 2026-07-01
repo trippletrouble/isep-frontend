@@ -9,6 +9,7 @@ import type {
   GameResults,
   GameStatus,
   PieceStatus,
+  ActiveQuizType,
 } from "../api/types";
 
 interface GameStoreState {
@@ -26,6 +27,8 @@ interface GameStoreState {
   isLoading: boolean;
   error: string | null;
 
+  activeQuiz: ActiveQuizType | null;
+
   setGameState: (state: GameState) => void;
   setDiceResult: (result: DiceRollResult) => void;
   setMoveResult: (result: MoveResult) => void;
@@ -39,6 +42,9 @@ interface GameStoreState {
   }) => void;
   handleGameEnded: (data: GameResults) => void;
   reset: () => void;
+
+  setActiveQuiz: (quiz: ActiveQuizType | null) => void;
+  submitQuizAnswer: (answer: string) => void;
 }
 
 const initialState = {
@@ -55,6 +61,8 @@ const initialState = {
   turnNumber: 0,
   isLoading: false,
   error: null,
+
+  activeQuiz: null,
 };
 
 export const useGameStore = create<GameStoreState>((set, get) => ({
@@ -188,5 +196,28 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
   reset: () => {
     set(initialState);
+  },
+
+  setActiveQuiz: (quiz) => {
+    set({ activeQuiz: quiz });
+  },
+
+  submitQuizAnswer: (answer) => {
+    console.log(`Submitting quiz answer to backend: ${answer}`);
+
+    set((state) => {
+      if (!state.activeQuiz) return {};
+
+      return {
+        activeQuiz: {
+          ...state.activeQuiz,
+          attackerAnswer: answer,
+        },
+      };
+    });
+
+    setTimeout(() => {
+      set({ activeQuiz: null });
+    }, 1500);
   },
 }));

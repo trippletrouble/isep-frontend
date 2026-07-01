@@ -205,6 +205,33 @@ export interface GameHistoryEvent {
   outcome?: MoveOutcome | null;
 }
 
+export interface QuizOption {
+  key: "A" | "B" | "C" | "D";
+  text: string;
+}
+
+export interface ActiveQuizType {
+  id: string;
+  questionId: string;
+  category: string;
+  questionText: string;
+  options: QuizOption[];
+  attackerId: string;
+  defenderId: string;
+  attackerColor: PlayerColor;
+  defenderColor: PlayerColor;
+  attackerAnswer: string | null;
+  defenderAnswer: string | null;
+  attackerCorrect: boolean | null;
+  defenderCorrect: boolean | null;
+  timeLimitSeconds: number;
+  pendingFigureId: number;
+  pendingFromPos: number;
+  pendingToPos: number;
+  diceValue: number;
+  createdAt: string;
+}
+
 // ─── REQUESTS ─────────────────────────────────────────────────────────────
 
 export interface CreateSessionRequest {
