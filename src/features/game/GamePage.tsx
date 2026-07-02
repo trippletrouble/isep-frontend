@@ -14,6 +14,7 @@ import { getSessionResults } from "@/api/gameplay.api";
 import type { GameResults } from "@/api/types";
 import { QuizDuelView } from "../quiz-duel/QuizDuelView";
 import { Trophy, Home, ShieldAlert } from "lucide-react";
+import { DiceIcon, FigureIcon } from "@/components/icons/PhaseIcons";
 
 export const GamePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -83,17 +84,14 @@ export const GamePage = () => {
     return () => clearTimeout(timer);
   }, [notification]);
 
-  // ==================== DEBUG MOCK BEGIN ====================
   useEffect(() => {
     if (!isSandboxMode) return;
 
     const mockUserId = user?.id || "mock-user-id";
     const enemyUserId = "enemy-player-id";
 
-    // 1. Keep active quiz null at start so we see the board phase first!
     useGameStore.getState().setActiveQuiz(null);
 
-    // 2. Setup the precise board coordinates
     setGameState({
       sessionId: id || "debug-sandbox-lobby",
       status: "IN_PROGRESS",
@@ -223,77 +221,98 @@ export const GamePage = () => {
     if (!isSandboxMode || !gameState || !gameState.diceRolledThisTurn) return;
 
     const myFigure = gameState.figures.find((f) => f.id === 1);
+
+    // Check if our token is still waiting at position 10
     if (myFigure && myFigure.position === 10) {
-      const triggerSandboxCaptureMove = () => {
-        const mockUserId = user?.id || "mock-user-id";
-        const enemyUserId = "enemy-player-id";
+      const mockUserId = user?.id || "mock-user-id";
+      const enemyUserId = "enemy-player-id";
 
-        const updatedFigures = gameState.figures.map((fig) => {
-          if (fig.id === 1) return { ...fig, position: 11 };
-          return fig;
+      // 1. Immediately move the token forward to simulate landing on the enemy
+      const updatedFigures = gameState.figures.map((fig) => {
+        if (fig.id === 1) return { ...fig, position: 11 };
+        return fig;
+      });
+
+      setGameState({
+        ...gameState,
+        figures: updatedFigures,
+      });
+
+      // 2. Alert the player a duel has been encountered
+      setNotification({
+        title: "DUELL!",
+        message: "Ein Quiz-Duell hat begonnen!",
+        iconType: "INFO",
+      });
+
+      // 3. Automatically pop up the quiz view after a brief animation delay
+      const timer = setTimeout(() => {
+        useGameStore.getState().setActiveQuiz({
+          id: "quiz-session-123",
+          questionId: "q-456",
+          category: "Allgemeinwissen",
+          questionText:
+            "Zusammenstoß auf Feld 11! Wer gewinnt dieses Quiz-Duell?",
+          options: [
+            { key: "A", text: "Du (Angreifer - Blau)" },
+            { key: "B", text: "Gegner (Verteidiger - Rot)" },
+            { key: "C", text: "Gleichstand" },
+            { key: "D", text: "Keiner" },
+          ],
+          attackerId: mockUserId,
+          defenderId: enemyUserId,
+          attackerColor: "BLUE",
+          defenderColor: "RED",
+          attackerAnswer: null,
+          defenderAnswer: null,
+          attackerCorrect: null,
+          defenderCorrect: null,
+          timeLimitSeconds: 15,
+          pendingFigureId: 1,
+          pendingFromPos: 10,
+          pendingToPos: 11,
+          diceValue: 1,
+          createdAt: new Date().toISOString(),
         });
+      }, 800);
 
-        setGameState({
-          ...gameState,
-          figures: updatedFigures,
-        });
-
-        setNotification({
-          title: "DUELL!",
-          message: "Ein Quiz-Duell hat begonnen!",
-          iconType: "INFO",
-        });
-
-        setTimeout(() => {
-          useGameStore.getState().setActiveQuiz({
-            id: "quiz-session-123",
-            questionId: "q-456",
-            category: "Allgemeinwissen",
-            questionText:
-              "Zusammenstoß auf Feld 11! Wer gewinnt dieses Quiz-Duell?",
-            options: [
-              { key: "A", text: "Du (Angreifer - Blau)" },
-              { key: "B", text: "Gegner (Verteidiger - Rot)" },
-              { key: "C", text: "Gleichstand" },
-              { key: "D", text: "Keiner" },
-            ],
-            attackerId: mockUserId,
-            defenderId: enemyUserId,
-            attackerColor: "BLUE",
-            defenderColor: "RED",
-            attackerAnswer: null,
-            defenderAnswer: null,
-            attackerCorrect: null,
-            defenderCorrect: null,
-            timeLimitSeconds: 15,
-            pendingFigureId: 1,
-            pendingFromPos: 10,
-            pendingToPos: 11,
-            diceValue: 1,
-            createdAt: new Date().toISOString(),
-          });
-        }, 600);
-      };
-
-      const boardContainer = document.querySelector(".aspect-square");
-      if (boardContainer) {
-        boardContainer.addEventListener("click", triggerSandboxCaptureMove, {
-          once: true,
-        });
-        return () =>
-          boardContainer.removeEventListener(
-            "click",
-            triggerSandboxCaptureMove,
-          );
-      }
+      return () => clearTimeout(timer);
     }
-  }, [gameState, isSandboxMode, user, setGameState]);
+  }, [gameState?.diceRolledThisTurn, isSandboxMode, user, setGameState]);
 
   const handleQuizAnswerSubmit = async (answer: "A" | "B" | "C" | "D") => {
     if (isSandboxMode) {
-      useGameStore.getState().setActiveQuiz(null);
+      if (!activeQuiz) return;
+
+      const evaluatedQuiz = {
+        ...activeQuiz,
+        attackerAnswer: answer, // What you selected
+        defenderAnswer: "B" as const, // Dummy choices
+        attackerCorrect: answer === "A", // Let's say 'A' was correct
+        defenderCorrect: false,
+      };
+
+      useGameStore.setState({ activeQuiz: evaluatedQuiz });
+
+      // 3. Simulate the delay before closing and firing the resolution banner
+      setTimeout(() => {
+        // Fire the resolution banner we wired up
+        setNotification({
+          title: "DUELL BEENDET",
+          message:
+            answer === "A"
+              ? "Du hast das Quiz-Duell gewonnen! (Blau)"
+              : "Dummy Player gewinnt das Duell. (Rot)",
+          iconType: "INFO",
+        });
+
+        // Close the modal
+        useGameStore.getState().setActiveQuiz(null);
+      }, 4000); // 4 seconds to inspect your UI states!
+
       return;
     }
+
     if (id) {
       await answerQuiz(id, answer);
     }
@@ -306,9 +325,13 @@ export const GamePage = () => {
       : "bewegen";
 
   const phaseConfig = {
-    warten: { label: "Warte auf anderen Spieler...", color: "text-white/40" },
-    würfeln: { label: "🎲 Würfeln!", color: "text-white" },
-    bewegen: { label: "♟ Figur bewegen!", color: "text-white" },
+    warten: {
+      label: "Warte auf anderen Spieler...",
+      color: "text-white/40",
+      icon: null,
+    },
+    würfeln: { label: "Würfeln!", color: "text-white", icon: DiceIcon },
+    bewegen: { label: "Figur bewegen!", color: "text-white", icon: FigureIcon },
   };
 
   return (
@@ -386,6 +409,7 @@ export const GamePage = () => {
                 onRoll={handleRoll}
                 disabled={!canRoll}
                 phase={phaseConfig[gamePhase].label}
+                PhaseIcon={phaseConfig[gamePhase].icon}
               />
             </div>
           </div>
@@ -417,6 +441,7 @@ export const GamePage = () => {
                 onRoll={handleRoll}
                 disabled={!canRoll}
                 phase={phaseConfig[gamePhase].label}
+                PhaseIcon={phaseConfig[gamePhase].icon}
               />
             </div>
           </div>
@@ -433,6 +458,9 @@ export const GamePage = () => {
           activeQuiz={activeQuiz}
           currentUserId={user?.id || ""}
           onSubmitAnswer={handleQuizAnswerSubmit}
+          onDuelResolved={(notificationData) => {
+            setNotification(notificationData);
+          }}
         />
       )}
     </div>

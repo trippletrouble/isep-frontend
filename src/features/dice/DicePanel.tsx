@@ -7,6 +7,7 @@ interface DicePanelProps {
   onRoll: () => void;
   disabled?: boolean;
   phase: string;
+  PhaseIcon: React.ComponentType<{ className?: string }> | null;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export function DicePanel({
   onRoll,
   disabled,
   phase,
+  PhaseIcon,
   className,
 }: DicePanelProps) {
   const isMyTurn = !disabled;
@@ -63,13 +65,16 @@ export function DicePanel({
         <div className="absolute inset-0 bg-white/5 animate-pulse pointer-events-none" />
       )}
 
-      <p
-        className={`text-md lg:text-lg font-lilita uppercase tracking-[0.02em] mb-1 sm:mb-2 lg:mb-4 drop-shadow-md transition-colors duration-300 text-center ${
+      <div
+        className={`flex items-center justify-center gap-2 mb-1 sm:mb-2 lg:mb-4 drop-shadow-md transition-colors duration-300 ${
           isMyTurn && !currentAwaitingState ? "text-white" : "text-white/50"
         }`}
       >
-        {phase}
-      </p>
+        {PhaseIcon && <PhaseIcon className="w-5 h-5 shrink-0 opacity-90" />}
+        <p className="text-md lg:text-lg font-lilita uppercase tracking-[0.02em] text-center">
+          {phase}
+        </p>
+      </div>
 
       <div
         className={`transition-all duration-300 ${isMyTurn ? "scale-105" : "opacity-40"} ${

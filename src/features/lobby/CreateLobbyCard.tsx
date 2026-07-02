@@ -29,9 +29,6 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
   const [playerName, setPlayerName] = useState(user?.username || "");
   const [playerCount, setPlayerCount] = useState<string>("4");
   const [againstAI, setAgainstAI] = useState(false);
-  const [gameMode, setGameMode] = useState<"klassisch" | "erweitert">(
-    "klassisch",
-  );
 
   const getInitialRules = (): string[] => {
     const routeState = location.state as { rules?: string[] } | null;
@@ -114,21 +111,6 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
               <SelectItem value="2">2 Spieler</SelectItem>
               <SelectItem value="3">3 Spieler</SelectItem>
               <SelectItem value="4">4 Spieler</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={gameMode}
-            onValueChange={(value) =>
-              setGameMode(value as "klassisch" | "erweitert")
-            }
-          >
-            <SelectTrigger className="bg-primary border border-accent text-white text-base h-12 rounded-xl px-4 w-full focus:ring-0 focus:ring-offset-0">
-              <SelectValue placeholder="Modus auswählen" />
-            </SelectTrigger>
-            <SelectContent className="bg-primary border border-accent text-white text-base rounded-xl">
-              <SelectItem value="klassisch">Klassisch</SelectItem>
-              <SelectItem value="erweitert">Erweitert</SelectItem>
             </SelectContent>
           </Select>
         </div>
