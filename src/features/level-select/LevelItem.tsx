@@ -63,7 +63,9 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
           <div className="flex flex-col md:flex-row gap-2 md:gap-4 px-0">
             <button
               onClick={() =>
-                navigate("/lobby/create", { state: { rules: level.rules } })
+                navigate(`/lobby/level-${level.id}`, {
+                  state: { rules: level.rules },
+                })
               }
               className="flex-1 h-[60px] bg-green text-black hover:opacity-90 font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2 transition-opacity"
             >

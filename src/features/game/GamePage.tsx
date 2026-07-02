@@ -7,19 +7,20 @@ import { NotificationPanel, type NotificationData } from "./NotificationPanel";
 import { PageSubHeader } from "@/components/layout/PageSubHeader";
 import { useGameStore } from "@/stores/game.store";
 import { useGameActions } from "@/hooks/useGameActions";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuthStore } from "@/stores";
 import { useSSE } from "@/hooks/useSSE";
 import { getSessionState, reconnectSession } from "@/api/sessions.api";
 import { getSessionResults } from "@/api/gameplay.api";
 import type { GameResults } from "@/api/types";
 import { QuizDuelView } from "../quiz-duel/QuizDuelView";
-import { Trophy, Home } from "lucide-react";
+import { Trophy, Home, ShieldAlert } from "lucide-react";
 
 export const GamePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
+  const isSandboxMode = true;
   const gameState = useGameStore((state) => state.gameState);
   const lastDiceValue = useGameStore((state) => state.lastDiceValue);
   const activeQuiz = useGameStore((state) => state.activeQuiz);
@@ -35,7 +36,7 @@ export const GamePage = () => {
   const [results, setResults] = useState<GameResults[] | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || isSandboxMode) return;
     let isMounted = true;
 
     const loadGame = async () => {
@@ -59,10 +60,11 @@ export const GamePage = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, setGameState]);
+  }, [id, setGameState, isSandboxMode]);
 
   useEffect(() => {
-    if (gameState?.status === "FINISHED" && id && !results) {
+    if (isSandboxMode || !id || results) return;
+    if (gameState?.status === "FINISHED") {
       let isMounted = true;
       getSessionResults(id)
         .then((res) => {
@@ -73,7 +75,7 @@ export const GamePage = () => {
         isMounted = false;
       };
     }
-  }, [gameState?.status, id, results]);
+  }, [gameState?.status, id, results, isSandboxMode]);
 
   useEffect(() => {
     if (!notification) return;
@@ -81,7 +83,67 @@ export const GamePage = () => {
     return () => clearTimeout(timer);
   }, [notification]);
 
-  useSSE(id || null, {
+  // ==================== DEBUG MOCK BEGIN ====================
+  useEffect(() => {
+    if (!isSandboxMode) return;
+
+    const mockUserId = user?.id || "mock-user-id";
+    const enemyUserId = "enemy-player-id";
+
+    // 1. Keep active quiz null at start so we see the board phase first!
+    useGameStore.getState().setActiveQuiz(null);
+
+    // 2. Setup the precise board coordinates
+    setGameState({
+      sessionId: id || "debug-sandbox-lobby",
+      status: "IN_PROGRESS",
+      currentPlayerId: mockUserId,
+      turnNumber: 1,
+      diceRolledThisTurn: false, // Ready to click!
+      consecutiveSixes: 0,
+      activeRules: ["QUIZ_DUELL"],
+      createdAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+      players: [
+        {
+          id: mockUserId,
+          username: user?.username || "You (Test Sandbox)",
+          color: "BLUE",
+          type: "HUMAN",
+          isCurrentTurn: true,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+        {
+          id: enemyUserId,
+          username: "Fake Dummy Player",
+          color: "RED",
+          type: "HUMAN",
+          isCurrentTurn: false,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+      ],
+      // Position 10 is directly behind position 11
+      figures: [
+        { id: 1, playerId: mockUserId, position: 10, status: "ACTIVE" },
+        { id: 2, playerId: mockUserId, position: 0, status: "HOME" },
+        { id: 3, playerId: mockUserId, position: 0, status: "HOME" },
+        { id: 4, playerId: mockUserId, position: 0, status: "HOME" },
+
+        { id: 5, playerId: enemyUserId, position: 11, status: "ACTIVE" },
+        { id: 6, playerId: enemyUserId, position: 0, status: "HOME" },
+        { id: 7, playerId: enemyUserId, position: 0, status: "HOME" },
+        { id: 8, playerId: enemyUserId, position: 0, status: "HOME" },
+      ],
+    });
+
+    useGameStore.setState({ lastDiceValue: null });
+  }, [id, user, setGameState, isSandboxMode]);
+  // ==================== DEBUG MOCK END ======================
+
+  // Pass null to useSSE if debugging to stop streaming server data updates over your state
+  useSSE(isSandboxMode ? null : id || null, {
     onGameState: (data) => useGameStore.getState().handleGameStarted(data),
     onGameStarted: (data) => useGameStore.getState().handleGameStarted(data),
     onMoveExecuted: (data) => {
@@ -141,10 +203,97 @@ export const GamePage = () => {
   const canRoll = isMyTurn && !gameState.diceRolledThisTurn;
 
   const handleRoll = () => {
+    if (isSandboxMode) {
+      const generatedRoll = 1;
+      useGameStore.setState({ lastDiceValue: generatedRoll });
+
+      if (gameState) {
+        setGameState({
+          ...gameState,
+          diceRolledThisTurn: true,
+        });
+      }
+      return;
+    }
+
     if (id) rollDice(id);
   };
 
+  useEffect(() => {
+    if (!isSandboxMode || !gameState || !gameState.diceRolledThisTurn) return;
+
+    const myFigure = gameState.figures.find((f) => f.id === 1);
+    if (myFigure && myFigure.position === 10) {
+      const triggerSandboxCaptureMove = () => {
+        const mockUserId = user?.id || "mock-user-id";
+        const enemyUserId = "enemy-player-id";
+
+        const updatedFigures = gameState.figures.map((fig) => {
+          if (fig.id === 1) return { ...fig, position: 11 };
+          return fig;
+        });
+
+        setGameState({
+          ...gameState,
+          figures: updatedFigures,
+        });
+
+        setNotification({
+          title: "DUELL!",
+          message: "Ein Quiz-Duell hat begonnen!",
+          iconType: "INFO",
+        });
+
+        setTimeout(() => {
+          useGameStore.getState().setActiveQuiz({
+            id: "quiz-session-123",
+            questionId: "q-456",
+            category: "Allgemeinwissen",
+            questionText:
+              "Zusammenstoß auf Feld 11! Wer gewinnt dieses Quiz-Duell?",
+            options: [
+              { key: "A", text: "Du (Angreifer - Blau)" },
+              { key: "B", text: "Gegner (Verteidiger - Rot)" },
+              { key: "C", text: "Gleichstand" },
+              { key: "D", text: "Keiner" },
+            ],
+            attackerId: mockUserId,
+            defenderId: enemyUserId,
+            attackerColor: "BLUE",
+            defenderColor: "RED",
+            attackerAnswer: null,
+            defenderAnswer: null,
+            attackerCorrect: null,
+            defenderCorrect: null,
+            timeLimitSeconds: 15,
+            pendingFigureId: 1,
+            pendingFromPos: 10,
+            pendingToPos: 11,
+            diceValue: 1,
+            createdAt: new Date().toISOString(),
+          });
+        }, 600);
+      };
+
+      const boardContainer = document.querySelector(".aspect-square");
+      if (boardContainer) {
+        boardContainer.addEventListener("click", triggerSandboxCaptureMove, {
+          once: true,
+        });
+        return () =>
+          boardContainer.removeEventListener(
+            "click",
+            triggerSandboxCaptureMove,
+          );
+      }
+    }
+  }, [gameState, isSandboxMode, user, setGameState]);
+
   const handleQuizAnswerSubmit = async (answer: "A" | "B" | "C" | "D") => {
+    if (isSandboxMode) {
+      useGameStore.getState().setActiveQuiz(null);
+      return;
+    }
     if (id) {
       await answerQuiz(id, answer);
     }
@@ -164,7 +313,18 @@ export const GamePage = () => {
 
   return (
     <div className="relative w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
-      <PageSubHeader center={`SPIEL #${id || ""}`} />
+      <PageSubHeader
+        center={
+          isSandboxMode ? "🛠 SANDBOX DESIGN DEBUGGER" : `SPIEL #${id || ""}`
+        }
+      />
+
+      {isSandboxMode && (
+        <div className="w-full bg-yellow text-primary py-1 px-4 text-center font-bold text-xs flex items-center justify-center gap-2 tracking-wide uppercase shrink-0 select-none">
+          <ShieldAlert size={14} /> Sandbox Modus aktiv — Backend-Streaming
+          unterdrückt
+        </div>
+      )}
 
       <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
         <div className="pointer-events-auto max-w-sm mx-auto">

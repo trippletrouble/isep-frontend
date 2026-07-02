@@ -12,8 +12,12 @@ import { toast } from "sonner";
 import { ApiError } from "@/api/client";
 
 export function LobbyPage() {
-  const { level } = useParams<{ level: string }>();
+  const { level, sessionId } = useParams<{
+    level?: string;
+    sessionId?: string;
+  }>();
   const navigate = useNavigate();
+
   const {
     currentLobby,
     players,
@@ -29,28 +33,31 @@ export function LobbyPage() {
     inviteToken: ***ENTFERNT***
     inviteUrl: string;
   } | null>(null);
-
-  const isSessionId =
-    level !== undefined &&
-    level !== "create" &&
-    !["0", "1", "2", "3"].includes(level);
   const [rulesOpen, setRulesOpen] = useState(false);
-  const levelId = isSessionId ? 0 : Number(level ?? 0);
+
+  const resolvedParam = level || sessionId || "";
+  const isSessionId =
+    resolvedParam !== "" && !resolvedParam.startsWith("level-");
+
+  const cleanLevel = resolvedParam.replace("level-", "").trim() || "0";
+  const levelId = isSessionId ? 0 : Number(cleanLevel);
+
+  const activeSessionId = sessionId || level || "";
 
   useEffect(() => {
-    if (!isSessionId || !level) return;
-    fetchLobby(level);
+    if (!isSessionId || !activeSessionId) return;
+    fetchLobby(activeSessionId);
     const interval = setInterval(async () => {
       try {
-        await fetchLobby(level);
+        await fetchLobby(activeSessionId);
       } catch (err) {
         if (err instanceof ApiError && err.status === 409) {
-          navigate(`/game/${level}`);
+          navigate(`/game/${activeSessionId}`);
         }
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [isSessionId, level, fetchLobby]);
+  }, [isSessionId, activeSessionId, fetchLobby, navigate]);
 
   useEffect(() => {
     if (currentLobby?.status === "IN_PROGRESS") {
@@ -58,19 +65,19 @@ export function LobbyPage() {
     }
   }, [currentLobby, navigate]);
 
-  useSSE(isSessionId && level ? level : null, {
+  useSSE(isSessionId && activeSessionId ? activeSessionId : null, {
     onGameState: (state) => {
-      if (state.status === "IN_PROGRESS") navigate(`/game/${level}`);
+      if (state.status === "IN_PROGRESS") navigate(`/game/${activeSessionId}`);
     },
     onGameStarted: () => {
-      navigate(`/game/${level}`);
+      navigate(`/game/${activeSessionId}`);
     },
   });
 
   async function handleLeave() {
-    if (level) {
+    if (activeSessionId) {
       try {
-        await leaveLobby(level);
+        await leaveLobby(activeSessionId);
         navigate("/");
       } catch (err) {
         console.error(err);
@@ -79,10 +86,10 @@ export function LobbyPage() {
   }
 
   async function handleStart() {
-    if (level) {
+    if (activeSessionId) {
       try {
-        await startGame(level);
-        navigate(`/game/${level}`);
+        await startGame(activeSessionId);
+        navigate(`/game/${activeSessionId}`);
       } catch (err) {
         console.error(err);
       }
@@ -90,9 +97,9 @@ export function LobbyPage() {
   }
 
   async function handleGenerateInvite() {
-    if (level) {
+    if (activeSessionId) {
       try {
-        const result = await generateInvite(level);
+        const result = await generateInvite(activeSessionId);
         setInviteInfo(result);
         await navigator.clipboard.writeText(result.inviteUrl);
         toast.success("Einladungslink in die Zwischenablage kopiert!");
@@ -129,7 +136,7 @@ export function LobbyPage() {
 
     return (
       <>
-        <div className="max-w-6xl mx-auto p-4 md:p-8 w-full flex flex-col gap-6">
+        <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
           <PageSubHeader
             backTo="/"
             center={`LOBBY`}
@@ -265,10 +272,10 @@ export function LobbyPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 w-full flex flex-col gap-6">
+    <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
       <PageSubHeader
         backTo="/"
-        center={`LEVEL ${level}`}
+        center={`LEVEL ${cleanLevel}`}
         right={
           <button
             onClick={() => setRulesOpen(true)}
@@ -280,11 +287,11 @@ export function LobbyPage() {
       />
 
       <h1 className="font-lilita text-white text-4xl md:text-6xl uppercase leading-none mb-8">
-        LEVEL {level}
+        LEVEL {cleanLevel}
       </h1>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <CreateLobbyCard />
+      <div className="flex flex-col md:flex-row justify-between gap-6">
+        <CreateLobbyCard cleanLevel={cleanLevel} />
         <JoinLobbyCard />
       </div>
       <RulesDialog

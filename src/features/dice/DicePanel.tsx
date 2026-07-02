@@ -19,36 +19,53 @@ export function DicePanel({
 }: DicePanelProps) {
   const isMyTurn = !disabled;
   const isVisible = currentRoll !== null;
-
   const [isLocalRolling, setIsLocalRolling] = useState(false);
+  const [awaitingServerPhaseUpdate, setAwaitingServerPhaseUpdate] =
+    useState(false);
+  const [prevRoll, setPrevRoll] = useState<number | null>(currentRoll);
+
+  let currentAwaitingState = awaitingServerPhaseUpdate;
+
+  if (disabled && awaitingServerPhaseUpdate) {
+    setAwaitingServerPhaseUpdate(false);
+    currentAwaitingState = false;
+  }
+
+  if (currentRoll !== prevRoll) {
+    setPrevRoll(currentRoll);
+    setAwaitingServerPhaseUpdate(false);
+    currentAwaitingState = false;
+  }
 
   const handleRollClick = () => {
-    if (disabled) return;
+    if (disabled || isLocalRolling || currentAwaitingState) return;
 
     setIsLocalRolling(true);
+    setAwaitingServerPhaseUpdate(true);
     onRoll();
 
-    // Setzt das lokale Rollen erst nach genau 1 Sekunde zurück
     setTimeout(() => {
       setIsLocalRolling(false);
     }, 1000);
   };
 
+  const isButtonDisabled = disabled || isLocalRolling || currentAwaitingState;
+
   return (
     <div
       className={`relative bg-primary border rounded-2xl lg:rounded-3xl py-2 sm:py-3 lg:py-5 px-3 lg:px-4 flex flex-col items-center justify-center w-full h-full lg:h-auto mx-auto shrink-0 min-w-0 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] overflow-hidden ${className} ${
-        isMyTurn
+        isMyTurn && !currentAwaitingState
           ? "border-white scale-[1.03]"
           : "border-accent opacity-60 hover:border-white"
       }`}
     >
-      {isMyTurn && (
+      {isMyTurn && !currentAwaitingState && (
         <div className="absolute inset-0 bg-white/5 animate-pulse pointer-events-none" />
       )}
 
       <p
         className={`text-md lg:text-lg font-lilita uppercase tracking-[0.02em] mb-1 sm:mb-2 lg:mb-4 drop-shadow-md transition-colors duration-300 text-center ${
-          isMyTurn ? "text-white" : "text-white/50"
+          isMyTurn && !currentAwaitingState ? "text-white" : "text-white/50"
         }`}
       >
         {phase}
@@ -64,8 +81,8 @@ export function DicePanel({
 
       <DiceButton
         onClick={handleRollClick}
-        disabled={disabled || isLocalRolling}
-        shouldPulse={isMyTurn}
+        disabled={isButtonDisabled}
+        shouldPulse={isMyTurn && !currentAwaitingState}
       />
     </div>
   );
