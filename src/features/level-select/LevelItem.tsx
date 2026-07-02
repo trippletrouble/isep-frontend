@@ -3,14 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight, ScrollText } from "lucide-react";
 import { RulesDialog } from "./RulesDialog";
 
-interface MockLevel {
+interface Level {
   id: number;
   name: string;
   description: string;
+  rules: string[];
 }
 
 interface LevelItemProps {
-  level: MockLevel;
+  level: Level;
   isActive: boolean;
   onSelect: (id: number) => void;
 }
@@ -61,7 +62,9 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
         <div className="overflow-hidden">
           <div className="flex flex-col md:flex-row gap-2 md:gap-4 px-0">
             <button
-              onClick={() => navigate(`/lobby/${level.id}`)}
+              onClick={() =>
+                navigate("/lobby/create", { state: { rules: level.rules } })
+              }
               className="flex-1 h-[60px] bg-green text-black hover:opacity-90 font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2 transition-opacity"
             >
               Spielen <ChevronRight size={24} strokeWidth={2.5} />
@@ -73,7 +76,11 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
             >
               Regeln <ScrollText size={22} />
             </button>
-            <RulesDialog levelId={level.id} open={rulesOpen} onOpenChange={setRulesOpen} />
+            <RulesDialog
+              levelId={level.id}
+              open={rulesOpen}
+              onOpenChange={setRulesOpen}
+            />
           </div>
         </div>
       </div>

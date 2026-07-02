@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLobby } from "@/hooks/useLobby";
+import { useAuth } from "@/hooks";
 
 export function JoinLobbyCard() {
   const navigate = useNavigate();
   const { joinLobby } = useLobby();
+  const { user } = useAuth();
 
+  const [playerName, setPlayerName] = useState(user?.username || "");
   const [lobbyCode, setLobbyCode] = useState("");
 
   async function handleJoin() {
@@ -27,10 +30,19 @@ export function JoinLobbyCard() {
       <div className="flex flex-col gap-4 flex-1">
         <Input
           type="text"
+          required
+          placeholder="Dein Name"
+          value={playerName}
+          onChange={(e) => setPlayerName(e.target.value)}
+          className="bg-primary border-accent text-white placeholder:text-accent text-base placeholder:text-base h-12 rounded-xl"
+        />
+
+        <Input
+          type="text"
           placeholder="Lobby-Code"
           value={lobbyCode}
           onChange={(e) => setLobbyCode(e.target.value)}
-          className="bg-primary border-accent text-white placeholder:text-accent h-12 rounded-xl"
+          className="bg-primary border-accent text-white placeholder:text-accent text-base placeholder:text-base h-12 rounded-xl"
         />
       </div>
       <Button

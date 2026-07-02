@@ -6,7 +6,10 @@ export type PieceStatus = "HOME" | "ACTIVE" | "GOAL";
 export type PlayerType = "HUMAN";
 export type GameMode = "CLASSIC";
 export type BoardTheme = "CLASSIC";
-export type AdditionalRule = "THROW_AGAIN_ON_6" | "THREE_SIXES_LOSE_TURN";
+export type AdditionalRule =
+  | "THROW_AGAIN_ON_6"
+  | "THREE_SIXES_LOSE_TURN"
+  | "QUIZ_DUELL";
 export type MoveOutcome = "MOVED" | "CAPTURED" | "GOAL" | "GAME_WON";
 export type ThemePreference = "LIGHT" | "DARK" | "SYSTEM";
 export type GameHistoryActionType =
