@@ -78,13 +78,10 @@ export function useGameActions() {
 
       const nextFigures = storeState.figures.map(fig => {
         if (fig.id === figureId) {
-          const nextDebuff = fig.flyDebuffCount && fig.flyDebuffCount > 1 ? fig.flyDebuffCount - 1 : 0;
           return {
             ...fig,
             position: targetFieldId,
             status: (targetFieldId === -1 ? "HOME" : "ACTIVE") as any,
-            hasPlagueFly: nextDebuff > 0,
-            flyDebuffCount: nextDebuff
           };
         }
         return fig;
