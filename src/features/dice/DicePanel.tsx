@@ -77,7 +77,7 @@ export function DicePanel({
   const isPlagueFlyActive = useGameStore((state) =>
     state.gameState?.activeRules?.includes("PLAGUE_FLY") ?? false
   );
-  const displayFlyCount = hasFly ? flyDebuffCount : 0;
+  const displayFlyCount = hasFly ? Math.max(0, 3 - flyDebuffCount) : 0;
 
   const playerColor = useGameStore((state) => {
     const player = state.gameState?.players?.find((p) => p.id === selectedFigure?.playerId);
