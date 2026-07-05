@@ -233,6 +233,13 @@ export const GamePage = () => {
         iconType: "INFO",
       });
     },
+    onPlagueFlyTransferred: (data) => {
+      setNotification({
+        title: "FLIEGE ÜBERTRAGEN! 🪰",
+        message: `Die Pestfliege wurde von Figur ${data.fromFigureId} auf Figur ${data.toFigureId} übertragen!`,
+        iconType: "INFO",
+      });
+    },
   });
 
   const isMyTurn = isSandboxMode
