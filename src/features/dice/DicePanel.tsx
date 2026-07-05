@@ -110,76 +110,80 @@ export function DicePanel({
   const isButtonDisabled = disabled || isLocalRolling || currentAwaitingState;
 
   return (
-    <div
-      className={`relative bg-primary border rounded-2xl lg:rounded-3xl py-2 sm:py-3 lg:py-5 px-3 lg:px-4 flex flex-col items-center justify-center w-full h-full lg:h-auto mx-auto shrink-0 min-w-0 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] overflow-hidden ${className} ${
-        isMyTurn && !currentAwaitingState
-          ? "border-white scale-[1.03]"
-          : "border-accent opacity-60 hover:border-white"
-      }`}
-    >
-      {isMyTurn && !currentAwaitingState && (
-        <div className="absolute inset-0 bg-white/5 animate-pulse pointer-events-none" />
-      )}
-
+    <div className="flex flex-col items-center w-full max-w-[391px] mx-auto shrink-0 select-none">
       <div
-        className={`flex items-center justify-center gap-2 mb-1 sm:mb-2 lg:mb-4 drop-shadow-md transition-colors duration-300 ${
-          isMyTurn && !currentAwaitingState ? "text-white" : "text-white/50"
+        className={`relative bg-[#282828] border border-[#797979] shadow-[0px_16px_22.2px_rgba(0,0,0,0.25)] rounded-[40px] flex flex-col items-center justify-start w-full h-[330px] pt-[26px] pb-[20px] px-6 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] ${className} ${
+          isMyTurn && !currentAwaitingState
+            ? "scale-[1.03]"
+            : "opacity-60"
         }`}
       >
-        <p className="text-2xl sm:text-3xl lg:text-[36px] font-lilita uppercase tracking-[0.04em] text-center text-white">
-          WÜRFEL
-        </p>
-      </div>
+        {isMyTurn && !currentAwaitingState && (
+          <div className="absolute inset-0 bg-white/5 animate-pulse rounded-[40px] pointer-events-none" />
+        )}
 
-      <div className="flex items-center gap-6 mb-4 lg:mb-6 justify-center min-w-0">
-        <div
-          className={`transition-all duration-300 ${isMyTurn ? "scale-105" : "opacity-40"}`}
-        >
-          <Dice value={currentRoll ?? 0} isRolling={isLocalRolling} />
+        <div className="flex items-center justify-center mb-[20px] drop-shadow-md">
+          <p className="text-[36px] font-lilita uppercase tracking-[0.04em] text-center text-white leading-[41px]">
+            WÜRFEL
+          </p>
         </div>
 
-        {/* Fliegen debuff layout next to the dice */}
-        {isPlagueFlyActive && (
-          <div className="flex flex-col items-center justify-center gap-1.5 h-14 md:h-[120px]">
-            <span className="font-afacad font-bold text-sm lg:text-[16px] uppercase tracking-[0.1em] text-white leading-none">
-              FLIEGEN
-            </span>
-            <div className="flex items-center gap-[5px] h-[35px]">
-              {[0, 1, 2].map((idx) => {
-                const isActive = idx < displayFlyCount;
-                return (
-                  <div
-                    key={idx}
-                    className="w-[28px] h-[35px] transition-all duration-300"
-                    style={{
-                      opacity: isActive ? 1.0 : 0.2,
-                      filter: "brightness(0) invert(1)",
-                    }}
-                  >
-                    <img
-                      src={fliegeIcon}
-                      alt="Pestfliege"
-                      className="w-[28px] h-[35px] object-contain"
-                    />
-                  </div>
-                );
-              })}
+        <div className="flex items-center gap-[45px] mb-[25px] justify-center min-w-0 w-full">
+          <div className="relative w-[123px] h-[123px] flex items-center justify-center shrink-0">
+            {/* Background Glow */}
+            <div className="absolute -top-[13px] -left-[13px] w-[150px] h-[150px] bg-[#FFFBFB]/20 rounded-full blur-[12.5px] pointer-events-none" />
+            
+            {/* Dice wrapper */}
+            <div className="relative z-10 transition-all duration-300">
+              <Dice value={currentRoll ?? 0} isRolling={isLocalRolling} />
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="relative w-full">
-        <DiceButton
-          onClick={handleRollClick}
-          disabled={isButtonDisabled}
-          shouldPulse={isMyTurn && !currentAwaitingState}
-        />
-        {hasFly && flyDebuff !== null && (
-          <div className="absolute -top-[10px] -right-[6px] bg-black text-white text-xs lg:text-[14px] font-bold font-afacad w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center border-2 border-white shadow-lg pointer-events-none">
-            -{flyDebuff}
-          </div>
-        )}
+          {/* Fliegen debuff layout next to the dice */}
+          {isPlagueFlyActive && (
+            <div className="flex flex-col items-start justify-center gap-[5px] h-[64px] shrink-0">
+              <span className="font-afacad font-bold text-[24px] uppercase tracking-[0.02em] text-white leading-none">
+                FLIEGEN
+              </span>
+              <div className="flex items-center gap-[5px] h-[35px]">
+                {[0, 1, 2].map((idx) => {
+                  const isActive = idx < displayFlyCount;
+                  return (
+                    <div
+                      key={idx}
+                      className="w-[28px] h-[35px] transition-all duration-300"
+                      style={{
+                        opacity: isActive ? 1.0 : 0.2,
+                        filter: "brightness(0) invert(1)",
+                      }}
+                    >
+                      <img
+                        src={fliegeIcon}
+                        alt="Pestfliege"
+                        className="w-[28px] h-[35px] object-contain"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="relative w-[262px] mx-auto mt-auto">
+          <DiceButton
+            onClick={handleRollClick}
+            disabled={isButtonDisabled}
+            shouldPulse={isMyTurn && !currentAwaitingState}
+          />
+          {hasFly && flyDebuff !== null && (
+            <div className="absolute -top-[16px] -right-[10px] w-[33px] h-[33px] bg-[#282828] border border-[#797979] rounded-full flex items-center justify-center shadow-[0px_4px_22.2px_rgba(0,0,0,0.25)] pointer-events-none">
+              <span className="font-lilita text-[18px] text-white leading-none uppercase">
+                -{flyDebuff}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

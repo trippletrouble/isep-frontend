@@ -86,7 +86,7 @@ export function Dice({ value, isRolling = false }: DiceProps) {
       `}</style>
 
       <div
-        className={`w-14 md:w-30 h-14 md:h-30 bg-white rounded-2xl md:rounded-3xl p-4 mb-4 lg:mb-10 grid grid-cols-3 grid-rows-3 gap-1 shrink-0 transition-all duration-300 will-change-transform ${
+        className={`w-14 md:w-30 h-14 md:h-30 bg-white rounded-2xl md:rounded-3xl p-4 grid grid-cols-3 grid-rows-3 gap-1 shrink-0 transition-all duration-300 will-change-transform ${
           isRolling
             ? "animate-dice-roll-2d border-2 border-white shadow-none"
             : "shadow-2xl border-2 border-transparent"
