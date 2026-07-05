@@ -285,12 +285,18 @@ export const GamePage = () => {
         if (flyActive && generatedRoll === 1) {
           const totalActiveFlies = updatedFigures.filter(f => f.hasPlagueFly).length;
           if (totalActiveFlies < 3) {
+            const goalStartPositions = [52, 57, 62, 67];
             const eligible = updatedFigures.find(
-              (f) =>
-                f.playerId === currentPlayerId &&
-                f.status === "ACTIVE" &&
-                f.position !== -1 &&
-                !f.hasPlagueFly
+              (f) => {
+                if (f.playerId !== currentPlayerId) return false;
+                if (f.status !== "ACTIVE" || f.position === -1) return false;
+                if (f.hasPlagueFly) return false;
+                if (f.position >= 72) return false;
+                const isInGoalLane = goalStartPositions.some(
+                  (start) => f.position >= start && f.position < start + 5
+                );
+                return !isInGoalLane;
+              }
             );
 
             if (eligible) {
