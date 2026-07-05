@@ -102,6 +102,7 @@ export function useGameActions() {
         players: nextPlayers,
         figures: nextFigures,
         diceRolledThisTurn: false,
+        lastDiceValue: null,
       });
 
       useGameStore.setState({ possibleMoves: [] });

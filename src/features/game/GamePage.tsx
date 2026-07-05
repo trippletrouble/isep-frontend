@@ -355,6 +355,7 @@ export const GamePage = () => {
         // Set the state
         setGameState({
           ...gameState,
+          lastDiceValue: generatedRoll,
           figures: updatedFigures,
           diceRolledThisTurn: true,
         });
@@ -378,6 +379,7 @@ export const GamePage = () => {
               currentPlayerId: nextPlayerId,
               players: nextPlayers,
               diceRolledThisTurn: false,
+              lastDiceValue: null,
             });
           }, 2000);
         }
