@@ -657,6 +657,7 @@ export default function Board({ diceRoll }: BoardProps) {
           if (N === 1) {
             const fig = groupFigs[0];
             const isSelected = fig.id === selectedFigureId;
+            const canMove = possibleMoves.some((m) => m.figureId === Number(fig.id));
             return (
               <Figure
                 key={fig.id}
@@ -664,6 +665,7 @@ export default function Board({ diceRoll }: BoardProps) {
                 y={coords.y}
                 color={fig.color}
                 isSelected={isSelected}
+                canMove={canMove}
                 onClick={
                   isCenter
                     ? undefined
@@ -692,6 +694,7 @@ export default function Board({ diceRoll }: BoardProps) {
             return groupFigs.map((fig, idx) => {
               const { dx, dy, scale } = getOffsetAndScale(N, idx);
               const isSelected = fig.id === selectedFigureId;
+              const canMove = possibleMoves.some((m) => m.figureId === Number(fig.id));
               return (
                 <Figure
                   key={fig.id}
@@ -700,6 +703,7 @@ export default function Board({ diceRoll }: BoardProps) {
                   color={fig.color}
                   scale={scale}
                   isSelected={isSelected}
+                  canMove={canMove}
                   onClick={
                     isCenter
                       ? undefined
@@ -727,6 +731,9 @@ export default function Board({ diceRoll }: BoardProps) {
             const isAnySelected = groupFigs.some(
               (f) => f.id === selectedFigureId,
             );
+            const isAnyCanMove = groupFigs.some((f) =>
+              possibleMoves.some((m) => m.figureId === Number(f.id)),
+            );
             return (
               <Figure
                 key={`stack-${key}`}
@@ -735,6 +742,7 @@ export default function Board({ diceRoll }: BoardProps) {
                 color={primaryColor}
                 count={N}
                 isSelected={isAnySelected}
+                canMove={isAnyCanMove}
                 onClick={
                   isCenter
                     ? undefined
