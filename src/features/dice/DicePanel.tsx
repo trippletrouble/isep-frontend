@@ -43,11 +43,15 @@ export function DicePanel({
   }
 
   const selectedFigureId = useGameStore((state) => state.selectedFigureId);
+  const selectedFigure = useGameStore((state) => {
+    if (!state.selectedFigureId) return null;
+    return state.figures.find(f => String(f.id) === state.selectedFigureId);
+  });
+  const hasFly = selectedFigure?.hasPlagueFly ?? false;
+  const flyDebuffCount = selectedFigure?.flyDebuffCount ?? 0;
 
   const flyDebuff = (() => {
-    if (!selectedFigureId) return null;
-    const fig = useGameStore.getState().figures.find(f => String(f.id) === selectedFigureId);
-    if (!fig || !fig.hasPlagueFly) return null;
+    if (!selectedFigure || !selectedFigure.hasPlagueFly) return null;
 
     if (currentRoll !== null) {
       const possibleMoves = useGameStore.getState().possibleMoves;
@@ -117,20 +121,20 @@ export function DicePanel({
         </div>
 
         {/* Fliegen debuff layout next to the dice */}
-        {flyDebuff !== null && (
+        {hasFly && (
           <div className="flex flex-col items-center justify-center gap-1.5 h-14 md:h-[120px]">
             <span className="font-afacad font-bold text-sm lg:text-[16px] uppercase tracking-[0.1em] text-white leading-none">
               FLIEGEN
             </span>
             <div className="flex items-center gap-[5px] h-[35px]">
               {[0, 1, 2].map((idx) => {
-                const isActive = idx < flyDebuff;
+                const isActive = idx < flyDebuffCount;
                 return (
                   <div
                     key={idx}
                     className="w-[28px] h-[35px] transition-all duration-300"
                     style={{
-                      opacity: isActive ? 1.0 : 0.25,
+                      opacity: isActive ? 1.0 : 0.2,
                       filter: "brightness(0) invert(1)"
                     }}
                   >
@@ -149,7 +153,7 @@ export function DicePanel({
           disabled={isButtonDisabled}
           shouldPulse={isMyTurn && !currentAwaitingState}
         />
-        {flyDebuff !== null && (
+        {hasFly && flyDebuff !== null && (
           <div className="absolute -top-[10px] -right-[6px] bg-black text-white text-xs lg:text-[14px] font-bold font-afacad w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center border-2 border-white shadow-lg pointer-events-none">
             -{flyDebuff}
           </div>
