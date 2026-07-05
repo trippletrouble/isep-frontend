@@ -5,6 +5,31 @@ import { DiceButton } from "./DiceButton";
 import { useGameStore } from '@/stores/game.store'
 import fliegeIcon from "@/assets/fliege.png";
 
+function calculateSteps(fromPosition: number, toPosition: number, playerColor: string): number {
+  if (fromPosition === -1) return 6;
+  const startField = ({ RED: 0, BLUE: 13, YELLOW: 26, GREEN: 39 } as Record<string, number>)[playerColor] ?? 0;
+  const goalStart = ({ RED: 52, BLUE: 57, YELLOW: 62, GREEN: 67 } as Record<string, number>)[playerColor] ?? 52;
+  const finalGoal = ({ RED: 72, BLUE: 73, YELLOW: 74, GREEN: 75 } as Record<string, number>)[playerColor] ?? 72;
+
+  if (fromPosition >= goalStart && fromPosition < goalStart + 5) {
+    if (toPosition === finalGoal) {
+      return 5 - (fromPosition - goalStart);
+    }
+    return toPosition - fromPosition;
+  }
+
+  const progressFromStart = (fromPosition - startField + 52) % 52;
+  if (toPosition === finalGoal) {
+    return 56 - progressFromStart;
+  }
+  if (toPosition >= goalStart && toPosition < goalStart + 5) {
+    const goalIndex = toPosition - goalStart;
+    return goalIndex + 51 - progressFromStart;
+  }
+
+  return (toPosition - fromPosition + 52) % 52;
+}
+
 interface DicePanelProps {
   currentRoll: number | null;
   onRoll: (customValue?: number) => void;
@@ -50,14 +75,19 @@ export function DicePanel({
   const hasFly = selectedFigure?.hasPlagueFly ?? false;
   const flyDebuffCount = selectedFigure?.flyDebuffCount ?? 0;
 
+  const playerColor = useGameStore((state) => {
+    const player = state.gameState?.players?.find((p) => p.id === selectedFigure?.playerId);
+    return player ? player.color : null;
+  });
+
   const flyDebuff = (() => {
     if (!selectedFigure || !selectedFigure.hasPlagueFly) return null;
 
     if (currentRoll !== null) {
       const possibleMoves = useGameStore.getState().possibleMoves;
-      const move = possibleMoves.find(m => String(m.figureId) === selectedFigureId);
-      if (move && move.fromPosition !== -1) {
-        const actualSteps = (move.toPosition - move.fromPosition + 52) % 52;
+      const move = possibleMoves.find((m) => String(m.figureId) === selectedFigureId);
+      if (move && move.fromPosition !== -1 && playerColor) {
+        const actualSteps = calculateSteps(move.fromPosition, move.toPosition, playerColor);
         const calculatedDebuff = currentRoll - actualSteps;
         if (calculatedDebuff > 0) return calculatedDebuff;
       }
@@ -153,7 +183,7 @@ export function DicePanel({
           disabled={isButtonDisabled}
           shouldPulse={isMyTurn && !currentAwaitingState}
         />
-        {hasFly && flyDebuff !== null && (
+        {hasFly && currentRoll !== null && flyDebuff !== null && (
           <div className="absolute -top-[10px] -right-[6px] bg-black text-white text-xs lg:text-[14px] font-bold font-afacad w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center border-2 border-white shadow-lg pointer-events-none">
             -{flyDebuff}
           </div>
