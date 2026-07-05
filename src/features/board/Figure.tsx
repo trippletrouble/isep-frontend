@@ -1,3 +1,5 @@
+import fliegeIcon from "@/assets/fliege.png";
+
 interface FigureProps {
   x: number;
   y: number;
@@ -17,6 +19,7 @@ export function Figure({
   scale = 1.0,
   count,
   isSelected,
+  hasPlagueFly,
 }: FigureProps) {
   const r = 31.66 * scale;
   const strokeWidth = 4.6 * scale;
@@ -41,6 +44,19 @@ export function Figure({
           pointerEvents: "all",
         }}
       />
+      {hasPlagueFly && (
+        <image
+          href={fliegeIcon}
+          x={4 * scale}
+          y={-36 * scale}
+          width={28 * scale}
+          height={28 * scale}
+          style={{
+            pointerEvents: "none",
+            filter: "drop-shadow(0px 2px 3px rgba(0,0,0,0.5))",
+          }}
+        />
+      )}
       {count && count > 1 && (
         <g pointerEvents="none">
           <text
