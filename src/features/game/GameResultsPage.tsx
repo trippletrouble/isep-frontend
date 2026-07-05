@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getResults, getHistory } from "@/api/gameplay.api";
 import type { GameResults, GameHistoryEvent, PlayerColor } from "@/api/types";
 import confetti from "canvas-confetti";
+import { useTranslation } from "@/i18n";
 
 const COLOR_HEX: Record<PlayerColor, string> = {
   RED: "#DB5757",
@@ -36,15 +37,13 @@ function DieFace({ value, faceColor, dotColor }: { value: number; faceColor: str
 }
 
 const DICE_CONFIG = [
-  { value: 6, color: "#57DB8F",  dotColor: "#1a4a2e", top: "18%",  floatAnim: "pawn-float 3.4s ease-in-out infinite" },
-  { value: 3, color: "#EBE036",  dotColor: "#4a3d00", top: "55%",  floatAnim: "pawn-float-alt 4.2s ease-in-out infinite 0.6s" },
-  { value: 1, color: "#577CDB",  dotColor: "#0f1f4a", top: "22%",  floatAnim: "pawn-float-slow 3.9s ease-in-out infinite 0.3s" },
-  { value: 4, color: "#DB5757",  dotColor: "#4a0f0f", top: "58%",  floatAnim: "pawn-drift 4.6s ease-in-out infinite 1.0s" },
+  { value: 6, color: "#57DB8F", dotColor: "#1a4a2e", top: "18%", floatAnim: "pawn-float 3.4s ease-in-out infinite" },
+  { value: 3, color: "#EBE036", dotColor: "#4a3d00", top: "55%", floatAnim: "pawn-float-alt 4.2s ease-in-out infinite 0.6s" },
+  { value: 1, color: "#577CDB", dotColor: "#0f1f4a", top: "22%", floatAnim: "pawn-float-slow 3.9s ease-in-out infinite 0.3s" },
+  { value: 4, color: "#DB5757", dotColor: "#4a0f0f", top: "58%", floatAnim: "pawn-drift 4.6s ease-in-out infinite 1.0s" },
 ];
 
-function InteractiveDie({
-  value, color, dotColor, top, floatAnim, side,
-}: {
+function InteractiveDie({ value, color, dotColor, top, floatAnim, side }: {
   value: number; color: string; dotColor: string; top: string;
   floatAnim: string; side: "left" | "right";
 }) {
@@ -62,7 +61,7 @@ function InteractiveDie({
       const dist = Math.sqrt(dx * dx + dy * dy);
       const strength = Math.max(0, 1 - dist / 600);
       const rx = -(dy / rect.height) * 30 * strength;
-      const ry =  (dx / rect.width)  * 30 * strength;
+      const ry = (dx / rect.width) * 30 * strength;
       el.style.transform = `perspective(300px) rotateX(${rx}deg) rotateY(${ry}deg)`;
     };
     window.addEventListener("mousemove", handler);
@@ -83,10 +82,7 @@ function InteractiveDie({
         filter: `drop-shadow(0 8px 28px ${color}66)`,
       }}
     >
-      <div
-        ref={innerRef}
-        style={{ width: "100%", height: "100%", transition: "transform 0.1s ease-out" }}
-      >
+      <div ref={innerRef} style={{ width: "100%", height: "100%", transition: "transform 0.1s ease-out" }}>
         <DieFace value={value} faceColor={color} dotColor={dotColor} />
       </div>
     </div>
@@ -94,15 +90,6 @@ function InteractiveDie({
 }
 
 const RANK_MEDAL = ["🥇", "🥈", "🥉"];
-
-const ACTION_LABELS: Record<string, string> = {
-  ROLL: "Würfelt",
-  MOVE: "Zieht Figur",
-  CAPTURE: "Schlägt Figur",
-  GOAL: "Figur im Ziel",
-  GAME_START: "Spiel gestartet",
-  GAME_END: "Spiel beendet",
-};
 
 function formatDuration(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min`;
@@ -129,48 +116,37 @@ const PREVIEW_RESULTS: GameResults = {
 function useConfetti(trigger: boolean) {
   useEffect(() => {
     if (!trigger) return;
-
     const colors = ["#57DB8F", "#EBE036", "#577CDB", "#DB5757", "#ffffff"];
-
     const burst = () => {
-      confetti({
-        particleCount: 120,
-        spread: 100,
-        origin: { x: 0.3, y: 0.4 },
-        colors,
-        scalar: 1.2,
-        gravity: 0.9,
-      });
-      confetti({
-        particleCount: 120,
-        spread: 100,
-        origin: { x: 0.7, y: 0.4 },
-        colors,
-        scalar: 1.2,
-        gravity: 0.9,
-      });
+      confetti({ particleCount: 120, spread: 100, origin: { x: 0.3, y: 0.4 }, colors, scalar: 1.2, gravity: 0.9 });
+      confetti({ particleCount: 120, spread: 100, origin: { x: 0.7, y: 0.4 }, colors, scalar: 1.2, gravity: 0.9 });
     };
-
     burst();
     const t1 = setTimeout(burst, 600);
     const t2 = setTimeout(burst, 1400);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [trigger]);
 }
 
 export function GameResultsPage() {
   const { id: sessionId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [results, setResults] = useState<GameResults | null>(null);
   const [history, setHistory] = useState<GameHistoryEvent[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [visibleRows, setVisibleRows] = useState(0);
   const [showTitle, setShowTitle] = useState(false);
   const [ready, setReady] = useState(false);
+
+  const ACTION_LABELS: Record<string, string> = {
+    ROLL: t("Würfelt"),
+    MOVE: t("Zieht Figur"),
+    CAPTURE: t("Schlägt Figur"),
+    GOAL: t("Figur im Ziel"),
+    GAME_START: t("Spiel gestartet"),
+    GAME_END: t("Spiel beendet"),
+  };
 
   useConfetti(ready);
 
@@ -181,38 +157,26 @@ export function GameResultsPage() {
       return;
     }
     Promise.all([getResults(sessionId), getHistory(sessionId)])
-      .then(([r, h]) => {
-        setResults(r);
-        setHistory(h);
-      })
+      .then(([r, h]) => { setResults(r); setHistory(h); })
       .catch(() => navigate("/"));
   }, [sessionId]);
 
   useEffect(() => {
     if (!results) return;
-
     const t0 = setTimeout(() => setShowTitle(true), 100);
     const t1 = setTimeout(() => setVisibleRows(1), 600);
     const t2 = setTimeout(() => setVisibleRows(2), 900);
     const t3 = setTimeout(() => setVisibleRows(3), 1150);
     const t4 = setTimeout(() => setVisibleRows(4), 1350);
     const t5 = setTimeout(() => setReady(true), 700);
-
-    return () => {
-      clearTimeout(t0);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(t5);
-    };
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, [results]);
 
   if (!results) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
         <span className="text-white text-2xl font-[family-name:var(--font-lilita)]">
-          Lade Ergebnis...
+          {t("Lade Ergebnis...")}
         </span>
       </div>
     );
@@ -223,14 +187,12 @@ export function GameResultsPage() {
   return (
     <div className="relative flex flex-col items-center justify-center px-4 overflow-hidden">
 
-      {/* Left dice */}
       <div className="hidden lg:block fixed left-0 top-0 h-full pointer-events-none z-0" style={{ width: 120 }}>
         {DICE_CONFIG.slice(0, 2).map((d) => (
           <InteractiveDie key={d.value + d.color} {...d} side="left" />
         ))}
       </div>
 
-      {/* Right dice */}
       <div className="hidden lg:block fixed right-0 top-0 h-full pointer-events-none z-0" style={{ width: 120 }}>
         {DICE_CONFIG.slice(2).map((d) => (
           <InteractiveDie key={d.value + d.color} {...d} side="right" />
@@ -239,24 +201,19 @@ export function GameResultsPage() {
 
       <div className="w-full max-w-lg relative z-10">
 
-        {/* Title */}
         <div
           className="text-center mb-2 transition-all duration-700"
-          style={{
-            opacity: showTitle ? 1 : 0,
-            transform: showTitle ? "translateY(0)" : "translateY(-24px)",
-          }}
+          style={{ opacity: showTitle ? 1 : 0, transform: showTitle ? "translateY(0)" : "translateY(-24px)" }}
         >
           <h1 className="font-[family-name:var(--font-lilita)] text-white text-5xl md:text-6xl uppercase tracking-wide">
-            Spiel beendet
+            {t("Spiel beendet")}
           </h1>
           <p className="text-[#ACACAC] font-[family-name:var(--font-afacad)] font-bold text-base mt-2">
-            {results.totalTurns != null && `${results.totalTurns} Runden · `}
+            {results.totalTurns != null && `${results.totalTurns} ${t("Runden")} · `}
             {results.durationSeconds != null && formatDuration(results.durationSeconds)}
           </p>
         </div>
 
-        {/* Winner banner */}
         {winner && (
           <div
             className="relative mb-5 rounded-[28px] p-5 flex items-center gap-4 overflow-hidden transition-all duration-700"
@@ -267,11 +224,8 @@ export function GameResultsPage() {
               border: `1.5px solid ${COLOR_HEX[winner.color]}55`,
             }}
           >
-            {/* Glow blob */}
-            <div
-              className="absolute -top-8 -left-8 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none"
-              style={{ background: COLOR_HEX[winner.color] }}
-            />
+            <div className="absolute -top-8 -left-8 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none"
+              style={{ background: COLOR_HEX[winner.color] }} />
 
             <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl shrink-0"
               style={{ background: `${COLOR_HEX[winner.color]}33` }}>
@@ -280,14 +234,14 @@ export function GameResultsPage() {
 
             <div className="flex-1 relative">
               <p className="font-[family-name:var(--font-lilita)] text-[#ACACAC] text-sm uppercase tracking-widest mb-0.5">
-                Gewinner
+                {t("Gewinner")}
               </p>
               <p className="font-[family-name:var(--font-lilita)] text-white text-3xl uppercase tracking-wide leading-none">
                 {winner.username}
               </p>
               <p className="font-[family-name:var(--font-afacad)] font-bold text-sm mt-1"
                 style={{ color: COLOR_HEX[winner.color] }}>
-                {winner.figuresInGoal}/4 Figuren · {winner.figuresCaptured ?? 0} geschlagen
+                {winner.figuresInGoal}/4 {t("Figuren")} · {winner.figuresCaptured ?? 0} {t("geschlagen")}
               </p>
             </div>
 
@@ -295,7 +249,6 @@ export function GameResultsPage() {
           </div>
         )}
 
-        {/* Placements */}
         <div className="bg-white/5 border border-white/10 rounded-[28px] p-4 mb-4 flex flex-col gap-2">
           {results.placements.map((p, i) => (
             <div
@@ -304,44 +257,28 @@ export function GameResultsPage() {
               style={{
                 opacity: visibleRows > i ? 1 : 0,
                 transform: visibleRows > i ? "translateX(0)" : "translateX(-32px)",
-                background: p.rank === 1
-                  ? `${COLOR_HEX[p.color]}15`
-                  : "rgba(255,255,255,0.04)",
-                border: p.rank === 1
-                  ? `1px solid ${COLOR_HEX[p.color]}40`
-                  : "1px solid transparent",
+                background: p.rank === 1 ? `${COLOR_HEX[p.color]}15` : "rgba(255,255,255,0.04)",
+                border: p.rank === 1 ? `1px solid ${COLOR_HEX[p.color]}40` : "1px solid transparent",
               }}
             >
-              {/* Rank */}
               <span className="font-[family-name:var(--font-lilita)] text-xl w-8 text-center shrink-0">
-                {p.rank <= 3
-                  ? RANK_MEDAL[p.rank - 1]
-                  : <span className="text-[#ACACAC]">{p.rank}.</span>}
+                {p.rank <= 3 ? RANK_MEDAL[p.rank - 1] : <span className="text-[#ACACAC]">{p.rank}.</span>}
               </span>
 
-              {/* Color dot */}
-              <div
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ backgroundColor: COLOR_HEX[p.color] }}
-              />
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLOR_HEX[p.color] }} />
 
-              {/* Name */}
               <span className="font-[family-name:var(--font-afacad)] font-bold text-white flex-1 text-lg">
                 {p.username}
               </span>
 
-              {/* Stats */}
               <div className="text-right font-[family-name:var(--font-afacad)] text-sm text-[#ACACAC]">
-                <div>{p.figuresInGoal}/4 Figuren</div>
-                {p.figuresCaptured != null && (
-                  <div>{p.figuresCaptured} geschlagen</div>
-                )}
+                <div>{p.figuresInGoal}/4 {t("Figuren")}</div>
+                {p.figuresCaptured != null && <div>{p.figuresCaptured} {t("geschlagen")}</div>}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Actions */}
         <div
           className="flex gap-3 mb-4 transition-all duration-500"
           style={{
@@ -354,7 +291,7 @@ export function GameResultsPage() {
             className="flex-1 bg-[#57DB8F] text-[#292929] hover:bg-[#47cb7f] font-[family-name:var(--font-lilita)] text-lg h-14 rounded-[20px] uppercase tracking-wide"
           >
             <Plus size={20} className="mr-2" />
-            Neue Lobby
+            {t("Neue Lobby")}
           </Button>
           <Button
             onClick={() => navigate("/")}
@@ -362,18 +299,17 @@ export function GameResultsPage() {
             className="flex-1 border-white/20 text-white hover:bg-white/5 font-[family-name:var(--font-lilita)] text-lg h-14 rounded-[20px] uppercase tracking-wide"
           >
             <Home size={20} className="mr-2" />
-            Startseite
+            {t("Startseite")}
           </Button>
         </div>
 
-        {/* History accordion */}
         {history.length > 0 && (
           <div className="bg-white/5 border border-white/10 rounded-[28px] overflow-hidden">
             <button
               onClick={() => setShowHistory(!showHistory)}
               className="w-full flex items-center justify-between px-6 py-4 text-white font-[family-name:var(--font-lilita)] text-lg uppercase tracking-wide hover:bg-white/5 transition-colors"
             >
-              <span>Spielverlauf ({history.length} Ereignisse)</span>
+              <span>{t("Spielverlauf ({0} Ereignisse)").replace("{0}", String(history.length))}</span>
               {showHistory ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
             {showHistory && (
@@ -384,22 +320,12 @@ export function GameResultsPage() {
                     <div
                       key={e.eventId}
                       className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-[family-name:var(--font-afacad)] ${
-                        isCapture
-                          ? "bg-red-500/10 border border-red-500/20"
-                          : "bg-white/3"
+                        isCapture ? "bg-red-500/10 border border-red-500/20" : "bg-white/3"
                       }`}
                     >
-                      <span className="text-[#ACACAC] shrink-0 w-16 text-xs">
-                        {formatTime(e.timestamp)}
-                      </span>
-                      <span className="text-white flex-1">
-                        {ACTION_LABELS[e.actionType] ?? e.actionType}
-                      </span>
-                      {e.diceValue && (
-                        <span className="text-[#ACACAC] shrink-0">
-                          [{e.diceValue}]
-                        </span>
-                      )}
+                      <span className="text-[#ACACAC] shrink-0 w-16 text-xs">{formatTime(e.timestamp)}</span>
+                      <span className="text-white flex-1">{ACTION_LABELS[e.actionType] ?? e.actionType}</span>
+                      {e.diceValue && <span className="text-[#ACACAC] shrink-0">[{e.diceValue}]</span>}
                     </div>
                   );
                 })}
