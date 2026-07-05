@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -175,6 +175,11 @@ export default function Board({ diceRoll }: BoardProps) {
   const { moveFigure } = useGameActions();
 
   const [selectedFigureId, setSelectedFigureId] = useState<string | null>(null);
+  const setSelectedFigureIdInStore = useGameStore((state) => state.setSelectedFigureId);
+  useEffect(() => {
+    setSelectedFigureIdInStore(selectedFigureId);
+  }, [selectedFigureId, setSelectedFigureIdInStore]);
+
   const [activePile, setActivePile] = useState<{
     x: number;
     y: number;
