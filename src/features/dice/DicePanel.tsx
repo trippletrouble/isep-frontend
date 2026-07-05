@@ -77,8 +77,6 @@ export function DicePanel({
   const isPlagueFlyActive = useGameStore((state) =>
     state.gameState?.activeRules?.includes("PLAGUE_FLY") ?? false
   );
-  const displayFlyCount = hasFly ? Math.max(0, 3 - flyDebuffCount) : 0;
-
   const playerColor = useGameStore((state) => {
     const player = state.gameState?.players?.find((p) => p.id === selectedFigure?.playerId);
     return player ? player.color : null;
@@ -98,6 +96,8 @@ export function DicePanel({
     }
     return 1;
   })();
+
+  const displayFlyCount = hasFly ? (flyDebuff ?? 1) : 0;
 
   const handleRollClick = () => {
     if (disabled || isLocalRolling || currentAwaitingState) return;
