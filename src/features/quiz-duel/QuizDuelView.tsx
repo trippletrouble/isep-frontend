@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VersusLogo } from "@/components/ui/VS";
+import { useGameStore } from "@/stores/game.store";
 import type { ActiveQuizType, PlayerColor } from "@/api/types";
 import type { NotificationData } from "../game/NotificationPanel";
 
@@ -14,6 +15,11 @@ interface QuizDuelViewProps {
   onDuelResolved: (notification: NotificationData) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface NormalizedOption {
+  key: "A" | "B" | "C" | "D";
+  text: string;
 }
 
 const COLOR_HEX_MAP: Record<PlayerColor, string> = {
@@ -31,7 +37,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
   open,
   onOpenChange,
 }) => {
-  const TOTAL_TIME = activeQuiz.timeLimitSeconds || 10;
+  const TOTAL_TIME = Number(activeQuiz.timeLimitSeconds) || 15;
 
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [localSelection, setLocalSelection] = useState<
@@ -44,7 +50,18 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
   const autoCloseTriggeredRef = useRef<boolean>(false);
   const notificationFiredRef = useRef<boolean>(false);
 
+  const storePlayers = useGameStore((state) => state.players) || [];
+  const attackerName =
+    storePlayers.find((p) => p.id === activeQuiz.attackerId)?.username ||
+    "Player 1";
+  const defenderName =
+    storePlayers.find((p) => p.id === activeQuiz.defenderId)?.username ||
+    "Player 2";
+
   const isUserAttacker = currentUserId === activeQuiz.attackerId;
+  const userName = isUserAttacker ? attackerName : defenderName;
+  const opponentName = isUserAttacker ? defenderName : attackerName;
+
   const userAnswer = isUserAttacker
     ? activeQuiz.attackerAnswer
     : activeQuiz.defenderAnswer;
@@ -55,12 +72,13 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
   const selectedAnswer =
     (userAnswer as "A" | "B" | "C" | "D" | null) || localSelection;
 
-  const hasUserAnswered = !!userAnswer;
-  const hasOpponentAnswered = !!opponentAnswer;
+  const hasUserAnswered = userAnswer !== null && userAnswer !== undefined;
+  const hasOpponentAnswered =
+    opponentAnswer !== null && opponentAnswer !== undefined;
 
   const isDuelEvaluated =
-    (activeQuiz.attackerCorrect !== null &&
-      activeQuiz.defenderCorrect !== null) ||
+    (typeof activeQuiz.attackerCorrect === "boolean" &&
+      typeof activeQuiz.defenderCorrect === "boolean") ||
     (timeLeft <= 0 && hasUserAnswered && hasOpponentAnswered);
 
   const isUserCorrect = isUserAttacker
@@ -71,8 +89,46 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
     : activeQuiz.attackerCorrect;
 
   const category = activeQuiz.category || "Allgemeinwissen";
-  const questionText = activeQuiz.questionText || "";
-  const options = activeQuiz.options || [];
+  const questionText =
+    activeQuiz.question || activeQuiz.questionText || "Lade Frage...";
+
+  const normalizedOptions: NormalizedOption[] = (() => {
+    if (activeQuiz.answers && activeQuiz.answers.length > 0) {
+      return activeQuiz.answers.map((opt, index) => ({
+        key: ["A", "B", "C", "D"][index] as "A" | "B" | "C" | "D",
+        text: opt.text,
+      }));
+    }
+    if (activeQuiz.options && activeQuiz.options.length > 0) {
+      return activeQuiz.options.map((opt) => ({
+        key: opt.key,
+        text: opt.text,
+      }));
+    }
+    return [];
+  })();
+
+  const attackerColor =
+    storePlayers.find((p) => p.id === activeQuiz.attackerId)?.color || "BLUE";
+  const defenderColor =
+    storePlayers.find((p) => p.id === activeQuiz.defenderId)?.color || "RED";
+
+  useEffect(() => {
+    setTimeLeft(TOTAL_TIME);
+    setLocalSelection(null);
+    startTimeRef.current = null;
+    autoCloseTriggeredRef.current = false;
+    notificationFiredRef.current = false;
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, [activeQuiz.id, TOTAL_TIME]);
 
   useEffect(() => {
     if (isDuelEvaluated && !notificationFiredRef.current) {
@@ -88,7 +144,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
         iconType = "WIN";
       } else if (!isUserCorrect && isOpponentCorrect) {
         title = "NIEDERLAGE";
-        message = "Dein Gegner war im Quizduell klüger.";
+        message = `${opponentName} war im Quizduell klüger.`;
       } else if (!isUserCorrect && !isOpponentCorrect) {
         message = "Beide Spieler lagen komplett falsch!";
       }
@@ -106,6 +162,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
     isOpponentCorrect,
     category,
     onDuelResolved,
+    opponentName,
   ]);
 
   useEffect(() => {
@@ -146,24 +203,23 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
     TOTAL_TIME,
     isDuelEvaluated,
     onOpenChange,
+    activeQuiz.id,
   ]);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
 
   const handleAnswerClick = (optionKey: "A" | "B" | "C" | "D") => {
     if (hasUserAnswered || timeLeft <= 0 || isDuelEvaluated) return;
     setLocalSelection(optionKey);
     onSubmitAnswer(optionKey);
   };
+
   const radius = 22;
   const strokeWidth = 5;
   const circumference = 2 * Math.PI * radius;
+
   const strokeDashoffset =
-    circumference - (timeLeft / TOTAL_TIME) * circumference;
+    TOTAL_TIME > 0
+      ? circumference - (timeLeft / TOTAL_TIME) * circumference
+      : circumference;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -184,15 +240,25 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
             QUIZDUELL
           </h2>
 
-          <VersusLogo
-            className="w-24 md:w-40 h-auto"
-            leftColor={
-              COLOR_HEX_MAP[activeQuiz.attackerColor] || "var(--color-blue)"
-            }
-            rightColor={
-              COLOR_HEX_MAP[activeQuiz.defenderColor] || "var(--color-blue)"
-            }
-          />
+          <div className="flex items-center justify-center gap-4 w-full px-4 mb-2">
+            <span
+              className="font-lilita text-xl md:text-3xl tracking-wide max-w-[40%] truncate"
+              style={{ color: COLOR_HEX_MAP[attackerColor] }}
+            >
+              {attackerName}
+            </span>
+            <VersusLogo
+              className="w-16 md:w-28 h-auto shrink-0"
+              leftColor={COLOR_HEX_MAP[attackerColor] || "var(--color-blue)"}
+              rightColor={COLOR_HEX_MAP[defenderColor] || "var(--color-blue)"}
+            />
+            <span
+              className="font-lilita text-xl md:text-3xl tracking-wide max-w-[40%] truncate"
+              style={{ color: COLOR_HEX_MAP[defenderColor] }}
+            >
+              {defenderName}
+            </span>
+          </div>
         </div>
 
         <div className="relative mt-8 md:mt-12 bg-primary border border-accent rounded-3xl p-4 md:p-8 flex flex-col items-center gap-4 md:gap-6">
@@ -273,10 +339,13 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 w-full">
-            {options.map((option) => {
-              const optionKey = option.key as "A" | "B" | "C" | "D";
+            {normalizedOptions.map((option) => {
+              const optionKey = option.key;
+              const optionText = option.text || "Antwort Ladefehler";
+
               const isUserSelection = selectedAnswer === optionKey;
-              const isOpponentSelection = opponentAnswer === optionKey;
+              const isOpponentSelection =
+                hasOpponentAnswered && opponentAnswer === optionKey;
 
               let buttonVariantStyle =
                 "bg-[#736ced] border-transparent text-white";
@@ -312,32 +381,48 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
 
               return (
                 <Button
-                  key={option.key}
+                  key={optionKey}
                   disabled={hasUserAnswered || timeLeft <= 0 || isDuelEvaluated}
                   onClick={() => handleAnswerClick(optionKey)}
                   variant="ghost"
-                  className={`min-h-14 md:min-h-16 h-auto py-3 md:py-4 flex items-center justify-start gap-3 md:gap-4 px-4 md:px-5 rounded-xl text-left font-bold transition-all shadow-sm font-sans whitespace-normal break-words border-2 relative
-                  ${buttonVariantStyle} disabled:pointer-events-none`}
+                  className={`min-h-14 md:min-h-16 h-auto py-3 md:py-4 flex items-center justify-start gap-3 md:gap-4 px-4 md:px-5 rounded-xl text-left font-bold transition-all shadow-sm font-sans whitespace-normal break-words border-2 relative ${buttonVariantStyle} disabled:pointer-events-none`}
                 >
                   <div className="flex items-center justify-center min-w-[24px] min-h-[24px] md:min-w-[28px] md:min-h-[28px] rounded-full bg-primary text-white text-xs font-extrabold shadow-inner shrink-0">
-                    {option.key}
+                    {optionKey}
                   </div>
 
                   <span className="text-base md:text-lg tracking-wide flex-1">
-                    {option.text}
+                    {optionText}
                   </span>
 
                   {isDuelEvaluated &&
                     (isUserSelection || isOpponentSelection) && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 z-10">
                         {isUserSelection && (
-                          <span className="text-[10px] md:text-xs uppercase bg-black/40 px-2 py-0.5 rounded font-black tracking-wider border border-white/20">
-                            Du
+                          <span
+                            className="text-[10px] md:text-xs uppercase px-2 py-0.5 rounded font-black tracking-wider border text-white bg-black/50"
+                            style={{
+                              borderColor: COLOR_HEX_MAP[attackerColor],
+                            }}
+                          >
+                            {userName}
                           </span>
                         )}
                         {isOpponentSelection && (
-                          <span className="text-[10px] md:text-xs uppercase bg-black/40 px-2 py-0.5 rounded font-black tracking-wider border border-white/20 text-accent">
-                            Gegner
+                          <span
+                            className="text-[10px] md:text-xs uppercase px-2 py-0.5 rounded font-black tracking-wider border bg-black/50"
+                            style={{
+                              color:
+                                COLOR_HEX_MAP[
+                                  isUserAttacker ? defenderColor : attackerColor
+                                ],
+                              borderColor:
+                                COLOR_HEX_MAP[
+                                  isUserAttacker ? defenderColor : attackerColor
+                                ],
+                            }}
+                          >
+                            {opponentName}
                           </span>
                         )}
                       </div>
