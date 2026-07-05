@@ -191,7 +191,7 @@ export function DicePanel({
           disabled={isButtonDisabled}
           shouldPulse={isMyTurn && !currentAwaitingState}
         />
-        {hasFly && currentRoll !== null && flyDebuff !== null && (
+        {hasFly && flyDebuff !== null && (
           <div className="absolute -top-[10px] -right-[6px] bg-black text-white text-xs lg:text-[14px] font-bold font-afacad w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center border-2 border-white shadow-lg pointer-events-none">
             -{flyDebuff}
           </div>
