@@ -659,7 +659,6 @@ export default function Board({ diceRoll }: BoardProps) {
                 y={coords.y}
                 color={fig.color}
                 isSelected={isSelected}
-                hasPlagueFly={fig.hasPlagueFly}
                 onClick={
                   isCenter
                     ? undefined
@@ -696,7 +695,6 @@ export default function Board({ diceRoll }: BoardProps) {
                   color={fig.color}
                   scale={scale}
                   isSelected={isSelected}
-                  hasPlagueFly={fig.hasPlagueFly}
                   onClick={
                     isCenter
                       ? undefined
@@ -732,7 +730,6 @@ export default function Board({ diceRoll }: BoardProps) {
                 color={primaryColor}
                 count={N}
                 isSelected={isAnySelected}
-                hasPlagueFly={groupFigs.some((f) => f.hasPlagueFly)}
                 onClick={
                   isCenter
                     ? undefined
