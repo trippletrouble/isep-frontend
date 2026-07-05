@@ -1,13 +1,14 @@
 import { LevelItem } from "./LevelItem";
 
-interface MockLevel {
+interface Level {
   id: number;
   name: string;
   description: string;
+  rules: string[];
 }
 
 interface LevelAccordionProps {
-  levels: MockLevel[];
+  levels: Level[];
   activeLevel: number;
   onLevelChange: (id: number) => void;
 }

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { API_BASE_URL } from "../api/client";
-import type { GameState, MoveResult, GameResults } from "../api/types";
+import type {
+  GameState,
+  MoveResult,
+  GameResults,
+  ActiveQuizType,
+} from "../api/types";
 
 interface UseSSEOptions {
   onGameState?: (data: GameState) => void; // initial snapshot on SSE connect
@@ -11,6 +16,8 @@ interface UseSSEOptions {
     turnNumber: number;
   }) => void;
   onGameEnded?: (data: GameResults) => void;
+  onQuizStarted?: (data: ActiveQuizType) => void;
+  onQuizResolved?: (data: GameState) => void;
   onError?: (error: Event) => void;
   onConnected?: () => void;
 }
@@ -88,6 +95,12 @@ export function useSSE(
             break;
           case "game_ended":
             optionsRef.current.onGameEnded?.(data);
+            break;
+          case "quiz_started":
+            optionsRef.current.onQuizStarted?.(data);
+            break;
+          case "quiz_resolved":
+            optionsRef.current.onQuizResolved?.(data);
             break;
           case "heartbeat":
             break;

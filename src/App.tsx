@@ -7,23 +7,29 @@ import { LevelSelectPage } from "@/features/level-select/LevelSelectPage";
 import { LobbyPage } from "@/features/lobby/LobbyPage";
 import { GamePage } from "@/features/game/GamePage";
 import { GameResultsPage } from "@/features/game/GameResultsPage";
+import { Toaster } from "@/components/ui/sonner";
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppShell />}>
-            <Route path="/" element={<LevelSelectPage />} />
-            <Route path="/lobby/:level" element={<LobbyPage />} />
-            <Route path="/game/:id" element={<GamePage />} />
-            <Route path="/results/:id" element={<GameResultsPage />} />
+      <div className="relative min-h-screen">
+        <Toaster closeButton />
+
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppShell />}>
+              <Route path="/" element={<LevelSelectPage />} />
+              <Route path="/lobby/level-:level" element={<LobbyPage />} />
+              <Route path="/lobby/:sessionId" element={<LobbyPage />} />
+              <Route path="/game/:id" element={<GamePage />} />
+              <Route path="/results/:id" element={<GameResultsPage />} />
+            </Route>
           </Route>
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }

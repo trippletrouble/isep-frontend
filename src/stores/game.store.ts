@@ -9,6 +9,7 @@ import type {
   GameResults,
   GameStatus,
   PieceStatus,
+  ActiveQuizType,
 } from "../api/types";
 
 interface GameStoreState {
@@ -26,6 +27,8 @@ interface GameStoreState {
   isLoading: boolean;
   error: string | null;
 
+  activeQuiz: ActiveQuizType | null;
+
   setGameState: (state: GameState) => void;
   setDiceResult: (result: DiceRollResult) => void;
   setMoveResult: (result: MoveResult) => void;
@@ -38,7 +41,12 @@ interface GameStoreState {
     turnNumber: number;
   }) => void;
   handleGameEnded: (data: GameResults) => void;
+
+  handleQuizStarted: (quiz: ActiveQuizType) => void;
+  handleQuizResolved: (finalGameState: GameState) => void;
+
   reset: () => void;
+  setActiveQuiz: (quiz: ActiveQuizType | null) => void;
 }
 
 const initialState = {
@@ -55,6 +63,7 @@ const initialState = {
   turnNumber: 0,
   isLoading: false,
   error: null,
+  activeQuiz: null,
 };
 
 export const useGameStore = create<GameStoreState>((set, get) => ({
@@ -72,6 +81,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       status: state.status,
       winnerId: state.winnerId ?? null,
       turnNumber: state.turnNumber,
+      activeQuiz: state.activeQuiz ?? null,
       possibleMoves: [],
     });
   },
@@ -184,6 +194,22 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       status: "FINISHED",
       winnerId: data.placements?.[0]?.playerId ?? null,
     });
+  },
+
+  handleQuizStarted: (quiz: ActiveQuizType) => {
+    set({
+      activeQuiz: quiz,
+      status: "QUIZ_PENDING",
+    });
+  },
+
+  handleQuizResolved: (finalGameState: GameState) => {
+    get().setGameState(finalGameState);
+    set({ activeQuiz: null });
+  },
+
+  setActiveQuiz: (quiz) => {
+    set({ activeQuiz: quiz });
   },
 
   reset: () => {

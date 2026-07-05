@@ -7,21 +7,29 @@ import { NotificationPanel, type NotificationData } from "./NotificationPanel";
 import { PageSubHeader } from "@/components/layout/PageSubHeader";
 import { useGameStore } from "@/stores/game.store";
 import { useGameActions } from "@/hooks/useGameActions";
-import { useAuthStore } from "@/stores/auth.store";
+import { useAuthStore } from "@/stores";
 import { useSSE } from "@/hooks/useSSE";
 import { getSessionState, reconnectSession } from "@/api/sessions.api";
 import { getSessionResults } from "@/api/gameplay.api";
 import type { GameResults } from "@/api/types";
-import { Trophy, Home } from "lucide-react";
+import { QuizDuelView } from "../quiz-duel/QuizDuelView";
+import { Trophy, Home, ShieldAlert } from "lucide-react";
+import { DiceIcon, FigureIcon } from "@/components/icons/PhaseIcons";
 
 export const GamePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+
+  const isSandboxMode = true;
   const gameState = useGameStore((state) => state.gameState);
   const lastDiceValue = useGameStore((state) => state.lastDiceValue);
+  const activeQuiz = useGameStore((state) => state.activeQuiz);
   const setGameState = useGameStore((s) => s.setGameState);
-  const { rollDice } = useGameActions();
+  const handleQuizStarted = useGameStore((s) => s.handleQuizStarted);
+  const handleQuizResolved = useGameStore((s) => s.handleQuizResolved);
+
+  const { rollDice, answerQuiz } = useGameActions();
 
   const [notification, setNotification] = useState<NotificationData | null>(
     null,
@@ -29,7 +37,7 @@ export const GamePage = () => {
   const [results, setResults] = useState<GameResults[] | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || isSandboxMode) return;
     let isMounted = true;
 
     const loadGame = async () => {
@@ -53,10 +61,11 @@ export const GamePage = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, setGameState]);
+  }, [id, setGameState, isSandboxMode]);
 
   useEffect(() => {
-    if (gameState?.status === "FINISHED" && id && !results) {
+    if (isSandboxMode || !id || results) return;
+    if (gameState?.status === "FINISHED") {
       let isMounted = true;
       getSessionResults(id)
         .then((res) => {
@@ -67,7 +76,7 @@ export const GamePage = () => {
         isMounted = false;
       };
     }
-  }, [gameState?.status, id, results]);
+  }, [gameState?.status, id, results, isSandboxMode]);
 
   useEffect(() => {
     if (!notification) return;
@@ -75,31 +84,96 @@ export const GamePage = () => {
     return () => clearTimeout(timer);
   }, [notification]);
 
-  useSSE(id || null, {
+  useEffect(() => {
+    if (!isSandboxMode) return;
+
+    const mockUserId = user?.id || "mock-user-id";
+    const enemyUserId = "enemy-player-id";
+
+    useGameStore.getState().setActiveQuiz(null);
+
+    setGameState({
+      sessionId: id || "debug-sandbox-lobby",
+      status: "IN_PROGRESS",
+      currentPlayerId: mockUserId,
+      turnNumber: 1,
+      diceRolledThisTurn: false, // Ready to click!
+      consecutiveSixes: 0,
+      activeRules: ["QUIZ_DUELL"],
+      createdAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+      players: [
+        {
+          id: mockUserId,
+          username: user?.username || "You (Test Sandbox)",
+          color: "BLUE",
+          type: "HUMAN",
+          isCurrentTurn: true,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+        {
+          id: enemyUserId,
+          username: "Fake Dummy Player",
+          color: "RED",
+          type: "HUMAN",
+          isCurrentTurn: false,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+      ],
+      // Position 10 is directly behind position 11
+      figures: [
+        { id: 1, playerId: mockUserId, position: 10, status: "ACTIVE" },
+        { id: 2, playerId: mockUserId, position: 0, status: "HOME" },
+        { id: 3, playerId: mockUserId, position: 0, status: "HOME" },
+        { id: 4, playerId: mockUserId, position: 0, status: "HOME" },
+
+        { id: 5, playerId: enemyUserId, position: 11, status: "ACTIVE" },
+        { id: 6, playerId: enemyUserId, position: 0, status: "HOME" },
+        { id: 7, playerId: enemyUserId, position: 0, status: "HOME" },
+        { id: 8, playerId: enemyUserId, position: 0, status: "HOME" },
+      ],
+    });
+
+    useGameStore.setState({ lastDiceValue: null });
+  }, [id, user, setGameState, isSandboxMode]);
+  // ==================== DEBUG MOCK END ======================
+
+  // Pass null to useSSE if debugging to stop streaming server data updates over your state
+  useSSE(isSandboxMode ? null : id || null, {
     onGameState: (data) => useGameStore.getState().handleGameStarted(data),
     onGameStarted: (data) => useGameStore.getState().handleGameStarted(data),
     onMoveExecuted: (data) => {
       useGameStore.getState().handleMoveExecuted(data);
+
+      const outcome: unknown = data.outcome;
       let actionMsg = `Figur ${data.figureId} wurde bewegt.`;
-      if (data.outcome === "CAPTURED") {
+
+      if (outcome === "CAPTURED") {
         actionMsg = `Figur ${data.figureId} wurde geschlagen!`;
-      } else if (data.outcome === "GOAL") {
+      } else if (outcome === "GOAL") {
         actionMsg = `Figur ${data.figureId} ist im Ziel!`;
-      } else if (data.outcome === "GAME_WON") {
+      } else if (outcome === "GAME_WON") {
         actionMsg = `Das Spiel wurde gewonnen!`;
+      } else if (outcome === "QUIZ_STARTED") {
+        actionMsg = `Ein Quiz-Duell hat begonnen!`;
       }
+
       setNotification({
         title:
-          data.outcome === "CAPTURED"
+          outcome === "CAPTURED"
             ? "SCHLAG!"
-            : data.outcome === "GOAL"
+            : outcome === "GOAL"
               ? "ZIEL!"
-              : "ZUG",
+              : outcome === "QUIZ_STARTED"
+                ? "DUELL!"
+                : "ZUG",
         message: actionMsg,
         iconType:
-          data.outcome === "CAPTURED"
+          outcome === "CAPTURED"
             ? "CAPTURE"
-            : data.outcome === "GAME_WON"
+            : outcome === "GAME_WON"
               ? "WIN"
               : "INFO",
       });
@@ -110,13 +184,138 @@ export const GamePage = () => {
     onGameEnded: (data) => {
       useGameStore.getState().handleGameEnded(data);
     },
+    onQuizStarted: (quizData) => {
+      handleQuizStarted(quizData);
+    },
+    onQuizResolved: (finalGameState) => {
+      handleQuizResolved(finalGameState);
+      setNotification({
+        title: "DUELL BEENDET",
+        message: "Das Quiz-Duell wurde ausgewertet!",
+        iconType: "INFO",
+      });
+    },
   });
 
   const isMyTurn = gameState && user && gameState.currentPlayerId === user.id;
   const canRoll = isMyTurn && !gameState.diceRolledThisTurn;
 
   const handleRoll = () => {
+    if (isSandboxMode) {
+      const generatedRoll = 1;
+      useGameStore.setState({ lastDiceValue: generatedRoll });
+
+      if (gameState) {
+        setGameState({
+          ...gameState,
+          diceRolledThisTurn: true,
+        });
+      }
+      return;
+    }
+
     if (id) rollDice(id);
+  };
+
+  useEffect(() => {
+    if (!isSandboxMode || !gameState || !gameState.diceRolledThisTurn) return;
+
+    const myFigure = gameState.figures.find((f) => f.id === 1);
+
+    // Check if our token is still waiting at position 10
+    if (myFigure && myFigure.position === 10) {
+      const mockUserId = user?.id || "mock-user-id";
+      const enemyUserId = "enemy-player-id";
+
+      // 1. Immediately move the token forward to simulate landing on the enemy
+      const updatedFigures = gameState.figures.map((fig) => {
+        if (fig.id === 1) return { ...fig, position: 11 };
+        return fig;
+      });
+
+      setGameState({
+        ...gameState,
+        figures: updatedFigures,
+      });
+
+      // 2. Alert the player a duel has been encountered
+      setNotification({
+        title: "DUELL!",
+        message: "Ein Quiz-Duell hat begonnen!",
+        iconType: "INFO",
+      });
+
+      // 3. Automatically pop up the quiz view after a brief animation delay
+      const timer = setTimeout(() => {
+        useGameStore.getState().setActiveQuiz({
+          id: "quiz-session-123",
+          questionId: "q-456",
+          category: "Allgemeinwissen",
+          questionText:
+            "Zusammenstoß auf Feld 11! Wer gewinnt dieses Quiz-Duell?",
+          options: [
+            { key: "A", text: "Du (Angreifer - Blau)" },
+            { key: "B", text: "Gegner (Verteidiger - Rot)" },
+            { key: "C", text: "Gleichstand" },
+            { key: "D", text: "Keiner" },
+          ],
+          attackerId: mockUserId,
+          defenderId: enemyUserId,
+          attackerColor: "BLUE",
+          defenderColor: "RED",
+          attackerAnswer: null,
+          defenderAnswer: null,
+          attackerCorrect: null,
+          defenderCorrect: null,
+          timeLimitSeconds: 15,
+          pendingFigureId: 1,
+          pendingFromPos: 10,
+          pendingToPos: 11,
+          diceValue: 1,
+          createdAt: new Date().toISOString(),
+        });
+      }, 800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState?.diceRolledThisTurn, isSandboxMode, user, setGameState]);
+
+  const handleQuizAnswerSubmit = async (answer: "A" | "B" | "C" | "D") => {
+    if (isSandboxMode) {
+      if (!activeQuiz) return;
+
+      const evaluatedQuiz = {
+        ...activeQuiz,
+        attackerAnswer: answer, // What you selected
+        defenderAnswer: "B" as const, // Dummy choices
+        attackerCorrect: answer === "A", // Let's say 'A' was correct
+        defenderCorrect: false,
+      };
+
+      useGameStore.setState({ activeQuiz: evaluatedQuiz });
+
+      // 3. Simulate the delay before closing and firing the resolution banner
+      setTimeout(() => {
+        // Fire the resolution banner we wired up
+        setNotification({
+          title: "DUELL BEENDET",
+          message:
+            answer === "A"
+              ? "Du hast das Quiz-Duell gewonnen! (Blau)"
+              : "Dummy Player gewinnt das Duell. (Rot)",
+          iconType: "INFO",
+        });
+
+        // Close the modal
+        useGameStore.getState().setActiveQuiz(null);
+      }, 4000); // 4 seconds to inspect your UI states!
+
+      return;
+    }
+
+    if (id) {
+      await answerQuiz(id, answer);
+    }
   };
 
   const gamePhase = !isMyTurn
@@ -126,16 +325,30 @@ export const GamePage = () => {
       : "bewegen";
 
   const phaseConfig = {
-    warten: { label: "Warte auf anderen Spieler...", color: "text-white/40" },
-    würfeln: { label: "🎲 Würfeln!", color: "text-white" },
-    bewegen: { label: "♟ Figur bewegen!", color: "text-white" },
+    warten: {
+      label: "Warte auf anderen Spieler...",
+      color: "text-white/40",
+      icon: null,
+    },
+    würfeln: { label: "Würfeln!", color: "text-white", icon: DiceIcon },
+    bewegen: { label: "Figur bewegen!", color: "text-white", icon: FigureIcon },
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
-      <PageSubHeader center={`SPIEL #${id || ""}`} />
+    <div className="relative w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
+      <PageSubHeader
+        center={
+          isSandboxMode ? "🛠 SANDBOX DESIGN DEBUGGER" : `SPIEL #${id || ""}`
+        }
+      />
 
-      {/* Mobile Notification */}
+      {isSandboxMode && (
+        <div className="w-full bg-yellow text-primary py-1 px-4 text-center font-bold text-xs flex items-center justify-center gap-2 tracking-wide uppercase shrink-0 select-none">
+          <ShieldAlert size={14} /> Sandbox Modus aktiv — Backend-Streaming
+          unterdrückt
+        </div>
+      )}
+
       <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
         <div className="pointer-events-auto max-w-sm mx-auto">
           <NotificationPanel
@@ -145,7 +358,6 @@ export const GamePage = () => {
         </div>
       </div>
 
-      {/* Game Over Overlay */}
       {gameState?.status === "FINISHED" && results && results.length > 0 && (
         <div className="absolute inset-0 bg-primary/95 z-50 flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
           <div className="max-w-md w-full bg-[#292929] border border-accent rounded-[40px] p-8 shadow-2xl flex flex-col items-center gap-6">
@@ -181,18 +393,12 @@ export const GamePage = () => {
 
       {/* Layout Wrapper */}
       <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 lg:p-4 mt-4">
-        {/* CSS-Grid Spielfeld-Layout */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,380px)] gap-4 lg:gap-10 items-stretch justify-center">
-          {/* LINKER CONTAINER: Spielfeld */}
           <div className="w-full flex flex-col items-center justify-center">
             <div className="w-full lg:hidden mb-4">
               <LeaderboardPanel />
             </div>
 
-            {/* SPIELBRETT-CONTAINER:
-          Nutzt auf Mobile max 90vw/90vh. Auf Desktop (lg:) heben wir die restriktive 
-          Kombination auf und erlauben ihm, sich bis zu einer gesunden vertikalen Grenze (82vh) 
-          maximal aufzublasen, um die linke Spalte komplett auszufüllen. */}
             <div className="w-full max-w-[min(90vw,90vh)] lg:max-w-[82vh] aspect-square flex-shrink-0">
               <Board diceRoll={lastDiceValue ?? 1} />
             </div>
@@ -203,19 +409,17 @@ export const GamePage = () => {
                 onRoll={handleRoll}
                 disabled={!canRoll}
                 phase={phaseConfig[gamePhase].label}
+                PhaseIcon={phaseConfig[gamePhase].icon}
               />
             </div>
           </div>
 
-          {/* RECHTER CONTAINER (Desktop Side Panel):
-        Passt sich durch "items-stretch" im Grid automatisch der neuen, größeren Höhe des Boards an! */}
+          {/* RECHTER CONTAINER (Desktop Side Panel) */}
           <div className="hidden lg:flex w-full flex-col h-full min-h-0 gap-4">
-            {/* LEADERBOARD PANEL */}
             <div className="flex-1 min-h-0 flex flex-col">
               <LeaderboardPanel />
             </div>
 
-            {/* NOTIFICATION SLOT */}
             <div className="h-14 w-full flex-shrink-0 flex items-center justify-center">
               <div
                 className={`w-full transition-all duration-300 ease-in-out ${
@@ -231,18 +435,34 @@ export const GamePage = () => {
               </div>
             </div>
 
-            {/* DICE PANEL */}
             <div className="flex-1 min-h-0 flex flex-col">
               <DicePanel
                 currentRoll={lastDiceValue}
                 onRoll={handleRoll}
                 disabled={!canRoll}
                 phase={phaseConfig[gamePhase].label}
+                PhaseIcon={phaseConfig[gamePhase].icon}
               />
             </div>
           </div>
         </div>
       </div>
+
+      {activeQuiz && (
+        <QuizDuelView
+          key={activeQuiz.questionText}
+          open={Boolean(activeQuiz)}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) useGameStore.getState().setActiveQuiz(null);
+          }}
+          activeQuiz={activeQuiz}
+          currentUserId={user?.id || ""}
+          onSubmitAnswer={handleQuizAnswerSubmit}
+          onDuelResolved={(notificationData) => {
+            setNotification(notificationData);
+          }}
+        />
+      )}
     </div>
   );
 };

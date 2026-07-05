@@ -31,7 +31,7 @@ export function Figure({
         cy={0}
         r={r}
         fill={color}
-        stroke={isSelected ? "#fff" : "var(--primary)"}
+        stroke={isSelected ? "#fff" : "var(--color-primary)"}
         strokeWidth={strokeWidth}
         onClick={onClick}
         style={{

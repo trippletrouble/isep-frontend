@@ -6,7 +6,10 @@ export type PieceStatus = "HOME" | "ACTIVE" | "GOAL";
 export type PlayerType = "HUMAN";
 export type GameMode = "CLASSIC";
 export type BoardTheme = "CLASSIC";
-export type AdditionalRule = "THROW_AGAIN_ON_6" | "THREE_SIXES_LOSE_TURN";
+export type AdditionalRule =
+  | "THROW_AGAIN_ON_6"
+  | "THREE_SIXES_LOSE_TURN"
+  | "QUIZ_DUELL";
 export type MoveOutcome = "MOVED" | "CAPTURED" | "GOAL" | "GAME_WON";
 export type ThemePreference = "LIGHT" | "DARK" | "SYSTEM";
 export type GameHistoryActionType =
@@ -107,6 +110,7 @@ export interface GameState {
   winnerId?: string | null;
   createdAt: string;
   lastUpdatedAt: string;
+  activeQuiz?: ActiveQuizType | null;
 }
 
 export interface Lobby {
@@ -203,6 +207,33 @@ export interface GameHistoryEvent {
   fromPosition?: number | null;
   toPosition?: number | null;
   outcome?: MoveOutcome | null;
+}
+
+export interface QuizOption {
+  key: "A" | "B" | "C" | "D";
+  text: string;
+}
+
+export interface ActiveQuizType {
+  id: string;
+  questionId: string;
+  category: string;
+  questionText: string;
+  options: QuizOption[];
+  attackerId: string;
+  defenderId: string;
+  attackerColor: PlayerColor;
+  defenderColor: PlayerColor;
+  attackerAnswer: string | null;
+  defenderAnswer: string | null;
+  attackerCorrect: boolean | null;
+  defenderCorrect: boolean | null;
+  timeLimitSeconds: number;
+  pendingFigureId: number;
+  pendingFromPos: number;
+  pendingToPos: number;
+  diceValue: number;
+  createdAt: string;
 }
 
 // ─── REQUESTS ─────────────────────────────────────────────────────────────
