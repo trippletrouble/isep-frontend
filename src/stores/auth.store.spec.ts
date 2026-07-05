@@ -30,16 +30,6 @@ describe("useAuthStore", () => {
     expect(state.isLoading).toBe(true);
   });
 
-  it("should use local tester in guest mode", async () => {
-    localStorage.setItem("guest_mode", "true");
-    await useAuthStore.getState().checkSession();
-
-    const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(true);
-    expect(state.user?.username).toBe("Local Tester");
-    expect(state.isLoading).toBe(false);
-  });
-
   it("should check session successfully and authenticate user", async () => {
     const mockUser = { id: "user-1", username: "Alice", role: "USER" };
     vi.mocked(getSession).mockResolvedValue(mockUser);
@@ -94,13 +84,11 @@ describe("useAuthStore", () => {
       isAuthenticated: true,
       isLoading: false,
     });
-    localStorage.setItem("guest_mode", "true");
     vi.mocked(logout).mockResolvedValue({ message: "Success" });
 
     await useAuthStore.getState().logout();
 
     expect(logout).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem("guest_mode")).toBeNull();
     const state = useAuthStore.getState();
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);

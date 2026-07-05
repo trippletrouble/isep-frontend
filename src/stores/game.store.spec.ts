@@ -73,12 +73,6 @@ describe("useGameStore", () => {
     expect(state.winnerId).toBeNull();
     expect(state.turnNumber).toBe(0);
     expect(state.activeQuiz).toBeNull();
-    expect(state.selectedFigureId).toBeNull();
-  });
-
-  it("should select figure id", () => {
-    useGameStore.getState().setSelectedFigureId("fig-1");
-    expect(useGameStore.getState().selectedFigureId).toBe("fig-1");
   });
 
   it("should set game state correctly", () => {

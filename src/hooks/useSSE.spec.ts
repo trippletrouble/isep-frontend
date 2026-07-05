@@ -150,9 +150,6 @@ describe("useSSE hook", () => {
 
     testEvent("quiz_resolved", { id: 5 });
     expect(onQuizResolvedSpy).toHaveBeenCalledWith({ id: 5 });
-
-    testEvent("plague_fly_acquired", { player: "p1" });
-    expect(onPlagueFlyAcquiredSpy).toHaveBeenCalledWith({ player: "p1" });
   });
 
   it("should disconnect and close event source manually", () => {

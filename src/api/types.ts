@@ -1,6 +1,6 @@
 // ─── ENUMS (als TypeScript union types) ───────────────────────────────────
 
-export type GameStatus = "WAITING" | "IN_PROGRESS" | "FINISHED";
+export type GameStatus = "WAITING" | "IN_PROGRESS" | "FINISHED" | "QUIZ_PENDING";
 export type PlayerColor = "RED" | "BLUE" | "GREEN" | "YELLOW";
 export type PieceStatus = "HOME" | "ACTIVE" | "GOAL";
 export type PlayerType = "HUMAN";
