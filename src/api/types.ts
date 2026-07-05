@@ -1,6 +1,6 @@
 // ─── ENUMS (als TypeScript union types) ───────────────────────────────────
 
-export type GameStatus = "WAITING" | "IN_PROGRESS" | "FINISHED";
+export type GameStatus = "WAITING" | "IN_PROGRESS" | "FINISHED" | "QUIZ_PENDING";
 export type PlayerColor = "RED" | "BLUE" | "GREEN" | "YELLOW";
 export type PieceStatus = "HOME" | "ACTIVE" | "GOAL";
 export type PlayerType = "HUMAN";
@@ -9,7 +9,8 @@ export type BoardTheme = "CLASSIC";
 export type AdditionalRule =
   | "THROW_AGAIN_ON_6"
   | "THREE_SIXES_LOSE_TURN"
-  | "QUIZ_DUELL";
+  | "QUIZ_DUELL"
+  | "PLAGUE_FLY";
 export type MoveOutcome = "MOVED" | "CAPTURED" | "GOAL" | "GAME_WON";
 export type ThemePreference = "LIGHT" | "DARK" | "SYSTEM";
 export type GameHistoryActionType =
@@ -73,6 +74,8 @@ export interface Figure {
   playerId: string;
   position: number;
   status: PieceStatus;
+  hasPlagueFly?: boolean;
+  flyDebuffCount?: number;
 }
 
 export interface Player {

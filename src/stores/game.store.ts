@@ -28,6 +28,8 @@ interface GameStoreState {
   error: string | null;
 
   activeQuiz: ActiveQuizType | null;
+  selectedFigureId: string | null;
+  setSelectedFigureId: (id: string | null) => void;
 
   setGameState: (state: GameState) => void;
   setDiceResult: (result: DiceRollResult) => void;
@@ -64,10 +66,13 @@ const initialState = {
   isLoading: false,
   error: null,
   activeQuiz: null,
+  selectedFigureId: null,
 };
 
 export const useGameStore = create<GameStoreState>((set, get) => ({
   ...initialState,
+
+  setSelectedFigureId: (id) => set({ selectedFigureId: id }),
 
   setGameState: (state: GameState) => {
     set({

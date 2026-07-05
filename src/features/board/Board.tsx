@@ -25,6 +25,7 @@ type FigureState = {
   position: "nest" | number | string;
   nestIndex: number;
   startTrackIndex: number;
+  hasPlagueFly?: boolean;
 };
 
 const INITIAL_FIGURES: FigureState[] = [
@@ -244,7 +245,14 @@ export default function Board({ diceRoll }: BoardProps) {
       position = animatedPositions[String(id)];
     }
 
-    return { id: String(id), color, position, nestIndex, startTrackIndex };
+    return {
+      id: String(id),
+      color,
+      position,
+      nestIndex,
+      startTrackIndex,
+      hasPlagueFly: backendFig.hasPlagueFly ?? false,
+    };
   };
 
   const figures =
@@ -651,6 +659,7 @@ export default function Board({ diceRoll }: BoardProps) {
                 y={coords.y}
                 color={fig.color}
                 isSelected={isSelected}
+                hasPlagueFly={fig.hasPlagueFly}
                 onClick={
                   isCenter
                     ? undefined
@@ -687,6 +696,7 @@ export default function Board({ diceRoll }: BoardProps) {
                   color={fig.color}
                   scale={scale}
                   isSelected={isSelected}
+                  hasPlagueFly={fig.hasPlagueFly}
                   onClick={
                     isCenter
                       ? undefined
@@ -722,6 +732,7 @@ export default function Board({ diceRoll }: BoardProps) {
                 color={primaryColor}
                 count={N}
                 isSelected={isAnySelected}
+                hasPlagueFly={groupFigs.some((f) => f.hasPlagueFly)}
                 onClick={
                   isCenter
                     ? undefined

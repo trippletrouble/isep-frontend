@@ -15,6 +15,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks";
 import { toast } from "sonner";
+import fliegeIcon from "@/assets/fliege.png";
 
 interface CreateLobbyCardProps {
   cleanLevel: string;
@@ -38,8 +39,11 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
 
     if (cleanLevel === "0") return ["THROW_AGAIN_ON_6"];
     if (cleanLevel === "1") return ["THROW_AGAIN_ON_6", "QUIZ_DUELL"];
-    if (cleanLevel === "2" || cleanLevel === "3") {
+    if (cleanLevel === "2") {
       return ["THROW_AGAIN_ON_6", "QUIZ_DUELL", "THREE_SIXES_LOSE_TURN"];
+    }
+    if (cleanLevel === "3") {
+      return ["THROW_AGAIN_ON_6", "QUIZ_DUELL", "THREE_SIXES_LOSE_TURN", "PLAGUE_FLY"];
     }
     return [];
   };
@@ -52,6 +56,9 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
   );
   const [threeSixesLoseTurn, setThreeSixesLoseTurn] = useState(() =>
     getInitialRules().includes("THREE_SIXES_LOSE_TURN"),
+  );
+  const [plagueFly, setPlagueFly] = useState(() =>
+    getInitialRules().includes("PLAGUE_FLY"),
   );
 
   async function handleCreate() {
@@ -66,6 +73,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
     if (throwAgainOn6) rules.push("THROW_AGAIN_ON_6");
     if (quizDuell && cleanLevel !== "0") rules.push("QUIZ_DUELL");
     if (threeSixesLoseTurn) rules.push("THREE_SIXES_LOSE_TURN");
+    if (plagueFly && cleanLevel === "3") rules.push("PLAGUE_FLY");
 
     try {
       const lobby = await createLobby({
@@ -194,6 +202,30 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
                   <Switch checked={quizDuell} onCheckedChange={setQuizDuell} />
                 </div>
               </div>
+
+              {cleanLevel === "3" && (
+                <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">
+                      <img src={fliegeIcon} alt="Fliege" className="w-6 h-6 object-contain brightness-0 invert" />
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white text-xl font-black tracking-wide">
+                          Pestfliege Modus
+                        </span>
+                      </div>
+                      <span className="text-white/50 text-sm font-medium mt-0.5">
+                        Bei einer gewürfelten 1 infiziert eine Pestfliege eine deiner Spielfiguren mit einem Bewegungs-Debuff!
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pl-4">
+                    <Switch checked={plagueFly} onCheckedChange={setPlagueFly} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

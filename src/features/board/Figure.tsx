@@ -6,6 +6,7 @@ interface FigureProps {
   scale?: number;
   count?: number;
   isSelected?: boolean;
+  hasPlagueFly?: boolean;
 }
 
 export function Figure({
