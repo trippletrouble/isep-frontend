@@ -36,6 +36,7 @@ const COLOR_LABEL: Record<PlayerColor, string> = {
 const RULE_LABEL: Record<AdditionalRule, string> = {
   THROW_AGAIN_ON_6: "Bei 6 nochmal würfeln",
   THREE_SIXES_LOSE_TURN: "3× Sechs = Zug verloren",
+  QUIZ_DUELL: "Quiz-Duell",
 };
 
 interface LobbyWaitingRoomProps {
