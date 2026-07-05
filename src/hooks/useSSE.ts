@@ -18,6 +18,7 @@ interface UseSSEOptions {
   onGameEnded?: (data: GameResults) => void;
   onQuizStarted?: (data: ActiveQuizType) => void;
   onQuizResolved?: (data: GameState) => void;
+  onPlagueFlyAcquired?: (data: { figureId: number; playerId: string }) => void;
   onError?: (error: Event) => void;
   onConnected?: () => void;
 }
@@ -101,6 +102,9 @@ export function useSSE(
             break;
           case "quiz_resolved":
             optionsRef.current.onQuizResolved?.(data);
+            break;
+          case "plague_fly_acquired":
+            optionsRef.current.onPlagueFlyAcquired?.(data);
             break;
           case "heartbeat":
             break;

@@ -250,14 +250,25 @@ export function LobbyPage() {
               </button>
 
               {isHost && (
-                <button
-                  onClick={handleStart}
-                  disabled={players.length < 2}
-                  className="flex-1 h-[60px] bg-green text-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
-                >
-                  <Play size={22} fill="currentColor" />
-                  Spiel starten
-                </button>
+                <div className="flex-1 flex flex-col gap-2">
+                  <button
+                    onClick={handleStart}
+                    disabled={players.length < 2}
+                    className="w-full h-[60px] bg-green text-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Play size={22} fill="currentColor" />
+                    Spiel starten
+                  </button>
+                  {players.length < 2 && (
+                    <button
+                      onClick={() => navigate("/game/sandbox")}
+                      className="w-full h-[40px] bg-yellow/80 hover:bg-yellow text-primary font-bold rounded-[15px] flex items-center justify-center gap-1.5 transition-all text-sm font-afacad"
+                    >
+                      <Play size={16} fill="currentColor" />
+                      Offline-Sandbox-Test starten
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -294,6 +305,17 @@ export function LobbyPage() {
         <CreateLobbyCard cleanLevel={cleanLevel} />
         <JoinLobbyCard />
       </div>
+
+      <div className="flex justify-center mt-6">
+        <button
+          onClick={() => navigate("/game/sandbox")}
+          className="px-6 py-3 bg-yellow hover:opacity-90 text-primary font-bold rounded-xl transition-all font-afacad text-lg shadow-lg flex items-center gap-2"
+        >
+          <Play size={20} fill="currentColor" />
+          Offline-Sandbox testen (Ohne Mitspieler)
+        </button>
+      </div>
+
       <RulesDialog
         levelId={levelId}
         open={rulesOpen}

@@ -15,6 +15,7 @@ import type { GameResults } from "@/api/types";
 import { QuizDuelView } from "../quiz-duel/QuizDuelView";
 import { Trophy, Home, ShieldAlert } from "lucide-react";
 import { DiceIcon, FigureIcon } from "@/components/icons/PhaseIcons";
+import { toast } from "sonner";
 
 export const GamePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -88,7 +89,9 @@ export const GamePage = () => {
     if (!isSandboxMode) return;
 
     const mockUserId = user?.id || "mock-user-id";
-    const enemyUserId = "enemy-player-id";
+    const redUserId = "red-player-id";
+    const yellowUserId = "yellow-player-id";
+    const greenUserId = "green-player-id";
 
     useGameStore.getState().setActiveQuiz(null);
 
@@ -97,15 +100,15 @@ export const GamePage = () => {
       status: "IN_PROGRESS",
       currentPlayerId: mockUserId,
       turnNumber: 1,
-      diceRolledThisTurn: false, // Ready to click!
+      diceRolledThisTurn: false,
       consecutiveSixes: 0,
-      activeRules: ["QUIZ_DUELL"],
+      activeRules: ["QUIZ_DUELL", "PLAGUE_FLY"],
       createdAt: new Date().toISOString(),
       lastUpdatedAt: new Date().toISOString(),
       players: [
         {
           id: mockUserId,
-          username: user?.username || "You (Test Sandbox)",
+          username: user?.username || "Du (Blau)",
           color: "BLUE",
           type: "HUMAN",
           isCurrentTurn: true,
@@ -113,26 +116,54 @@ export const GamePage = () => {
           figuresInGoal: 0,
         },
         {
-          id: enemyUserId,
-          username: "Fake Dummy Player",
+          id: redUserId,
+          username: "Spieler Rot",
           color: "RED",
           type: "HUMAN",
           isCurrentTurn: false,
           hasFinished: false,
           figuresInGoal: 0,
         },
+        {
+          id: yellowUserId,
+          username: "Spieler Gelb",
+          color: "YELLOW",
+          type: "HUMAN",
+          isCurrentTurn: false,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+        {
+          id: greenUserId,
+          username: "Spieler Grün",
+          color: "GREEN",
+          type: "HUMAN",
+          isCurrentTurn: false,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
       ],
-      // Position 10 is directly behind position 11
       figures: [
-        { id: 1, playerId: mockUserId, position: 10, status: "ACTIVE" },
-        { id: 2, playerId: mockUserId, position: 0, status: "HOME" },
-        { id: 3, playerId: mockUserId, position: 0, status: "HOME" },
-        { id: 4, playerId: mockUserId, position: 0, status: "HOME" },
-
-        { id: 5, playerId: enemyUserId, position: 11, status: "ACTIVE" },
-        { id: 6, playerId: enemyUserId, position: 0, status: "HOME" },
-        { id: 7, playerId: enemyUserId, position: 0, status: "HOME" },
-        { id: 8, playerId: enemyUserId, position: 0, status: "HOME" },
+        // Blue
+        { id: 1, playerId: mockUserId, position: 10, status: "ACTIVE", hasPlagueFly: true, flyDebuffCount: 2 },
+        { id: 2, playerId: mockUserId, position: -1, status: "HOME" },
+        { id: 3, playerId: mockUserId, position: -1, status: "HOME" },
+        { id: 4, playerId: mockUserId, position: -1, status: "HOME" },
+        // Red
+        { id: 5, playerId: redUserId, position: 11, status: "ACTIVE" },
+        { id: 6, playerId: redUserId, position: -1, status: "HOME" },
+        { id: 7, playerId: redUserId, position: -1, status: "HOME" },
+        { id: 8, playerId: redUserId, position: -1, status: "HOME" },
+        // Yellow
+        { id: 9, playerId: yellowUserId, position: 24, status: "ACTIVE" },
+        { id: 10, playerId: yellowUserId, position: -1, status: "HOME" },
+        { id: 11, playerId: yellowUserId, position: -1, status: "HOME" },
+        { id: 12, playerId: yellowUserId, position: -1, status: "HOME" },
+        // Green
+        { id: 13, playerId: greenUserId, position: 37, status: "ACTIVE" },
+        { id: 14, playerId: greenUserId, position: -1, status: "HOME" },
+        { id: 15, playerId: greenUserId, position: -1, status: "HOME" },
+        { id: 16, playerId: greenUserId, position: -1, status: "HOME" },
       ],
     });
 
@@ -195,21 +226,148 @@ export const GamePage = () => {
         iconType: "INFO",
       });
     },
+    onPlagueFlyAcquired: (data) => {
+      setNotification({
+        title: "PESTFLIEGE! 🪰",
+        message: `Eine Pestfliege hat die Figur ${data.figureId} befallen!`,
+        iconType: "INFO",
+      });
+    },
   });
 
-  const isMyTurn = gameState && user && gameState.currentPlayerId === user.id;
-  const canRoll = isMyTurn && !gameState.diceRolledThisTurn;
+  const isMyTurn = isSandboxMode
+    ? true
+    : gameState && user && gameState.currentPlayerId === user.id;
 
-  const handleRoll = () => {
+  const canRoll = isMyTurn && !gameState?.diceRolledThisTurn;
+
+  const handleRoll = (customValue?: number) => {
     if (isSandboxMode) {
-      const generatedRoll = 1;
+      const generatedRoll = customValue !== undefined ? customValue : Math.floor(Math.random() * 6) + 1;
       useGameStore.setState({ lastDiceValue: generatedRoll });
 
       if (gameState) {
+        const currentPlayerId = gameState.currentPlayerId || "mock-user-id";
+        const currentPlayerColor = gameState.players.find(p => p.id === currentPlayerId)?.color || "BLUE";
+
+        const startFields: Record<string, number> = {
+          RED: 0,
+          BLUE: 13,
+          YELLOW: 26,
+          GREEN: 39
+        };
+        const startField = startFields[currentPlayerColor] ?? 13;
+
+        let updatedFigures = gameState.figures;
+        const flyActive = gameState.activeRules?.includes("PLAGUE_FLY") ?? true;
+        const activeFliesMap = new Map<number, number>();
+
+        if (flyActive) {
+          updatedFigures = updatedFigures.map((fig) => {
+            if (fig.playerId === currentPlayerId && fig.hasPlagueFly) {
+              const currentCount = fig.flyDebuffCount || 0;
+              const nextCount = currentCount + 1;
+              const debuffVal = Math.floor(Math.random() * 3) + 1;
+              const effectiveRoll = Math.max(1, generatedRoll - debuffVal);
+              activeFliesMap.set(fig.id, effectiveRoll);
+
+              const shouldHeal = nextCount >= 3;
+              return {
+                ...fig,
+                flyDebuffCount: shouldHeal ? 0 : nextCount,
+                hasPlagueFly: !shouldHeal
+              };
+            }
+            return fig;
+          });
+        }
+
+        if (flyActive && generatedRoll === 1) {
+          const totalActiveFlies = updatedFigures.filter(f => f.hasPlagueFly).length;
+          if (totalActiveFlies < 3) {
+            const eligible = updatedFigures.find(
+              (f) =>
+                f.playerId === currentPlayerId &&
+                f.status === "ACTIVE" &&
+                f.position !== -1 &&
+                !f.hasPlagueFly
+            );
+
+            if (eligible) {
+              updatedFigures = updatedFigures.map((f) => {
+                if (f.id === eligible.id) {
+                  return {
+                    ...f,
+                    hasPlagueFly: true,
+                    flyDebuffCount: 0
+                  };
+                }
+                return f;
+              });
+              toast.info(`Eine Pestfliege hat Figur ${eligible.id} infiziert!`);
+            }
+          }
+        }
+
+        const moves: any[] = [];
+        updatedFigures.forEach((fig) => {
+          if (fig.playerId !== currentPlayerId) return;
+
+          const figRoll = activeFliesMap.has(fig.id) ? activeFliesMap.get(fig.id)! : generatedRoll;
+
+          if (fig.status === "HOME" || fig.position === -1) {
+            if (generatedRoll === 6) {
+              moves.push({
+                figureId: fig.id,
+                fromPosition: -1,
+                toPosition: startField,
+                capturesOpponent: updatedFigures.some(
+                  (f) => f.playerId !== currentPlayerId && f.position === startField
+                ),
+              });
+            }
+          } else {
+            const nextPos = (fig.position + figRoll) % 52;
+            moves.push({
+              figureId: fig.id,
+              fromPosition: fig.position,
+              toPosition: nextPos,
+              capturesOpponent: updatedFigures.some(
+                (f) => f.playerId !== currentPlayerId && f.position === nextPos
+              ),
+            });
+          }
+        });
+
+        // Set the state
         setGameState({
           ...gameState,
+          figures: updatedFigures,
           diceRolledThisTurn: true,
         });
+        useGameStore.getState().setPossibleMoves(moves);
+
+        if (moves.length === 0) {
+          toast.info(`Keine Züge möglich mit einer ${generatedRoll}. Nächster Spieler!`);
+
+          const players = gameState.players;
+          const currentIdx = players.findIndex(p => p.id === currentPlayerId);
+          const nextIdx = (currentIdx + 1) % players.length;
+          const nextPlayerId = players[nextIdx].id;
+          const nextPlayers = players.map(p => ({
+            ...p,
+            isCurrentTurn: p.id === nextPlayerId
+          }));
+
+          setTimeout(() => {
+            setGameState({
+              ...gameState,
+              currentPlayerId: nextPlayerId,
+              players: nextPlayers,
+              diceRolledThisTurn: false,
+            });
+          }, 2000);
+        }
       }
       return;
     }
@@ -217,98 +375,110 @@ export const GamePage = () => {
     if (id) rollDice(id);
   };
 
-  useEffect(() => {
-    if (!isSandboxMode || !gameState || !gameState.diceRolledThisTurn) return;
-
-    const myFigure = gameState.figures.find((f) => f.id === 1);
-
-    // Check if our token is still waiting at position 10
-    if (myFigure && myFigure.position === 10) {
-      const mockUserId = user?.id || "mock-user-id";
-      const enemyUserId = "enemy-player-id";
-
-      // 1. Immediately move the token forward to simulate landing on the enemy
-      const updatedFigures = gameState.figures.map((fig) => {
-        if (fig.id === 1) return { ...fig, position: 11 };
-        return fig;
-      });
-
-      setGameState({
-        ...gameState,
-        figures: updatedFigures,
-      });
-
-      // 2. Alert the player a duel has been encountered
-      setNotification({
-        title: "DUELL!",
-        message: "Ein Quiz-Duell hat begonnen!",
-        iconType: "INFO",
-      });
-
-      // 3. Automatically pop up the quiz view after a brief animation delay
-      const timer = setTimeout(() => {
-        useGameStore.getState().setActiveQuiz({
-          id: "quiz-session-123",
-          questionId: "q-456",
-          category: "Allgemeinwissen",
-          questionText:
-            "Zusammenstoß auf Feld 11! Wer gewinnt dieses Quiz-Duell?",
-          options: [
-            { key: "A", text: "Du (Angreifer - Blau)" },
-            { key: "B", text: "Gegner (Verteidiger - Rot)" },
-            { key: "C", text: "Gleichstand" },
-            { key: "D", text: "Keiner" },
-          ],
-          attackerId: mockUserId,
-          defenderId: enemyUserId,
-          attackerColor: "BLUE",
-          defenderColor: "RED",
-          attackerAnswer: null,
-          defenderAnswer: null,
-          attackerCorrect: null,
-          defenderCorrect: null,
-          timeLimitSeconds: 15,
-          pendingFigureId: 1,
-          pendingFromPos: 10,
-          pendingToPos: 11,
-          diceValue: 1,
-          createdAt: new Date().toISOString(),
-        });
-      }, 800);
-
-      return () => clearTimeout(timer);
-    }
-  }, [gameState?.diceRolledThisTurn, isSandboxMode, user, setGameState]);
-
   const handleQuizAnswerSubmit = async (answer: "A" | "B" | "C" | "D") => {
     if (isSandboxMode) {
       if (!activeQuiz) return;
 
       const evaluatedQuiz = {
         ...activeQuiz,
-        attackerAnswer: answer, // What you selected
-        defenderAnswer: "B" as const, // Dummy choices
-        attackerCorrect: answer === "A", // Let's say 'A' was correct
+        attackerAnswer: answer,
+        defenderAnswer: "B" as const,
+        attackerCorrect: answer === "A",
         defenderCorrect: false,
       };
 
       useGameStore.setState({ activeQuiz: evaluatedQuiz });
 
-      // 3. Simulate the delay before closing and firing the resolution banner
       setTimeout(() => {
-        // Fire the resolution banner we wired up
         setNotification({
           title: "DUELL BEENDET",
           message:
             answer === "A"
-              ? "Du hast das Quiz-Duell gewonnen! (Blau)"
-              : "Dummy Player gewinnt das Duell. (Rot)",
+              ? "Der Angreifer hat das Quiz-Duell gewonnen!"
+              : "Der Verteidiger hat das Quiz-Duell gewonnen!",
           iconType: "INFO",
         });
 
-        // Close the modal
-        useGameStore.getState().setActiveQuiz(null);
-      }, 4000); // 4 seconds to inspect your UI states!
+        const storeState = useGameStore.getState();
+        const pendingFigId = activeQuiz.pendingFigureId;
+        const targetPos = activeQuiz.pendingToPos;
+        const fromPos = activeQuiz.pendingFromPos;
+
+        let nextFigures = storeState.figures;
+
+        if (answer === "A") {
+          const defenderFig = storeState.figures.find(
+            (fig) => fig.playerId !== storeState.currentPlayerId && fig.position === targetPos
+          );
+          const attackerFig = storeState.figures.find((fig) => fig.id === pendingFigId);
+
+          let nextAttackerFly = attackerFig?.hasPlagueFly ?? false;
+          let nextDefenderFly = defenderFig?.hasPlagueFly ?? false;
+
+          if (attackerFig && defenderFig) {
+            if (attackerFig.hasPlagueFly && defenderFig.hasPlagueFly) {
+              nextAttackerFly = false;
+              nextDefenderFly = false;
+              toast.info("Beide Figuren waren infiziert. Die Pestfliegen fliegen weg!");
+            } else if (defenderFig.hasPlagueFly) {
+              nextAttackerFly = true;
+              nextDefenderFly = false;
+              toast.info("Pestfliege wurde auf den Angreifer übertragen!");
+            } else if (attackerFig.hasPlagueFly) {
+              nextAttackerFly = false;
+              toast.info("Der Angreifer hat seine Pestfliege verloren!");
+            }
+          }
+
+          nextFigures = storeState.figures.map(fig => {
+            if (fig.playerId !== storeState.currentPlayerId && fig.position === targetPos) {
+              return {
+                ...fig,
+                position: -1,
+                status: "HOME" as const,
+                hasPlagueFly: nextDefenderFly,
+                flyDebuffCount: 0
+              };
+            }
+            if (fig.id === pendingFigId) {
+              return {
+                ...fig,
+                position: targetPos,
+                status: "ACTIVE" as const,
+                hasPlagueFly: nextAttackerFly,
+                flyDebuffCount: nextAttackerFly ? (attackerFig?.flyDebuffCount ?? 0) : 0
+              };
+            }
+            return fig;
+          });
+        } else {
+          nextFigures = storeState.figures.map(fig => {
+            if (fig.id === pendingFigId) {
+              return { ...fig, position: fromPos, status: (fromPos === -1 ? "HOME" : "ACTIVE") as any };
+            }
+            return fig;
+          });
+        }
+
+        const players = storeState.players;
+        const currentIdx = players.findIndex(p => p.id === storeState.currentPlayerId);
+        const nextIdx = (currentIdx + 1) % players.length;
+        const nextPlayerId = players[nextIdx].id;
+        const nextPlayers = players.map(p => ({
+          ...p,
+          isCurrentTurn: p.id === nextPlayerId
+        }));
+
+        setGameState({
+          ...storeState.gameState!,
+          currentPlayerId: nextPlayerId,
+          players: nextPlayers,
+          figures: nextFigures,
+          diceRolledThisTurn: false,
+        });
+
+        useGameStore.setState({ activeQuiz: null });
+      }, 3000);
 
       return;
     }

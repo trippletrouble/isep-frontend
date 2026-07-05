@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Dice } from "./Dice";
 import { DiceButton } from "./DiceButton";
+import { useGameStore } from '@/stores/game.store'
+import fliegeIcon from "@/assets/fliege.png";
 
 interface DicePanelProps {
   currentRoll: number | null;
-  onRoll: () => void;
+  onRoll: (customValue?: number) => void;
   disabled?: boolean;
   phase: string;
   PhaseIcon: React.ComponentType<{ className?: string }> | null;
@@ -15,12 +18,12 @@ export function DicePanel({
   currentRoll,
   onRoll,
   disabled,
-  phase,
-  PhaseIcon,
   className,
 }: DicePanelProps) {
+  const { id: sessionId } = useParams<{ id: string }>();
+  const isSandbox = sessionId === "sandbox" || window.location.pathname.endsWith("/sandbox");
+
   const isMyTurn = !disabled;
-  const isVisible = currentRoll !== null;
   const [isLocalRolling, setIsLocalRolling] = useState(false);
   const [awaitingServerPhaseUpdate, setAwaitingServerPhaseUpdate] =
     useState(false);
@@ -39,12 +42,43 @@ export function DicePanel({
     currentAwaitingState = false;
   }
 
+  const selectedFigureId = useGameStore((state) => state.selectedFigureId);
+
+  const flyDebuff = (() => {
+    if (!selectedFigureId) return null;
+    const fig = useGameStore.getState().figures.find(f => String(f.id) === selectedFigureId);
+    if (!fig || !fig.hasPlagueFly) return null;
+
+    if (currentRoll !== null) {
+      const possibleMoves = useGameStore.getState().possibleMoves;
+      const move = possibleMoves.find(m => String(m.figureId) === selectedFigureId);
+      if (move && move.fromPosition !== -1) {
+        const actualSteps = (move.toPosition - move.fromPosition + 52) % 52;
+        const calculatedDebuff = currentRoll - actualSteps;
+        if (calculatedDebuff > 0) return calculatedDebuff;
+      }
+    }
+    return 1;
+  })();
+
   const handleRollClick = () => {
     if (disabled || isLocalRolling || currentAwaitingState) return;
 
     setIsLocalRolling(true);
     setAwaitingServerPhaseUpdate(true);
     onRoll();
+
+    setTimeout(() => {
+      setIsLocalRolling(false);
+    }, 1000);
+  };
+
+  const handleCheatRoll = (num: number) => {
+    if (disabled || isLocalRolling || currentAwaitingState) return;
+
+    setIsLocalRolling(true);
+    setAwaitingServerPhaseUpdate(true);
+    onRoll(num);
 
     setTimeout(() => {
       setIsLocalRolling(false);
@@ -70,25 +104,73 @@ export function DicePanel({
           isMyTurn && !currentAwaitingState ? "text-white" : "text-white/50"
         }`}
       >
-        {PhaseIcon && <PhaseIcon className="w-5 h-5 shrink-0 opacity-90" />}
-        <p className="text-md lg:text-lg font-lilita uppercase tracking-[0.02em] text-center">
-          {phase}
+        <p className="text-2xl sm:text-3xl lg:text-[36px] font-lilita uppercase tracking-[0.04em] text-center text-white">
+          WÜRFEL
         </p>
       </div>
 
-      <div
-        className={`transition-all duration-300 ${isMyTurn ? "scale-105" : "opacity-40"} ${
-          !isVisible && !isLocalRolling ? "invisible" : ""
-        }`}
-      >
-        <Dice value={currentRoll ?? 0} isRolling={isLocalRolling} />
+      <div className="flex items-center gap-6 mb-4 lg:mb-6 justify-center min-w-0">
+        <div
+          className={`transition-all duration-300 ${isMyTurn ? "scale-105" : "opacity-40"}`}
+        >
+          <Dice value={currentRoll ?? 0} isRolling={isLocalRolling} />
+        </div>
+
+        {/* Fliegen debuff layout next to the dice */}
+        {flyDebuff !== null && (
+          <div className="flex flex-col items-center justify-center gap-1.5 h-14 md:h-[120px]">
+            <span className="font-afacad font-bold text-sm lg:text-[16px] uppercase tracking-[0.1em] text-white leading-none">
+              FLIEGEN
+            </span>
+            <div className="flex items-center gap-[5px] h-[35px]">
+              {[0, 1, 2].map((idx) => {
+                const isActive = idx < flyDebuff;
+                return (
+                  <div
+                    key={idx}
+                    className="w-[28px] h-[35px] transition-all duration-300"
+                    style={{
+                      opacity: isActive ? 1.0 : 0.25,
+                      filter: "brightness(0) invert(1)"
+                    }}
+                  >
+                    <img src={fliegeIcon} alt="Pestfliege" className="w-[28px] h-[35px] object-contain" />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      <DiceButton
-        onClick={handleRollClick}
-        disabled={isButtonDisabled}
-        shouldPulse={isMyTurn && !currentAwaitingState}
-      />
+      <div className="relative w-full">
+        <DiceButton
+          onClick={handleRollClick}
+          disabled={isButtonDisabled}
+          shouldPulse={isMyTurn && !currentAwaitingState}
+        />
+        {flyDebuff !== null && (
+          <div className="absolute -top-[10px] -right-[6px] bg-black text-white text-xs lg:text-[14px] font-bold font-afacad w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center border-2 border-white shadow-lg pointer-events-none">
+            -{flyDebuff}
+          </div>
+        )}
+        {isSandbox && !disabled && (
+          <div className="flex items-center justify-center gap-1.5 mt-3 w-full">
+            <span className="text-[10px] text-white/50 font-afacad font-bold uppercase tracking-wider mr-1">
+              Wurf:
+            </span>
+            {[1, 2, 3, 4, 5, 6].map((num) => (
+              <button
+                key={num}
+                onClick={() => handleCheatRoll(num)}
+                className="w-7 h-7 bg-white/10 hover:bg-white/30 text-white font-lilita rounded-lg text-sm flex items-center justify-center border border-white/20 active:scale-95 transition-all"
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
