@@ -19,6 +19,13 @@ interface UseSSEOptions {
   onQuizStarted?: (data: ActiveQuizType) => void;
   onQuizResolved?: (data: GameState) => void;
   onPlagueFlyAcquired?: (data: { figureId: number; playerId: string }) => void;
+  onPlagueFlyTransferred?: (data: {
+    fromFigureId: number;
+    toFigureId: number;
+    fromPlayerId: string;
+    toPlayerId: string;
+    activeFlyCount: number;
+  }) => void;
   onError?: (error: Event) => void;
   onConnected?: () => void;
 }
@@ -105,6 +112,9 @@ export function useSSE(
             break;
           case "plague_fly_acquired":
             optionsRef.current.onPlagueFlyAcquired?.(data);
+            break;
+          case "plague_fly_transferred":
+            optionsRef.current.onPlagueFlyTransferred?.(data);
             break;
           case "heartbeat":
             break;

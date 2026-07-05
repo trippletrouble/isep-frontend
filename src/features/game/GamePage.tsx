@@ -195,6 +195,20 @@ export const GamePage = () => {
         iconType: "INFO",
       });
     },
+    onPlagueFlyAcquired: (data) => {
+      setNotification({
+        title: "PESTFLIEGE! 🪰",
+        message: `Eine Pestfliege hat die Figur ${data.figureId} befallen!`,
+        iconType: "INFO",
+      });
+    },
+    onPlagueFlyTransferred: (data) => {
+      setNotification({
+        title: "FLIEGE ÜBERTRAGEN! 🪰",
+        message: `Die Pestfliege wurde von Figur ${data.fromFigureId} auf Figur ${data.toFigureId} übertragen!`,
+        iconType: "INFO",
+      });
+    },
   });
 
   const isMyTurn = gameState && user && gameState.currentPlayerId === user.id;
