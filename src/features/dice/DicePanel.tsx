@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dice } from "./Dice";
 import { DiceButton } from "./DiceButton";
-import { useGameStore } from '@/stores/game.store'
+import { useGameStore } from '@/stores/game.store';
 import fliegeIcon from "@/assets/fliege.png";
 
 function calculateSteps(fromPosition: number, toPosition: number, playerColor: string): number {
@@ -70,6 +70,10 @@ export function DicePanel({
   });
   const hasFly = selectedFigure?.hasPlagueFly ?? false;
   const flyDebuffCount = selectedFigure?.flyDebuffCount ?? 0;
+  const isPlagueFlyActive = useGameStore((state) =>
+    state.gameState?.activeRules?.includes("PLAGUE_FLY") ?? false
+  );
+  const displayFlyCount = hasFly ? flyDebuffCount : 0;
 
   const playerColor = useGameStore((state) => {
     const player = state.gameState?.players?.find((p) => p.id === selectedFigure?.playerId);
@@ -135,24 +139,28 @@ export function DicePanel({
         </div>
 
         {/* Fliegen debuff layout next to the dice */}
-        {hasFly && (
+        {isPlagueFlyActive && (
           <div className="flex flex-col items-center justify-center gap-1.5 h-14 md:h-[120px]">
             <span className="font-afacad font-bold text-sm lg:text-[16px] uppercase tracking-[0.1em] text-white leading-none">
               FLIEGEN
             </span>
             <div className="flex items-center gap-[5px] h-[35px]">
               {[0, 1, 2].map((idx) => {
-                const isActive = idx < flyDebuffCount;
+                const isActive = idx < displayFlyCount;
                 return (
                   <div
                     key={idx}
                     className="w-[28px] h-[35px] transition-all duration-300"
                     style={{
                       opacity: isActive ? 1.0 : 0.2,
-                      filter: "brightness(0) invert(1)"
+                      filter: "brightness(0) invert(1)",
                     }}
                   >
-                    <img src={fliegeIcon} alt="Pestfliege" className="w-[28px] h-[35px] object-contain" />
+                    <img
+                      src={fliegeIcon}
+                      alt="Pestfliege"
+                      className="w-[28px] h-[35px] object-contain"
+                    />
                   </div>
                 );
               })}
