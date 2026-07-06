@@ -815,6 +815,7 @@ export default function Board({ diceRoll }: BoardProps) {
             strokeWidth="4"
             strokeDasharray="16 8"
             className="animate-spin"
+            data-testid="target-tile"
             style={{
               cursor: "pointer",
               transformOrigin: `${targetTile.x}px ${targetTile.y}px`,
