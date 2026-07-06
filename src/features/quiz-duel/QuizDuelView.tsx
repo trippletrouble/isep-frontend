@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, CheckCircle2, XCircle, Hourglass } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VersusLogo } from "@/components/ui/VS";
+import { useGameStore } from "@/stores/game.store";
 import type { ActiveQuizType, PlayerColor } from "@/api/types";
 import type { NotificationData } from "../game/NotificationPanel";
 
@@ -14,6 +20,12 @@ interface QuizDuelViewProps {
   onDuelResolved: (notification: NotificationData) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface NormalizedOption {
+  key: "A" | "B" | "C" | "D";
+  text: string;
+  originalId?: string;
 }
 
 const COLOR_HEX_MAP: Record<PlayerColor, string> = {
@@ -31,12 +43,14 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
   open,
   onOpenChange,
 }) => {
-  const TOTAL_TIME = activeQuiz.timeLimitSeconds || 10;
+  const TOTAL_TIME = Number(activeQuiz?.timeLimitSeconds) || 15;
 
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
   const [localSelection, setLocalSelection] = useState<
     "A" | "B" | "C" | "D" | null
   >(null);
+
+  const [prevQuizId, setPrevQuizId] = useState(activeQuiz?.id);
 
   const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -44,35 +58,92 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
   const autoCloseTriggeredRef = useRef<boolean>(false);
   const notificationFiredRef = useRef<boolean>(false);
 
-  const isUserAttacker = currentUserId === activeQuiz.attackerId;
+  if (activeQuiz?.id !== prevQuizId) {
+    setPrevQuizId(activeQuiz?.id);
+    setTimeLeft(TOTAL_TIME);
+    setLocalSelection(null);
+  }
+
+  useEffect(() => {
+    startTimeRef.current = null;
+    autoCloseTriggeredRef.current = false;
+    notificationFiredRef.current = false;
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, [activeQuiz?.id]);
+
+  const storePlayers = useGameStore((state) => state.players) || [];
+
+  const attackerName =
+    storePlayers.find((p) => p.id === activeQuiz?.attackerId)?.username ||
+    "Spieler 1";
+  const defenderName =
+    storePlayers.find((p) => p.id === activeQuiz?.defenderId)?.username ||
+    "Spieler 2";
+
+  const isUserAttacker = currentUserId === activeQuiz?.attackerId;
+  const opponentName = isUserAttacker ? defenderName : attackerName;
+
   const userAnswer = isUserAttacker
-    ? activeQuiz.attackerAnswer
-    : activeQuiz.defenderAnswer;
+    ? activeQuiz?.attackerAnswer
+    : activeQuiz?.defenderAnswer;
   const opponentAnswer = isUserAttacker
-    ? activeQuiz.defenderAnswer
-    : activeQuiz.attackerAnswer;
+    ? activeQuiz?.defenderAnswer
+    : activeQuiz?.attackerAnswer;
 
   const selectedAnswer =
     (userAnswer as "A" | "B" | "C" | "D" | null) || localSelection;
 
-  const hasUserAnswered = !!userAnswer;
-  const hasOpponentAnswered = !!opponentAnswer;
+  const hasUserAnswered = userAnswer !== null && userAnswer !== undefined;
+  const hasOpponentAnswered =
+    opponentAnswer !== null && opponentAnswer !== undefined;
 
   const isDuelEvaluated =
-    (activeQuiz.attackerCorrect !== null &&
-      activeQuiz.defenderCorrect !== null) ||
+    (typeof activeQuiz?.attackerCorrect === "boolean" &&
+      typeof activeQuiz?.defenderCorrect === "boolean") ||
     (timeLeft <= 0 && hasUserAnswered && hasOpponentAnswered);
 
   const isUserCorrect = isUserAttacker
-    ? activeQuiz.attackerCorrect
-    : activeQuiz.defenderCorrect;
+    ? activeQuiz?.attackerCorrect
+    : activeQuiz?.defenderCorrect;
   const isOpponentCorrect = isUserAttacker
-    ? activeQuiz.defenderCorrect
-    : activeQuiz.attackerCorrect;
+    ? activeQuiz?.defenderCorrect
+    : activeQuiz?.attackerCorrect;
 
-  const category = activeQuiz.category || "Allgemeinwissen";
-  const questionText = activeQuiz.questionText || "";
-  const options = activeQuiz.options || [];
+  const category = activeQuiz?.category || "Allgemeinwissen";
+  const questionText =
+    activeQuiz?.question || activeQuiz?.questionText || "Lade Frage...";
+
+  const normalizedOptions: NormalizedOption[] = (() => {
+    if (!activeQuiz) return [];
+    if (activeQuiz.answers && activeQuiz.answers.length > 0) {
+      return activeQuiz.answers.map((opt, index) => ({
+        key: ["A", "B", "C", "D"][index] as "A" | "B" | "C" | "D",
+        text: opt.text,
+        originalId: opt.id,
+      }));
+    }
+    if (activeQuiz.options && activeQuiz.options.length > 0) {
+      return activeQuiz.options.map((opt) => ({
+        key: opt.key,
+        text: opt.text,
+        originalId: opt.key,
+      }));
+    }
+    return [];
+  })();
+
+  const attackerColor =
+    storePlayers.find((p) => p.id === activeQuiz?.attackerId)?.color || "BLUE";
+  const defenderColor =
+    storePlayers.find((p) => p.id === activeQuiz?.defenderId)?.color || "RED";
 
   useEffect(() => {
     if (isDuelEvaluated && !notificationFiredRef.current) {
@@ -80,7 +151,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
 
       let title = "QUIZ BEENDET";
       let message = "Das Duell endete unentschieden!";
-      let iconType: "WIN" | "INFO" = "INFO";
+      let iconType: "WIN" | "INFO" | "QUIZ" = "QUIZ";
 
       if (isUserCorrect && !isOpponentCorrect) {
         title = "SIEG";
@@ -88,7 +159,7 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
         iconType = "WIN";
       } else if (!isUserCorrect && isOpponentCorrect) {
         title = "NIEDERLAGE";
-        message = "Dein Gegner war im Quizduell klüger.";
+        message = `${opponentName} war im Quizduell klüger.`;
       } else if (!isUserCorrect && !isOpponentCorrect) {
         message = "Beide Spieler lagen komplett falsch!";
       }
@@ -97,15 +168,14 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
         title,
         message,
         iconType,
-        extraText: category,
       });
     }
   }, [
     isDuelEvaluated,
     isUserCorrect,
     isOpponentCorrect,
-    category,
     onDuelResolved,
+    opponentName,
   ]);
 
   useEffect(() => {
@@ -146,31 +216,45 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
     TOTAL_TIME,
     isDuelEvaluated,
     onOpenChange,
+    activeQuiz?.id,
   ]);
 
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
   const handleAnswerClick = (optionKey: "A" | "B" | "C" | "D") => {
-    if (hasUserAnswered || timeLeft <= 0 || isDuelEvaluated) return;
+    if (
+      hasUserAnswered ||
+      timeLeft <= 0 ||
+      isDuelEvaluated ||
+      localSelection !== null
+    ) {
+      return;
+    }
     setLocalSelection(optionKey);
     onSubmitAnswer(optionKey);
   };
+
   const radius = 22;
   const strokeWidth = 5;
   const circumference = 2 * Math.PI * radius;
+
   const strokeDashoffset =
-    circumference - (timeLeft / TOTAL_TIME) * circumference;
+    TOTAL_TIME > 0
+      ? circumference - (timeLeft / TOTAL_TIME) * circumference
+      : circumference;
+
+  if (!activeQuiz) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="bg-primary border border-accent text-white rounded-4xl p-4 md:p-8 shadow-2xl w-[calc(100%-2rem)] max-w-4xl backdrop-blur-xl select-none"
+        className="bg-primary border border-accent text-white rounded-4xl p-4 md:p-8 shadow-2xl w-[calc(100%-2rem)] max-w-4xl backdrop-blur-xl select-none outline-none ring-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-[48%] duration-300"
       >
+        <DialogTitle className="sr-only">Quiz Duell</DialogTitle>
+        <DialogDescription className="sr-only">
+          Beantworte die Frage schneller und besser als dein Gegner.
+        </DialogDescription>
         <button
           onClick={() => onOpenChange(false)}
           className="absolute top-4 right-4 p-1 text-red hover:opacity-80 transition-opacity bg-transparent border-none outline-none z-10"
@@ -184,19 +268,17 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
             QUIZDUELL
           </h2>
 
-          <VersusLogo
-            className="w-24 md:w-40 h-auto"
-            leftColor={
-              COLOR_HEX_MAP[activeQuiz.attackerColor] || "var(--color-blue)"
-            }
-            rightColor={
-              COLOR_HEX_MAP[activeQuiz.defenderColor] || "var(--color-blue)"
-            }
-          />
+          <div className="flex items-center justify-center gap-4 w-full px-4 mb-2">
+            <VersusLogo
+              className="w-16 md:w-28 h-auto shrink-0"
+              leftColor={COLOR_HEX_MAP[attackerColor] || "var(--color-blue)"}
+              rightColor={COLOR_HEX_MAP[defenderColor] || "var(--color-blue)"}
+            />
+          </div>
         </div>
 
         <div className="relative mt-8 md:mt-12 bg-primary border border-accent rounded-3xl p-4 md:p-8 flex flex-col items-center gap-4 md:gap-6">
-          <Badge className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#736ced] text-white p-4 text-lg font-bold uppercase tracking-widest rounded-full border-none font-sans whitespace-nowrap z-10">
+          <Badge className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#736ced] text-white p-4 text-lg font-bold uppercase tracking-widest rounded-full border-none font-sans whitespace-nowrap z-10 shadow-md">
             {category}
           </Badge>
 
@@ -273,75 +355,74 @@ export const QuizDuelView: React.FC<QuizDuelViewProps> = ({
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 w-full">
-            {options.map((option) => {
-              const optionKey = option.key as "A" | "B" | "C" | "D";
+            {normalizedOptions.map((option) => {
+              const optionKey = option.key;
+              const optionText = option.text || "Antwort Ladefehler";
+
               const isUserSelection = selectedAnswer === optionKey;
-              const isOpponentSelection = opponentAnswer === optionKey;
+              const isOpponentSelection =
+                hasOpponentAnswered && opponentAnswer === optionKey;
+              const isAnyAnswerSelected = selectedAnswer !== null;
 
               let buttonVariantStyle =
-                "bg-[#736ced] border-transparent text-white";
+                "bg-[#736ced] border-transparent text-white hover:bg-[#6159db]";
 
               if (isDuelEvaluated) {
+                const actualCorrectAnswerId = (activeQuiz as any)
+                  .correctAnswerId;
+
                 const isThisOptionCorrect =
-                  (isUserAttacker &&
-                    optionKey === activeQuiz.attackerAnswer &&
-                    activeQuiz.attackerCorrect) ||
-                  (!isUserAttacker &&
-                    optionKey === activeQuiz.defenderAnswer &&
-                    activeQuiz.defenderCorrect) ||
-                  (isUserAttacker &&
-                    optionKey === activeQuiz.defenderAnswer &&
-                    activeQuiz.defenderCorrect) ||
-                  (!isUserAttacker &&
-                    optionKey === activeQuiz.attackerAnswer &&
-                    activeQuiz.attackerCorrect);
+                  actualCorrectAnswerId && option.originalId
+                    ? actualCorrectAnswerId === option.originalId
+                    : Boolean(
+                        (isUserAttacker &&
+                          isUserSelection &&
+                          activeQuiz.attackerCorrect) ||
+                        (!isUserAttacker &&
+                          isUserSelection &&
+                          activeQuiz.defenderCorrect),
+                      );
 
                 if (isThisOptionCorrect) {
                   buttonVariantStyle =
-                    "bg-green border-green text-white font-black";
+                    "bg-green border-green text-white font-black shadow-[0_0_15px_var(--color-green)]";
                 } else if (isUserSelection && !isUserCorrect) {
                   buttonVariantStyle =
-                    "bg-red border-red text-white opacity-90";
+                    "bg-red border-red text-white opacity-100 shadow-[0_0_10px_var(--color-red)]";
+                } else if (isOpponentSelection && !isOpponentCorrect) {
+                  buttonVariantStyle =
+                    "bg-neutral-800 border-red/40 text-neutral-400 opacity-60";
                 } else {
                   buttonVariantStyle =
-                    "bg-neutral-800 border-neutral-700 text-neutral-400 opacity-40";
+                    "bg-neutral-800 border-neutral-700 text-neutral-500 opacity-40";
                 }
-              } else if (isUserSelection) {
-                buttonVariantStyle = "bg-[#6159db] border-accent text-white";
+              } else if (isAnyAnswerSelected) {
+                if (isUserSelection) {
+                  buttonVariantStyle =
+                    "bg-[#736ced] border-2 border-white text-white font-black scale-[1.02] shadow-lg transition-transform";
+                } else {
+                  buttonVariantStyle =
+                    "bg-neutral-800 border-neutral-800 text-neutral-500 opacity-50";
+                }
               }
 
               return (
                 <Button
-                  key={option.key}
-                  disabled={hasUserAnswered || timeLeft <= 0 || isDuelEvaluated}
+                  key={optionKey}
+                  disabled={
+                    isAnyAnswerSelected || timeLeft <= 0 || isDuelEvaluated
+                  }
                   onClick={() => handleAnswerClick(optionKey)}
                   variant="ghost"
-                  className={`min-h-14 md:min-h-16 h-auto py-3 md:py-4 flex items-center justify-start gap-3 md:gap-4 px-4 md:px-5 rounded-xl text-left font-bold transition-all shadow-sm font-sans whitespace-normal break-words border-2 relative
-                  ${buttonVariantStyle} disabled:pointer-events-none`}
+                  className={`min-h-14 md:min-h-16 h-auto py-3 md:py-4 flex items-center justify-start gap-3 md:gap-4 px-4 md:px-5 rounded-xl text-left font-bold transition-all shadow-sm font-sans whitespace-normal break-words border-2 relative outline-none focus-visible:ring-0 ${buttonVariantStyle} disabled:pointer-events-none`}
                 >
                   <div className="flex items-center justify-center min-w-[24px] min-h-[24px] md:min-w-[28px] md:min-h-[28px] rounded-full bg-primary text-white text-xs font-extrabold shadow-inner shrink-0">
-                    {option.key}
+                    {optionKey}
                   </div>
 
                   <span className="text-base md:text-lg tracking-wide flex-1">
-                    {option.text}
+                    {optionText}
                   </span>
-
-                  {isDuelEvaluated &&
-                    (isUserSelection || isOpponentSelection) && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
-                        {isUserSelection && (
-                          <span className="text-[10px] md:text-xs uppercase bg-black/40 px-2 py-0.5 rounded font-black tracking-wider border border-white/20">
-                            Du
-                          </span>
-                        )}
-                        {isOpponentSelection && (
-                          <span className="text-[10px] md:text-xs uppercase bg-black/40 px-2 py-0.5 rounded font-black tracking-wider border border-white/20 text-accent">
-                            Gegner
-                          </span>
-                        )}
-                      </div>
-                    )}
                 </Button>
               );
             })}

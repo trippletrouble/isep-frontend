@@ -3,8 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ScrollText, Copy, LogOut, Play, User } from "lucide-react";
 import { RulesDialog } from "@/features/level-select/RulesDialog";
 import { CreateLobbyCard } from "./CreateLobbyCard";
-import { JoinLobbyCard } from "./JoinLobbyCard";
+import { JoinLobbyDialog } from "./JoinLobbyDialog";
 import { PageSubHeader } from "@/components/layout/PageSubHeader";
+import { Button } from "@/components/ui/button";
 import { useLobby } from "@/hooks/useLobby";
 import { useAuthStore } from "@/stores/auth.store";
 import { useSSE } from "@/hooks/useSSE";
@@ -33,7 +34,9 @@ export function LobbyPage() {
     inviteToken: ***ENTFERNT***
     inviteUrl: string;
   } | null>(null);
+
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false); // <-- New State for Modal
 
   const resolvedParam = level || sessionId || "";
   const isSessionId =
@@ -286,14 +289,24 @@ export function LobbyPage() {
         }
       />
 
-      <h1 className="font-lilita text-white text-4xl md:text-6xl uppercase leading-none mb-8">
-        LEVEL {cleanLevel}
-      </h1>
-
-      <div className="flex flex-col md:flex-row justify-between gap-6">
-        <CreateLobbyCard cleanLevel={cleanLevel} />
-        <JoinLobbyCard />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 md:mb-8">
+        <h1 className="font-lilita text-white text-4xl md:text-6xl uppercase leading-none m-0">
+          LEVEL {cleanLevel}
+        </h1>
+        <Button
+          onClick={() => setJoinOpen(true)}
+          className="bg-green text-primary border-2 hover:bg-green/90 hover:border-white font-lilita text-xl h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl uppercase tracking-wider transition-colors w-full md:w-auto"
+        >
+          Lobby beitreten
+        </Button>
       </div>
+
+      <div className="w-full mx-auto">
+        <CreateLobbyCard cleanLevel={cleanLevel} />
+      </div>
+
+      <JoinLobbyDialog open={joinOpen} onOpenChange={setJoinOpen} />
+
       <RulesDialog
         levelId={levelId}
         open={rulesOpen}

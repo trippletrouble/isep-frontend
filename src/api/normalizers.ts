@@ -54,6 +54,7 @@ export function normalizeGameState(raw: any): GameState {
     consecutiveSixes: raw.consecutiveSixes ?? 0,
     activeRules: raw.activeRules ?? raw.additionalRules ?? [],
     winnerId: raw.winnerId ?? null,
+    activeQuiz: raw.activeQuiz ?? null,
     createdAt: raw.createdAt,
     lastUpdatedAt: raw.lastUpdatedAt ?? raw.updatedAt ?? raw.createdAt,
   };
