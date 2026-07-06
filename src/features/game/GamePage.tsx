@@ -10,7 +10,7 @@ import { useGameActions } from "@/hooks/useGameActions";
 import { useAuthStore } from "@/stores";
 import { useSSE } from "@/hooks/useSSE";
 import { getSessionState, reconnectSession } from "@/api/sessions.api";
-import { getSessionResults } from "@/api/gameplay.api";
+import {getPossibleMoves, getSessionResults} from "@/api/gameplay.api";
 import type { GameResults } from "@/api/types";
 import { QuizDuelView } from "../quiz-duel/QuizDuelView";
 import { Trophy, Home } from "lucide-react";
@@ -45,6 +45,12 @@ export const GamePage = () => {
         if (!isMounted) return;
 
         setGameState(state);
+
+        if (state.status === 'IN_PROGRESS' && state.diceRolledThisTurn && state.lastDiceValue) {
+          const moves = await getPossibleMoves(id)
+          useGameStore.getState().setPossibleMoves(moves.possibleMoves)
+        }
+
         if (state.status === "IN_PROGRESS") {
           await reconnectSession(id);
         } else if (state.status === "FINISHED") {
