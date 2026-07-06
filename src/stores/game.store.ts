@@ -122,8 +122,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
       return {
         gameState: state,
-        figures: state.figures || [],
-        players: state.players || [],
+        figures: state.figures || current.figures,
+        players:
+          state.players && state.players.length > 0
+            ? state.players
+            : current.players,
         currentPlayerId: state.currentPlayerId || null,
         lastDiceValue: state.lastDiceValue ?? null,
         diceRolledThisTurn: !!state.diceRolledThisTurn,
@@ -167,7 +170,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           "Frage wird geladen...";
         const quizAnswers = rawQuiz.answers || [];
 
-        // 🛡️ UNBREAKABLE INITIALIZATION: Construct the object by force so the modal CANNOT fail to open.
         const forcefullyMergedQuiz: ActiveQuizType = {
           id: dbQuiz?.id || state.activeQuiz?.id || `temp-${Date.now()}`,
           questionId: rawQuiz.questionId || dbQuiz?.questionId || "temp-q",
@@ -219,7 +221,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           figures: result.gameState?.figures || state.figures,
           players: result.gameState?.players || state.players,
           status: "QUIZ_PENDING",
-          activeQuiz: forcefullyMergedQuiz, // Set forcefully. The modal will open instantly.
+          activeQuiz: forcefullyMergedQuiz,
           possibleMoves: [],
           diceRolledThisTurn: false,
         };
@@ -361,12 +363,27 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     });
   },
 
-  handleQuizResolved: (inputGameState: GameState) => {
-    const finalGameState = (inputGameState as any).data
-      ? (inputGameState as any).data
-      : inputGameState;
-    get().setGameState(finalGameState);
-    set({ activeQuiz: null, status: finalGameState.status });
+  handleQuizResolved: (inputPayload: any) => {
+    const payload = inputPayload.data ? inputPayload.data : inputPayload;
+
+    set((current) => {
+      if (!current.activeQuiz) return current;
+
+      return {
+        activeQuiz: {
+          ...current.activeQuiz,
+          attackerCorrect: payload.attackerCorrect,
+          defenderCorrect: payload.defenderCorrect,
+          correctAnswerId: payload.correctAnswerId,
+          winnerId: payload.winnerId,
+          loserId: payload.loserId,
+        },
+      };
+    });
+
+    if (payload.gameState) {
+      get().setGameState(payload.gameState);
+    }
   },
 
   setActiveQuiz: (quiz) => {

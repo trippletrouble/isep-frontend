@@ -79,8 +79,8 @@ export const GamePage = () => {
 
   useEffect(() => {
     if (!notification) return;
-    const timer = setTimeout(() => setNotification(null), 5000);
-    return () => clearTimeout(timer);
+    // const timer = setTimeout(() => setNotification(null), 5000);
+    // return () => clearTimeout(timer);
   }, [notification]);
 
   useSSE(id || null, {
@@ -115,8 +115,8 @@ export const GamePage = () => {
         iconType:
           outcome === "CAPTURED"
             ? "CAPTURE"
-            : outcome === "GAME_WON"
-              ? "WIN"
+            : outcome === "QUIZ_STARTED"
+              ? "QUIZ"
               : "INFO",
       });
     },
@@ -134,7 +134,7 @@ export const GamePage = () => {
       setNotification({
         title: "DUELL BEENDET",
         message: "Das Quiz-Duell wurde ausgewertet!",
-        iconType: "INFO",
+        iconType: "QUIZ",
       });
     },
   });
@@ -239,26 +239,18 @@ export const GamePage = () => {
           </div>
 
           <div className="hidden lg:flex w-full flex-col h-full min-h-0 gap-4">
-            <div className="flex-1 min-h-0 flex flex-col">
+            <div className="w-full shrink-0">
               <LeaderboardPanel />
             </div>
 
-            <div className="h-14 w-full flex-shrink-0 flex items-center justify-center">
-              <div
-                className={`w-full transition-all duration-300 ease-in-out ${
-                  notification
-                    ? "opacity-100 scale-100"
-                    : "opacity-0 scale-95 pointer-events-none"
-                }`}
-              >
-                <NotificationPanel
-                  data={notification}
-                  onClose={() => setNotification(null)}
-                />
-              </div>
+            <div className="flex-1 flex flex-col justify-center w-full min-h-0">
+              <NotificationPanel
+                data={notification}
+                onClose={() => setNotification(null)}
+              />
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col">
+            <div className="w-full shrink-0">
               <DicePanel
                 currentRoll={lastDiceValue}
                 onRoll={handleRoll}

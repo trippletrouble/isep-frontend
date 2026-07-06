@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLobby } from "@/hooks/useLobby";
 import type { AdditionalRule } from "@/api/types";
-import { Dices, Swords, Flame } from "lucide-react";
+import { Dices, BookOpen, Flame } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -130,7 +130,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
             Zusätzliche Regeln
           </span>
 
-          <div className="flex flex-col gap-3 w-full">
+          <div className="flex flex-col md:flex-row gap-3 w-full">
             <div className="flex items-center justify-between bg-primary-dark/30 p-4 rounded-2xl border-2 border-accent/20 hover:border-accent/40 transition-all min-h-[4.5rem] w-full">
               <div className="flex items-center gap-4">
                 <div className="shrink-0 w-11 h-11 rounded-xl text-blue flex items-center justify-center border-2 border-blue">
@@ -171,11 +171,11 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
               </span>
             </div>
 
-            <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-col md:flex-row gap-3 w-full">
               <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
                 <div className="flex items-center gap-4">
                   <div className="shrink-0 w-12 h-12 rounded-xl text-yellow flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">
-                    <Swords size={24} />
+                    <BookOpen size={24} />
                   </div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">

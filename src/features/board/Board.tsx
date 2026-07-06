@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -180,11 +180,6 @@ export default function Board({ diceRoll }: BoardProps) {
     figures: FigureState[];
   } | null>(null);
 
-  // Lokaler State, um die schrittweise Animation zu überschreiben, während sie läuft
-  const [animatedPositions, setAnimatedPositions] = useState<
-    Record<string, "nest" | number | string>
-  >({});
-
   const mapBackendFigureToFrontend = (
     backendFig: BackendFigure,
   ): FigureState => {
@@ -239,17 +234,157 @@ export default function Board({ diceRoll }: BoardProps) {
       position = `goal_${backendFig.position - goalStart}`;
     }
 
-    // Wenn für diese Figur gerade eine Animation läuft, nutzen wir die animierte Position
-    if (animatedPositions[String(id)] !== undefined) {
-      position = animatedPositions[String(id)];
-    }
-
     return { id: String(id), color, position, nestIndex, startTrackIndex };
   };
 
+  const getPathOfPositions = (
+    startPos: "nest" | number | string,
+    targetPos: "nest" | number | string,
+    fig: FigureState,
+  ): Array<"nest" | number | string> => {
+    if (startPos === "nest") return [targetPos];
+
+    const path: Array<"nest" | number | string> = [];
+    const colorName = HEX_TO_COLOR[fig.color] ?? "RED";
+    const goalStart = GOAL_START_FIELDS[colorName];
+    const finalGoalPos = FINAL_GOAL_POSITIONS[colorName];
+
+    let targetNumeric = 0;
+    if (typeof targetPos === "number") targetNumeric = targetPos;
+    else if (targetPos === "center") targetNumeric = finalGoalPos;
+    else if (targetPos.startsWith("goal_"))
+      targetNumeric = goalStart + parseInt(targetPos.split("_")[1], 10);
+
+    if (typeof startPos === "number") {
+      let curr = startPos;
+      const trackDistance = (targetNumeric - startPos + 52) % 52;
+      const stepsToGoalStart = (goalStart - startPos + 52) % 52;
+      const willEnterHouse = targetNumeric >= goalStart;
+
+      const stepsOnTrack = willEnterHouse ? stepsToGoalStart : trackDistance;
+
+      for (let i = 1; i <= stepsOnTrack; i++) {
+        curr = (curr + 1) % 52;
+        path.push(curr);
+      }
+
+      if (willEnterHouse) {
+        const houseSteps = targetNumeric - goalStart;
+        for (let i = 0; i < houseSteps; i++) {
+          if (goalStart + i === finalGoalPos - 1) path.push("center");
+          else path.push(`goal_${i}`);
+        }
+        if (targetNumeric === finalGoalPos && !path.includes("center")) {
+          path.push("center");
+        }
+      }
+    } else if (typeof startPos === "string" && startPos.startsWith("goal_")) {
+      const startGoalIdx = parseInt(startPos.split("_")[1], 10);
+      const endGoalIdx =
+        targetPos === "center"
+          ? 5
+          : parseInt((targetPos as string).split("_")[1], 10);
+
+      for (let idx = startGoalIdx + 1; idx <= endGoalIdx; idx++) {
+        if (idx === 5 || goalStart + idx === finalGoalPos) path.push("center");
+        else path.push(`goal_${idx}`);
+      }
+    }
+    return path;
+  };
+
+  const [displayPositions, setDisplayPositions] = useState<
+    Record<string, "nest" | number | string>
+  >({});
+  const prevStoreFiguresRef = useRef<BackendFigure[] | null>(null);
+  const localMoveTracker = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!storeFigures) return;
+
+    const newDisplay = { ...displayPositions };
+    let changed = false;
+    const animationsToRun: Array<{
+      id: string;
+      from: "nest" | number | string;
+      to: "nest" | number | string;
+      fig: FigureState;
+    }> = [];
+
+    if (!prevStoreFiguresRef.current) {
+      storeFigures.forEach((newFig) => {
+        const frontend = mapBackendFigureToFrontend(newFig);
+        newDisplay[newFig.id] = frontend.position;
+      });
+      changed = true;
+    } else {
+      storeFigures.forEach((newFig) => {
+        const oldFig = prevStoreFiguresRef.current!.find(
+          (f) => f.id === newFig.id,
+        );
+
+        if (oldFig && oldFig.position !== newFig.position) {
+          const prevFrontend = mapBackendFigureToFrontend(oldFig);
+          const newFrontend = mapBackendFigureToFrontend(newFig);
+
+          if (prevFrontend.position !== newFrontend.position) {
+            if (localMoveTracker.current.has(String(newFig.id))) {
+              newDisplay[newFig.id] = newFrontend.position;
+              localMoveTracker.current.delete(String(newFig.id));
+            } else if (
+              newFrontend.position === "nest" &&
+              prevFrontend.position !== "nest"
+            ) {
+              newDisplay[newFig.id] = "nest";
+            } else {
+              newDisplay[newFig.id] = prevFrontend.position;
+              animationsToRun.push({
+                id: String(newFig.id),
+                from: prevFrontend.position,
+                to: newFrontend.position,
+                fig: newFrontend,
+              });
+            }
+            changed = true;
+          }
+        } else if (!oldFig) {
+          const frontend = mapBackendFigureToFrontend(newFig);
+          newDisplay[newFig.id] = frontend.position;
+          changed = true;
+        }
+      });
+    }
+
+    if (changed) {
+      setDisplayPositions(newDisplay);
+    }
+
+    prevStoreFiguresRef.current = storeFigures;
+
+    if (animationsToRun.length > 0) {
+      const runAnimations = async () => {
+        for (const anim of animationsToRun) {
+          const path = getPathOfPositions(anim.from, anim.to, anim.fig);
+          for (const p of path) {
+            setDisplayPositions((prev) => ({ ...prev, [anim.id]: p }));
+            await sleep(250);
+          }
+        }
+      };
+      runAnimations();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeFigures]);
+
   const figures =
     storeFigures && storeFigures.length > 0
-      ? storeFigures.map(mapBackendFigureToFrontend)
+      ? storeFigures.map((backendFig) => {
+          const base = mapBackendFigureToFrontend(backendFig);
+          if (displayPositions[base.id] !== undefined) {
+            base.position = displayPositions[base.id];
+          }
+          return base;
+        })
       : INITIAL_FIGURES;
 
   const activeFigure = figures.find((f) => f.id === selectedFigureId);
@@ -314,15 +449,11 @@ export default function Board({ diceRoll }: BoardProps) {
 
           let position: "nest" | number | string = "nest";
 
-          if (pos === -1) {
-            position = "nest";
-          } else if (pos >= 0 && pos <= 51) {
-            position = pos;
-          } else if (pos >= goalStart && pos < finalGoalPos) {
+          if (pos === -1) position = "nest";
+          else if (pos >= 0 && pos <= 51) position = pos;
+          else if (pos >= goalStart && pos < finalGoalPos)
             position = `goal_${pos - goalStart}`;
-          } else if (pos === finalGoalPos) {
-            position = "center";
-          }
+          else if (pos === finalGoalPos) position = "center";
 
           const tile = (() => {
             if (pos >= 0 && pos <= 51) return CLOCKWISE_TRACK[pos];
@@ -342,109 +473,35 @@ export default function Board({ diceRoll }: BoardProps) {
 
   const targetTile = targetResult?.tile || null;
 
-  // Berechnet die einzelnen Zwischenschritte für die hüpfende Animation basierend auf dem Backend-Ziel
-  const getPathOfPositions = (
-    startPos: "nest" | number | string,
-    targetPos: "nest" | number | string,
-    fig: FigureState,
-  ): Array<"nest" | number | string> => {
-    if (startPos === "nest") return [targetPos];
-
-    const path: Array<"nest" | number | string> = [];
-    const colorName = HEX_TO_COLOR[fig.color] ?? "RED";
-    const goalStart = GOAL_START_FIELDS[colorName];
-    const finalGoalPos = FINAL_GOAL_POSITIONS[colorName];
-
-    // Ermittle das numerische Ziel aus dem targetResult String/Zahl-Format
-    let targetNumeric = 0;
-    if (typeof targetPos === "number") targetNumeric = targetPos;
-    else if (targetPos === "center") targetNumeric = finalGoalPos;
-    else if (targetPos.startsWith("goal_"))
-      targetNumeric = goalStart + parseInt(targetPos.split("_")[1], 10);
-
-    if (typeof startPos === "number") {
-      let curr = startPos;
-      // Berechne Distanz auf der Standard-Schleife
-      const trackDistance = (targetNumeric - startPos + 52) % 52;
-
-      // Falls das Ziel im Haus liegt, berechnen wir die Schritte bis zum Hauseingang
-      const stepsToGoalStart = (goalStart - startPos + 52) % 52;
-      const willEnterHouse = targetNumeric >= goalStart;
-
-      const stepsOnTrack = willEnterHouse ? stepsToGoalStart : trackDistance;
-
-      for (let i = 1; i <= stepsOnTrack; i++) {
-        curr = (curr + 1) % 52;
-        path.push(curr);
-      }
-
-      if (willEnterHouse) {
-        const houseSteps = targetNumeric - goalStart;
-        for (let i = 0; i < houseSteps; i++) {
-          if (goalStart + i === finalGoalPos - 1) {
-            path.push("center");
-          } else {
-            path.push(`goal_${i}`);
-          }
-        }
-        if (targetNumeric === finalGoalPos && !path.includes("center")) {
-          path.push("center");
-        }
-      }
-    } else if (typeof startPos === "string" && startPos.startsWith("goal_")) {
-      const startGoalIdx = parseInt(startPos.split("_")[1], 10);
-      const endGoalIdx =
-        targetPos === "center"
-          ? 5
-          : parseInt((targetPos as string).split("_")[1], 10);
-
-      for (let idx = startGoalIdx + 1; idx <= endGoalIdx; idx++) {
-        if (idx === 5 || goalStart + idx === finalGoalPos) {
-          path.push("center");
-        } else {
-          path.push(`goal_${idx}`);
-        }
-      }
-    }
-
-    return path;
-  };
-
   const handleMoveToTarget = async () => {
     if (!activeMove || !sessionId || !activeFigure || !targetResult) return;
 
-    const targetPos = targetResult.position;
-    const figureId = activeMove.figureId;
     const toPosition = activeMove.toPosition;
+    const figureId = activeMove.figureId;
+    const targetPos = targetResult.position;
 
-    // 1. Berechne Animationspfad
+    setSelectedFigureId(null);
+    setActivePile(null);
+
+    localMoveTracker.current.add(String(figureId));
     const path = getPathOfPositions(
       activeFigure.position,
       targetPos,
       activeFigure,
     );
 
-    setSelectedFigureId(null);
-    setActivePile(null);
+    const runLocalAnimation = async () => {
+      for (const p of path) {
+        setDisplayPositions((prev) => ({ ...prev, [figureId]: p }));
+        await sleep(250);
+      }
+    };
+    runLocalAnimation();
 
-    // 2. Führe die schrittweise Animation lokal aus
-    for (const pos of path) {
-      setAnimatedPositions((prev) => ({ ...prev, [String(figureId)]: pos }));
-      await sleep(250);
-    }
-
-    // 3. Sende Bewegung ans Backend & klicke die temporäre Animationsüberschreibung weg
     try {
       await moveFigure(sessionId, figureId, toPosition);
     } catch (err) {
       console.error("Move figure error", err);
-    } finally {
-      // Lösche die Animation aus dem lokalen State, damit wieder die echten Backend-Daten greifen
-      setAnimatedPositions((prev) => {
-        const copy = { ...prev };
-        delete copy[String(figureId)];
-        return copy;
-      });
     }
   };
 
@@ -664,7 +721,9 @@ export default function Board({ diceRoll }: BoardProps) {
                           return;
                         }
                         if (fig.position === "nest" && diceRoll !== 6) {
-                          toast.error("You need a 6 to leave the nest!");
+                          toast.error(
+                            "Du brauchst eine 6 um das Nest zu verlassen!",
+                          );
                           return;
                         }
                         setSelectedFigureId(
@@ -806,7 +865,9 @@ export default function Board({ diceRoll }: BoardProps) {
                       return;
                     }
                     if (fig.position === "nest" && diceRoll !== 6) {
-                      toast.error("You need a 6 to leave the nest!");
+                      toast.error(
+                        "Du brauchst eine 6, um das Nest zu verlassen!",
+                      );
                       return;
                     }
                     setSelectedFigureId(
@@ -814,7 +875,11 @@ export default function Board({ diceRoll }: BoardProps) {
                     );
                     setActivePile(null);
                   }}
-                  className={`flex items-center gap-3 w-full p-2 rounded-xl transition-all text-left font-afacad font-bold ${isSelected ? "bg-white/20 text-white" : "hover:bg-white/10 text-white/85"}`}
+                  className={`flex items-center gap-3 w-full p-2 rounded-xl transition-all text-left font-afacad font-bold ${
+                    isSelected
+                      ? "bg-white/20 text-white"
+                      : "hover:bg-white/10 text-white/85"
+                  }`}
                 >
                   <div
                     className="w-3.5 h-3.5 rounded-full shrink-0"
