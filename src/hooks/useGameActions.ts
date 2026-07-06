@@ -44,7 +44,6 @@ export function useGameActions() {
         figureId,
         toPosition: targetFieldId,
       });
-      console.log("🔥 RAW HTTP RESPONSE:", JSON.stringify(result, null, 2));
       useGameStore.getState().setMoveResult(result);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Zug fehlgeschlagen";
