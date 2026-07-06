@@ -44,6 +44,7 @@ export function useGameActions() {
         figureId,
         toPosition: targetFieldId,
       });
+      console.log("🔥 RAW HTTP RESPONSE:", JSON.stringify(result, null, 2));
       useGameStore.getState().setMoveResult(result);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Zug fehlgeschlagen";
@@ -64,8 +65,16 @@ export function useGameActions() {
 
     try {
       setIsAnswering(true);
-      const result = await submitQuizAnswer(sessionId, { answer });
-      useGameStore.getState().setGameState(result.gameState);
+      const activeQuiz = useGameStore.getState().activeQuiz;
+
+      const matchingAnswer =
+        activeQuiz?.answers?.[["A", "B", "C", "D"].indexOf(answer)];
+      const resolvedAnswerId = matchingAnswer ? matchingAnswer.id : answer;
+
+      const result = await submitQuizAnswer(sessionId, {
+        answerId: resolvedAnswerId,
+      } as any);
+      useGameStore.getState().setGameState(result.gameState || result);
     } catch (err: unknown) {
       const message =
         err instanceof Error

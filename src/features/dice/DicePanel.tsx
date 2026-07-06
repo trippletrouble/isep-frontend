@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dice } from "./Dice";
 import { DiceButton } from "./DiceButton";
 import { useGameStore } from '@/stores/game.store';
@@ -31,7 +31,7 @@ function calculateSteps(fromPosition: number, toPosition: number, playerColor: s
 
 interface DicePanelProps {
   currentRoll: number | null;
-  onRoll: () => void;
+  onRoll: () => Promise<void> | void;
   disabled?: boolean;
   phase: string;
   PhaseIcon: React.ComponentType<{ className?: string }> | null;
@@ -95,16 +95,18 @@ export function DicePanel({
 
   const displayFlyCount = hasFly ? (flyDebuff ?? 1) : 0;
 
-  const handleRollClick = () => {
+  const handleRollClick = async () => {
     if (disabled || isLocalRolling || currentAwaitingState) return;
 
     setIsLocalRolling(true);
     setAwaitingServerPhaseUpdate(true);
-    onRoll();
-
-    setTimeout(() => {
-      setIsLocalRolling(false);
-    }, 1000);
+    try {
+      await onRoll();
+    } finally {
+      setTimeout(() => {
+        setIsLocalRolling(false);
+      }, 1000);
+    }
   };
 
   const isButtonDisabled = disabled || isLocalRolling || currentAwaitingState;
@@ -135,7 +137,7 @@ export function DicePanel({
             
             {/* Dice wrapper */}
             <div className="relative z-10 transition-all duration-300">
-              <Dice value={currentRoll ?? 0} isRolling={isLocalRolling} />
+              <Dice value={currentRoll ?? 0} isSpinning={isLocalRolling} />
             </div>
           </div>
 

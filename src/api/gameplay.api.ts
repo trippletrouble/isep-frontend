@@ -30,7 +30,7 @@ export async function getPossibleMoves(
 }
 
 export interface SubmitAnswerRequest {
-  answer: "A" | "B" | "C" | "D";
+  answerId: string;
 }
 
 export interface QuizSubmissionResponse {

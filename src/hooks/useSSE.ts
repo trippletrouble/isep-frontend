@@ -8,8 +8,8 @@ import type {
 } from "../api/types";
 
 interface UseSSEOptions {
-  onGameState?: (data: GameState) => void; // initial snapshot on SSE connect
-  onGameStarted?: (data: GameState) => void; // game transitioned to IN_PROGRESS
+  onGameState?: (data: GameState) => void;
+  onGameStarted?: (data: GameState) => void;
   onMoveExecuted?: (data: MoveResult) => void;
   onTurnChanged?: (data: {
     currentPlayerId: string;
@@ -85,9 +85,12 @@ export function useSSE(
         connectRef.current();
       }, delay);
     };
-    es.onmessage = (e: MessageEvent) => {
+
+    // Central event routing system that securely extracts data payloads
+    const routeEvent = (type: string, rawData: string) => {
+      console.log(`📡 RAW SSE EVENT [${type}]:`, rawData);
       try {
-        const { type, data } = JSON.parse(e.data);
+        const data = JSON.parse(rawData);
         switch (type) {
           case "game_state":
             optionsRef.current.onGameState?.(data);
@@ -120,7 +123,37 @@ export function useSSE(
             break;
         }
       } catch (err) {
-        console.error("SSE parse error", err);
+        console.error(`Error parsing SSE data for event type: ${type}`, err);
+      }
+    };
+
+    const nativeSseTypes = [
+      "game_state",
+      "game_started",
+      "move_executed",
+      "turn_changed",
+      "game_ended",
+      "quiz_started",
+      "quiz_resolved",
+      "plague_fly_acquired",
+      "plague_fly_transferred",
+    ];
+
+    nativeSseTypes.forEach((type) => {
+      es.addEventListener(type, (e: Event) => {
+        const messageEvent = e as MessageEvent;
+        routeEvent(type, messageEvent.data);
+      });
+    });
+
+    es.onmessage = (e: MessageEvent) => {
+      try {
+        const parsed = JSON.parse(e.data);
+        if (parsed && typeof parsed === "object" && "type" in parsed) {
+          routeEvent(parsed.type, JSON.stringify(parsed.data));
+        }
+      } catch {
+        // Drop silent
       }
     };
   }, [sessionId]);

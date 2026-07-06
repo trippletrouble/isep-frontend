@@ -1,6 +1,9 @@
 // ─── ENUMS (als TypeScript union types) ───────────────────────────────────
-
-export type GameStatus = "WAITING" | "IN_PROGRESS" | "FINISHED" | "QUIZ_PENDING";
+export type GameStatus =
+  | "WAITING"
+  | "IN_PROGRESS"
+  | "FINISHED"
+  | "QUIZ_PENDING";
 export type PlayerColor = "RED" | "BLUE" | "GREEN" | "YELLOW";
 export type PieceStatus = "HOME" | "ACTIVE" | "GOAL";
 export type PlayerType = "HUMAN";
@@ -11,7 +14,12 @@ export type AdditionalRule =
   | "THREE_SIXES_LOSE_TURN"
   | "QUIZ_DUELL"
   | "PLAGUE_FLY";
-export type MoveOutcome = "MOVED" | "CAPTURED" | "GOAL" | "GAME_WON";
+export type MoveOutcome =
+  | "MOVED"
+  | "CAPTURED"
+  | "GOAL"
+  | "GAME_WON"
+  | "QUIZ_STARTED";
 export type ThemePreference = "LIGHT" | "DARK" | "SYSTEM";
 export type GameHistoryActionType =
   | "ROLL"
@@ -237,6 +245,10 @@ export interface ActiveQuizType {
   pendingToPos: number;
   diceValue: number;
   createdAt: string;
+
+  // Unified operational properties to seamlessly accept the SSE live data
+  question?: string;
+  answers?: Array<{ id: string; text: string }>;
 }
 
 // ─── REQUESTS ─────────────────────────────────────────────────────────────
