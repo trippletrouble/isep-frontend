@@ -180,29 +180,6 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
             </div>
 
             <div className="flex flex-col gap-3 w-full">
-              <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
-                <div className="flex items-center gap-4">
-                  <div className="shrink-0 w-12 h-12 rounded-xl text-yellow flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">
-                    <BookOpen size={24} />
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white text-xl font-black tracking-wide">
-                        Quiz-Duell Modus
-                      </span>
-                    </div>
-                    <span className="text-white/50 text-sm font-medium mt-0.5">
-                      Ein Wissensduell bricht aus, wenn du eine gegnerische
-                      Spielfigur schlagen willst!
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pl-4">
-                  <Switch checked={quizDuell} onCheckedChange={setQuizDuell} />
-                </div>
-              </div>
-
               {cleanLevel !== "0" && (
                 <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
                   <div className="flex items-center gap-4">
@@ -226,6 +203,29 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
                   </div>
                 </div>
               )}
+
+              <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
+                <div className="flex items-center gap-4">
+                  <div className="shrink-0 w-12 h-12 rounded-xl text-yellow flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">
+                    <BookOpen size={24} />
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white text-xl font-black tracking-wide">
+                        Quiz-Duell Modus
+                      </span>
+                    </div>
+                    <span className="text-white/50 text-sm font-medium mt-0.5">
+                      Ein Wissensduell bricht aus, wenn du eine gegnerische
+                      Spielfigur schlagen willst!
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pl-4">
+                  <Switch checked={quizDuell} onCheckedChange={setQuizDuell} />
+                </div>
+              </div>
             </div>
           </div>
         )}
