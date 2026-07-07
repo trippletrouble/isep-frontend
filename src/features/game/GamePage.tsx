@@ -581,18 +581,18 @@ export const GamePage = () => {
       )}
 
       {/* Layout Wrapper */}
-      <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 lg:p-4 mt-4">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,380px)] gap-4 lg:gap-10 items-stretch justify-center">
+      <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 md:p-4 mt-4">
+        <div className="w-full grid grid-cols-1 md:grid-cols-[1fr_minmax(280px,360px)] gap-4 md:gap-8 items-stretch justify-center">
           <div className="w-full flex flex-col items-center justify-center">
-            <div className="w-full lg:hidden mb-4">
+            <div className="w-full md:hidden mb-4">
               <LeaderboardPanel />
             </div>
 
-            <div className="w-full max-w-[min(90vw,90vh)] lg:max-w-[82vh] aspect-square flex-shrink-0">
+            <div className="w-full max-w-[min(90vw,60vh)] md:max-w-[78vh] aspect-square flex-shrink-0">
               <Board diceRoll={lastDiceValue ?? 1} />
             </div>
 
-            <div className="w-full lg:hidden mt-4">
+            <div className="w-full md:hidden mt-4">
               <DicePanel
                 currentRoll={lastDiceValue}
                 onRoll={handleRoll}
@@ -604,7 +604,7 @@ export const GamePage = () => {
           </div>
 
           {/* RECHTER CONTAINER (Desktop Side Panel) */}
-          <div className="hidden lg:flex w-full flex-col h-full min-h-0 gap-4">
+          <div className="hidden md:flex w-full flex-col h-full min-h-0 gap-4">
             <div className="flex-1 min-h-0 flex flex-col">
               <LeaderboardPanel />
             </div>

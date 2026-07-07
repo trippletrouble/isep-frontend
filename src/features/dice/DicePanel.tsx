@@ -134,7 +134,7 @@ export function DicePanel({
   return (
     <div className="flex flex-col items-center w-full max-w-[391px] mx-auto shrink-0 select-none">
       <div
-        className={`relative bg-[#282828] border border-[#797979] shadow-[0px_16px_22.2px_rgba(0,0,0,0.25)] rounded-[40px] flex flex-col items-center justify-start w-full h-[330px] pt-[26px] pb-[20px] px-6 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] ${className} ${
+        className={`relative bg-[#282828] border border-[#797979] shadow-[0px_16px_22.2px_rgba(0,0,0,0.25)] rounded-[40px] flex flex-col items-center justify-start w-full h-[220px] md:h-[330px] pt-4 md:pt-[26px] pb-4 md:pb-[20px] px-6 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] ${className} ${
           isMyTurn && !currentAwaitingState
             ? "scale-[1.03]"
             : "opacity-60"
@@ -144,36 +144,36 @@ export function DicePanel({
           <div className="absolute inset-0 bg-white/5 animate-pulse rounded-[40px] pointer-events-none" />
         )}
 
-        <div className="flex items-center justify-center mb-[20px] drop-shadow-md">
-          <p className="text-[36px] font-lilita uppercase tracking-[0.04em] text-center text-white leading-[41px]">
+        <div className="flex items-center justify-center mb-3 md:mb-[20px] drop-shadow-md">
+          <p className="text-[26px] md:text-[36px] font-lilita uppercase tracking-[0.04em] text-center text-white leading-none md:leading-[41px]">
             WÜRFEL
           </p>
         </div>
 
-        <div className="flex items-center gap-[45px] mb-[25px] justify-center min-w-0 w-full">
-          <div className="relative w-[123px] h-[123px] flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-[25px] md:gap-[45px] mb-3 md:mb-[25px] justify-center min-w-0 w-full">
+          <div className="relative w-[85px] h-[85px] md:w-[123px] md:h-[123px] flex items-center justify-center shrink-0">
             {/* Background Glow */}
-            <div className="absolute -top-[13px] -left-[13px] w-[150px] h-[150px] bg-[#FFFBFB]/20 rounded-full blur-[12.5px] pointer-events-none" />
+            <div className="absolute -top-[10px] -left-[10px] w-[105px] h-[105px] md:-top-[13px] md:-left-[13px] md:w-[150px] md:h-[150px] bg-[#FFFBFB]/20 rounded-full blur-[10px] md:blur-[12.5px] pointer-events-none" />
             
             {/* Dice wrapper */}
-            <div className="relative z-10 transition-all duration-300">
+            <div className="relative z-10 transition-all duration-300 scale-75 md:scale-100">
               <Dice value={currentRoll ?? 0} isRolling={isLocalRolling} />
             </div>
           </div>
 
           {/* Fliegen debuff layout next to the dice */}
           {isPlagueFlyActive && (
-            <div className="flex flex-col items-start justify-center gap-[5px] h-[64px] shrink-0">
-              <span className="font-afacad font-bold text-[24px] uppercase tracking-[0.02em] text-white leading-none">
+            <div className="flex flex-col items-start justify-center gap-1 md:gap-[5px] h-[48px] md:h-[64px] shrink-0">
+              <span className="font-afacad font-bold text-[18px] md:text-[24px] uppercase tracking-[0.02em] text-white leading-none">
                 FLIEGEN
               </span>
-              <div className="flex items-center gap-[5px] h-[35px]">
+              <div className="flex items-center gap-[5px] h-[25px] md:h-[35px]">
                 {[0, 1, 2].map((idx) => {
                   const isActive = idx < displayFlyCount;
                   return (
                     <div
                       key={idx}
-                      className="w-[28px] h-[35px] transition-all duration-300"
+                      className="w-[20px] h-[25px] md:w-[28px] md:h-[35px] transition-all duration-300"
                       style={{
                         opacity: isActive ? 1.0 : 0.2,
                         filter: "brightness(0) invert(1)",
@@ -182,7 +182,7 @@ export function DicePanel({
                       <img
                         src={fliegeIcon}
                         alt="Pestfliege"
-                        className="w-[28px] h-[35px] object-contain"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   );
@@ -192,15 +192,15 @@ export function DicePanel({
           )}
         </div>
 
-        <div className="relative w-[262px] mx-auto mt-auto">
+        <div className="relative w-[200px] md:w-[262px] mx-auto mt-auto scale-90 md:scale-100">
           <DiceButton
             onClick={handleRollClick}
             disabled={isButtonDisabled}
             shouldPulse={isMyTurn && !currentAwaitingState}
           />
           {hasFly && flyDebuff !== null && (
-            <div className="absolute -top-[16px] -right-[10px] w-[33px] h-[33px] bg-[#282828] border border-[#797979] rounded-full flex items-center justify-center shadow-[0px_4px_22.2px_rgba(0,0,0,0.25)] pointer-events-none">
-              <span className="font-lilita text-[18px] text-white leading-none uppercase">
+            <div className="absolute -top-[12px] -right-[8px] md:-top-[16px] md:-right-[10px] w-[26px] h-[26px] md:w-[33px] md:h-[33px] bg-[#282828] border border-[#797979] rounded-full flex items-center justify-center shadow-[0px_4px_22.2px_rgba(0,0,0,0.25)] pointer-events-none">
+              <span className="font-lilita text-[14px] md:text-[18px] text-white leading-none uppercase">
                 -{flyDebuff}
               </span>
             </div>
