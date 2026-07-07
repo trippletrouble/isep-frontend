@@ -2,6 +2,7 @@ import { Settings, ChevronDown } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import vector7 from "@/assets/vector7.png";
 import { useAuth } from "@/hooks/useAuth";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -25,12 +26,15 @@ export function Header() {
           <ChevronDown size={20} />
         </button>
 
-        <button
-          aria-label="Einstellungen"
-          className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-white/5 transition-colors"
-        >
-          <Settings size={24} className="text-white" />
-        </button>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <button
+            aria-label="Einstellungen"
+            className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-white/5 transition-colors"
+          >
+            <Settings size={24} className="text-white" />
+          </button>
+        </div>
       </header>
     </div>
   );
