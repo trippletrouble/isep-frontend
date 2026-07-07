@@ -156,39 +156,77 @@ export function DicePanel({
           </p>
         </div>
 
-        <div className="flex items-center gap-[25px] md:gap-[45px] mb-3 md:mb-[25px] justify-center min-w-0 w-full">
-          <div className="relative w-[85px] h-[85px] md:w-[123px] md:h-[123px] flex items-center justify-center shrink-0">
-            {/* Background Glow */}
-            <div className="absolute -top-[10px] -left-[10px] w-[105px] h-[105px] md:-top-[13px] md:-left-[13px] md:w-[150px] md:h-[150px] bg-[#FFFBFB]/20 rounded-full blur-[10px] md:blur-[12.5px] pointer-events-none" />
-            
-            {/* Dice wrapper */}
-            <div className="relative z-10 transition-all duration-300 scale-75 md:scale-100">
-              <Dice value={currentRoll ?? 0} isSpinning={isLocalRolling} />
+        <div className="flex flex-col md:flex-row items-center mb-3 md:mb-[25px] justify-center min-w-0 w-full gap-3 md:gap-0">
+          <div className={isPlagueFlyActive ? "flex md:flex-1 justify-center md:justify-end md:pr-8" : "flex justify-center"}>
+            <div className="relative w-[85px] h-[85px] md:w-[123px] md:h-[123px] flex items-center justify-center shrink-0">
+              {/* Background Glow */}
+              <div className="absolute -top-[10px] -left-[10px] w-[105px] h-[105px] md:-top-[13px] md:-left-[13px] md:w-[150px] md:h-[150px] bg-[#FFFBFB]/20 rounded-full blur-[10px] md:blur-[12.5px] pointer-events-none" />
+              
+              {/* Dice wrapper */}
+              <div className="relative z-10 transition-all duration-300 scale-90 md:scale-100">
+                <Dice value={currentRoll ?? 0} isSpinning={isLocalRolling} />
+              </div>
             </div>
           </div>
 
+          {/* Separator (Desktop only) */}
+          {isPlagueFlyActive && (
+            <div className="hidden md:block w-[1px] h-[55px] bg-white/10 shrink-0" />
+          )}
+
           {/* Fliegen debuff layout next to the dice */}
           {isPlagueFlyActive && (
-            <div className="flex flex-col items-start justify-center gap-1 md:gap-[5px] h-[48px] md:h-[64px] shrink-0">
-              <span className="font-afacad font-bold text-[18px] md:text-[24px] uppercase tracking-[0.02em] text-white leading-none">
-                FLIEGEN
-              </span>
-              <div className="flex items-center gap-2 h-[25px] md:h-[35px]">
-                <div
-                  className="w-[20px] h-[25px] md:w-[28px] md:h-[35px] transition-all duration-300 flex items-center justify-center"
-                  style={{
-                    opacity: displayFlyCount > 0 ? 1.0 : 0.2,
-                  }}
-                >
-                  <Icon iconNode={bee} className="w-full h-full text-white" />
-                </div>
-                <span className="font-afacad font-semibold text-[14px] md:text-[18px] text-white/70">
-                  {displayFlyCount > 0 ? `Stufe ${displayFlyCount}/3` : "Keine"}
+            <div className="flex md:flex-1 justify-center md:justify-start md:pl-8">
+              <div className="flex flex-col items-center md:items-start justify-center gap-1 md:gap-[5px] h-[48px] md:h-[64px] shrink-0">
+                <span className="font-afacad font-bold text-[18px] md:text-[24px] uppercase tracking-[0.02em] text-white leading-none">
+                  FLIEGE
                 </span>
+                <div className="flex items-center gap-2 h-[25px] md:h-[35px]">
+                  <div
+                    className="w-[20px] h-[25px] md:w-[28px] md:h-[35px] transition-all duration-300 flex items-center justify-center"
+                    style={{
+                      opacity: displayFlyCount > 0 ? 1.0 : 0.2,
+                    }}
+                  >
+                    <Icon iconNode={bee} className="w-full h-full text-white" />
+                  </div>
+                  <span className="font-afacad font-semibold text-[14px] md:text-[18px] text-white/70">
+                    {displayFlyCount > 0 ? `Stufe ${displayFlyCount}/3` : "Keine"}
+                  </span>
+                </div>
               </div>
             </div>
           )}
         </div>
+
+        {/* New Pill: 3 -> 1 -2 (or -2 preview before roll) */}
+        {hasFly && flyDebuff !== null && (
+          <div className="flex justify-center mb-3">
+            <div className="bg-[#282828] border border-white/10 rounded-full px-3.5 py-1.5 flex items-center gap-2 shadow-md">
+              {currentRoll !== null ? (
+                <>
+                  <span className="line-through text-white/50 font-lilita text-[18px] leading-none">
+                    {currentRoll}
+                  </span>
+                  <span className="text-white/40 text-[14px] leading-none">→</span>
+                  <span className="text-[#ebd536] font-lilita text-[22px] leading-none">
+                    {Math.max(1, currentRoll - flyDebuff)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-white/60 font-lilita text-[14px] leading-none uppercase tracking-wider">
+                  Nächster Wurf:
+                </span>
+              )}
+              <div className="w-[16px] h-[16px] flex items-center justify-center text-white/70 ml-0.5">
+                <Icon iconNode={bee} className="w-full h-full text-white" />
+              </div>
+              <span className="font-lilita text-[15px] text-[#DB5757] font-bold leading-none">
+                -{flyDebuff}
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="relative w-[200px] md:w-[262px] mx-auto mt-auto scale-90 md:scale-100">
           <DiceButton
@@ -196,13 +234,6 @@ export function DicePanel({
             disabled={isButtonDisabled}
             shouldPulse={isMyTurn && !currentAwaitingState}
           />
-          {hasFly && flyDebuff !== null && (
-            <div className="absolute -top-[12px] -right-[8px] md:-top-[16px] md:-right-[10px] w-[26px] h-[26px] md:w-[33px] md:h-[33px] bg-[#282828] border border-[#797979] rounded-full flex items-center justify-center shadow-[0px_4px_22.2px_rgba(0,0,0,0.25)] pointer-events-none z-20">
-              <span className="font-lilita text-[14px] md:text-[18px] text-white leading-none uppercase">
-                -{flyDebuff}
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </div>

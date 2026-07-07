@@ -37,10 +37,10 @@ describe("DicePanel component", () => {
     );
 
     expect(screen.getByText("Würfeln")).toBeInTheDocument();
-    expect(screen.queryByText("FLIEGEN")).not.toBeInTheDocument();
+    expect(screen.queryByText("FLIEGE")).not.toBeInTheDocument();
   });
 
-  it("should render FLIEGEN section and subtraction badge when PLAGUE_FLY is active and player has infected figure", () => {
+  it("should render FLIEGE section and subtraction badge when PLAGUE_FLY is active and player has infected figure", () => {
     // Player has infected figure with flyDebuffCount = 1 (meaning next count = 2)
     (useGameStore as any).mockImplementation((selector: any) =>
       selector({
@@ -73,8 +73,8 @@ describe("DicePanel component", () => {
       />
     );
 
-    // FLIEGEN section is active
-    expect(screen.getByText("FLIEGEN")).toBeInTheDocument();
+    // FLIEGE section is active
+    expect(screen.getByText("FLIEGE")).toBeInTheDocument();
     
     // Subtraction badge displays -2 (debuff count 1 + 1 = 2)
     expect(screen.getByText("-2")).toBeInTheDocument();
