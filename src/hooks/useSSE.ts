@@ -19,6 +19,14 @@ interface UseSSEOptions {
   onGameEnded?: (data: GameResults) => void;
   onQuizStarted?: (data: ActiveQuizType) => void;
   onQuizResolved?: (data: GameState) => void;
+  onPlagueFlyAcquired?: (data: { figureId: number; playerId: string }) => void;
+  onPlagueFlyTransferred?: (data: {
+    fromFigureId: number;
+    toFigureId: number;
+    fromPlayerId: string;
+    toPlayerId: string;
+    activeFlyCount: number;
+  }) => void;
   onError?: (error: Event) => void;
   onConnected?: () => void;
 }
@@ -109,6 +117,14 @@ export function useSSE(
           case "quiz_resolved":
             optionsRef.current.onQuizResolved?.(data);
             break;
+          case "plague_fly_acquired":
+            optionsRef.current.onPlagueFlyAcquired?.(data);
+            break;
+          case "plague_fly_transferred":
+            optionsRef.current.onPlagueFlyTransferred?.(data);
+            break;
+          case "heartbeat":
+            break;
         }
       } catch (err) {
         console.error(`Error parsing SSE data for event type: ${type}`, err);
@@ -123,6 +139,8 @@ export function useSSE(
       "game_ended",
       "quiz_started",
       "quiz_resolved",
+      "plague_fly_acquired",
+      "plague_fly_transferred",
     ];
 
     nativeSseTypes.forEach((type) => {

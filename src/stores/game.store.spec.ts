@@ -279,7 +279,7 @@ describe("useGameStore", () => {
     useGameStore.getState().handleQuizStarted(dummyQuiz as any);
 
     let state = useGameStore.getState();
-    expect(state.activeQuiz).toEqual(dummyQuiz);
+    expect(state.activeQuiz).toMatchObject(dummyQuiz);
     expect(state.status).toBe("QUIZ_PENDING");
 
     // Manually setting active quiz
@@ -288,10 +288,26 @@ describe("useGameStore", () => {
 
     // Resolving quiz
     useGameStore.getState().handleQuizStarted(dummyQuiz as any);
-    useGameStore.getState().handleQuizResolved(dummyGameState);
+    const resolutionPayload = {
+      winnerId: "p1",
+      loserId: "p2",
+      attackerCorrect: true,
+      defenderCorrect: false,
+      correctAnswerId: "A",
+      gameState: {
+        ...dummyGameState,
+        activeQuiz: null,
+      },
+    };
+    useGameStore.getState().handleQuizResolved(resolutionPayload);
 
     state = useGameStore.getState();
-    expect(state.activeQuiz).toBeNull();
-    expect(state.gameState).toEqual(dummyGameState);
+    expect(state.activeQuiz).not.toBeNull();
+    expect(state.activeQuiz?.winnerId).toBe("p1");
+    expect(state.activeQuiz?.attackerCorrect).toBe(true);
+
+    // Simulate closing the quiz overlay
+    useGameStore.getState().setActiveQuiz(null);
+    expect(useGameStore.getState().activeQuiz).toBeNull();
   });
 });

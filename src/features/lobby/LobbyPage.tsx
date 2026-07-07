@@ -25,6 +25,7 @@ export function LobbyPage() {
     players,
     isLoading,
     fetchLobby,
+    joinLobby,
     leaveLobby,
     startGame,
     generateInvite,
@@ -77,6 +78,20 @@ export function LobbyPage() {
       navigate(`/game/${activeSessionId}`);
     },
   });
+
+  async function handleJoinLobby() {
+    if (activeSessionId) {
+      try {
+        const queryParams = new URLSearchParams(window.location.search);
+        const inviteToken = queryParams.get("token") || queryParams.get("inviteToken") || undefined;
+        await joinLobby(activeSessionId, { inviteToken });
+        toast.success("Lobby erfolgreich beigetreten!");
+        await fetchLobby(activeSessionId);
+      } catch (err) {
+        console.error("Failed to join lobby", err);
+      }
+    }
+  }
 
   async function handleLeave() {
     if (activeSessionId) {
@@ -245,17 +260,25 @@ export function LobbyPage() {
                 })}
               </div>
             </div>
-
             <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-accent">
-              <button
-                onClick={handleLeave}
-                className="flex-1 h-[60px] bg-[#3A3A3A] border border-accent text-white hover:bg-[#4A4A4A] font-bold text-xl rounded-[20px] flex items-center justify-center gap-2 transition-all"
-              >
-                <LogOut size={20} />
-                {t("Lobby verlassen")}
-              </button>
+              {players.some((p) => p.id === user?.id) ? (
+                <button
+                  onClick={handleLeave}
+                  className="flex-1 h-[60px] bg-[#3A3A3A] border border-accent text-white hover:bg-[#4A4A4A] font-bold text-xl rounded-[20px] flex items-center justify-center gap-2 transition-all"
+                >
+                  <LogOut size={20} />
+                  {t("Lobby verlassen")}
+                </button>
+              ) : (
+                <button
+                  onClick={handleJoinLobby}
+                  className="flex-1 h-[60px] bg-green text-primary hover:opacity-90 font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
+                >
+                  {t("Lobby beitreten")}
+                </button>
+              )}
 
-              {isHost && (
+              {players.some((p) => p.id === user?.id) && isHost && (
                 <button
                   onClick={handleStart}
                   disabled={players.length < 2}

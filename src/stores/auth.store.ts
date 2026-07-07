@@ -35,6 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   logout: async () => {
+    localStorage.removeItem("guest_mode");
     try {
       await logoutApi();
     } catch {

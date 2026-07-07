@@ -25,6 +25,7 @@ type FigureState = {
   position: "nest" | number | string;
   nestIndex: number;
   startTrackIndex: number;
+  hasPlagueFly?: boolean;
 };
 
 const INITIAL_FIGURES: FigureState[] = [
@@ -174,6 +175,11 @@ export default function Board({ diceRoll }: BoardProps) {
   const { moveFigure } = useGameActions();
 
   const [selectedFigureId, setSelectedFigureId] = useState<string | null>(null);
+  const setSelectedFigureIdInStore = useGameStore((state) => state.setSelectedFigureId);
+  useEffect(() => {
+    setSelectedFigureIdInStore(selectedFigureId);
+  }, [selectedFigureId, setSelectedFigureIdInStore]);
+
   const [activePile, setActivePile] = useState<{
     x: number;
     y: number;
@@ -234,7 +240,14 @@ export default function Board({ diceRoll }: BoardProps) {
       position = `goal_${backendFig.position - goalStart}`;
     }
 
-    return { id: String(id), color, position, nestIndex, startTrackIndex };
+    return {
+      id: String(id),
+      color,
+      position,
+      nestIndex,
+      startTrackIndex,
+      hasPlagueFly: backendFig.hasPlagueFly ?? false,
+    };
   };
 
   const getPathOfPositions = (
@@ -687,6 +700,7 @@ export default function Board({ diceRoll }: BoardProps) {
           if (N === 1) {
             const fig = groupFigs[0];
             const isSelected = fig.id === selectedFigureId;
+            const canMove = possibleMoves.some((m) => m.figureId === Number(fig.id));
             return (
               <Figure
                 key={fig.id}
@@ -694,6 +708,8 @@ export default function Board({ diceRoll }: BoardProps) {
                 y={coords.y}
                 color={fig.color}
                 isSelected={isSelected}
+                canMove={canMove}
+                hasPlagueFly={fig.hasPlagueFly}
                 onClick={
                   isCenter
                     ? undefined
@@ -724,6 +740,7 @@ export default function Board({ diceRoll }: BoardProps) {
             return groupFigs.map((fig, idx) => {
               const { dx, dy, scale } = getOffsetAndScale(N, idx);
               const isSelected = fig.id === selectedFigureId;
+              const canMove = possibleMoves.some((m) => m.figureId === Number(fig.id));
               return (
                 <Figure
                   key={fig.id}
@@ -732,6 +749,8 @@ export default function Board({ diceRoll }: BoardProps) {
                   color={fig.color}
                   scale={scale}
                   isSelected={isSelected}
+                  canMove={canMove}
+                  hasPlagueFly={fig.hasPlagueFly}
                   onClick={
                     isCenter
                       ? undefined
@@ -759,6 +778,9 @@ export default function Board({ diceRoll }: BoardProps) {
             const isAnySelected = groupFigs.some(
               (f) => f.id === selectedFigureId,
             );
+            const isAnyCanMove = groupFigs.some((f) =>
+              possibleMoves.some((m) => m.figureId === Number(f.id)),
+            );
             return (
               <Figure
                 key={`stack-${key}`}
@@ -767,6 +789,8 @@ export default function Board({ diceRoll }: BoardProps) {
                 color={primaryColor}
                 count={N}
                 isSelected={isAnySelected}
+                canMove={isAnyCanMove}
+                hasPlagueFly={groupFigs.some((f) => f.hasPlagueFly)}
                 onClick={
                   isCenter
                     ? undefined
@@ -801,6 +825,7 @@ export default function Board({ diceRoll }: BoardProps) {
             strokeWidth="4"
             strokeDasharray="16 8"
             className="animate-spin"
+            data-testid="target-tile"
             style={{
               cursor: "pointer",
               transformOrigin: `${targetTile.x}px ${targetTile.y}px`,

@@ -33,7 +33,7 @@ const LEVELS: LevelConfig[] = [
     id: 3,
     name: "Level 3",
     description: "Alle aktiven Erweiterungen (Quiz-Duell & Sechser-Regeln)",
-    rules: ["THROW_AGAIN_ON_6", "QUIZ_DUELL", "THREE_SIXES_LOSE_TURN"],
+    rules: ["THROW_AGAIN_ON_6", "QUIZ_DUELL", "THREE_SIXES_LOSE_TURN", "PLAGUE_FLY"],
   },
 ];
 

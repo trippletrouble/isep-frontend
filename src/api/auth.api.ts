@@ -23,3 +23,7 @@ export async function handleOAuthCallback(
 export function getOAuthUrl(): string {
   return API_BASE_URL + "/auth/oauth";
 }
+
+export async function testLogin(username: string, sub: string): Promise<SessionUser> {
+  return api.get<SessionUser>(`/auth/test-login?username=${encodeURIComponent(username)}&sub=${encodeURIComponent(sub)}`);
+}

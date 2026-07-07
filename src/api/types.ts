@@ -12,7 +12,8 @@ export type BoardTheme = "CLASSIC";
 export type AdditionalRule =
   | "THROW_AGAIN_ON_6"
   | "THREE_SIXES_LOSE_TURN"
-  | "QUIZ_DUELL";
+  | "QUIZ_DUELL"
+  | "PLAGUE_FLY";
 export type MoveOutcome =
   | "MOVED"
   | "CAPTURED"
@@ -81,6 +82,8 @@ export interface Figure {
   playerId: string;
   position: number;
   status: PieceStatus;
+  hasPlagueFly?: boolean;
+  flyDebuffCount?: number;
 }
 
 export interface Player {

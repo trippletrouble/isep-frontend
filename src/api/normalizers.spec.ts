@@ -127,6 +127,7 @@ describe("API Normalizers", () => {
         consecutiveSixes: 1,
         activeRules: ["RULE_A"],
         winnerId: null,
+        activeQuiz: null,
         createdAt: "2026-07-05T12:00:00Z",
         lastUpdatedAt: "2026-07-05T12:00:00Z",
       });

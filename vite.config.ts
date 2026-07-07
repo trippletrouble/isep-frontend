@@ -10,7 +10,7 @@ export default defineConfig({
       babel: {
         presets: [reactCompilerPreset()],
       },
-    }),
+    } as any),
     tailwindcss(),
   ],
   resolve: {

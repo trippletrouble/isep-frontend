@@ -10,11 +10,11 @@ import { useGameActions } from "@/hooks/useGameActions";
 import { useAuthStore } from "@/stores";
 import { useSSE } from "@/hooks/useSSE";
 import { getSessionState, reconnectSession } from "@/api/sessions.api";
-import {getPossibleMoves, getSessionResults} from "@/api/gameplay.api";
-import type { GameResults } from "@/api/types";
+import { getSessionResults, getPossibleMoves } from "@/api/gameplay.api";
 import { QuizDuelView } from "../quiz-duel/QuizDuelView";
-import { Trophy, Home } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { DiceIcon, FigureIcon } from "@/components/icons/PhaseIcons";
+import { toast } from "sonner";
 
 export const GamePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,10 +33,11 @@ export const GamePage = () => {
   const [notification, setNotification] = useState<NotificationData | null>(
     null,
   );
-  const [results, setResults] = useState<GameResults[] | null>(null);
+
+  const isSandboxMode = id === "sandbox" || window.location.pathname.endsWith("/sandbox");
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || isSandboxMode) return;
     let isMounted = true;
 
     const loadGame = async () => {
@@ -53,9 +54,21 @@ export const GamePage = () => {
 
         if (state.status === "IN_PROGRESS") {
           await reconnectSession(id);
+          
+          if (user && state.currentPlayerId === user.id && state.diceRolledThisTurn) {
+            try {
+              const { possibleMoves } = await getPossibleMoves(id);
+              if (isMounted) {
+                useGameStore.getState().setPossibleMoves(possibleMoves);
+              }
+            } catch (movesErr) {
+              console.error("Failed to fetch possible moves on reconnect", movesErr);
+            }
+          }
         } else if (state.status === "FINISHED") {
-          const res = await getSessionResults(id);
-          if (isMounted) setResults(res);
+          if (isMounted) {
+            navigate(`/results/${id}`);
+          }
         }
       } catch (err) {
         console.error("Failed to load game session", err);
@@ -66,15 +79,14 @@ export const GamePage = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, setGameState]);
+  }, [id, setGameState, isSandboxMode, user]);
 
   useEffect(() => {
-    if (!id) return; // Keep it clean
-
+    if (isSandboxMode || !id) return;
     if (gameState?.status === "FINISHED") {
       let isMounted = true;
       getSessionResults(id)
-        .then((res) => {
+        .then(() => {
           if (isMounted) {
             navigate(`/results/${id}`);
           }
@@ -85,7 +97,7 @@ export const GamePage = () => {
         isMounted = false;
       };
     }
-  }, [gameState?.status, id, navigate]);
+  }, [gameState?.status, id, navigate, isSandboxMode]);
 
   useEffect(() => {
     if (!notification) return;
@@ -93,7 +105,95 @@ export const GamePage = () => {
     // return () => clearTimeout(timer);
   }, [notification]);
 
-  useSSE(id || null, {
+  // ==================== DEBUG MOCK BEGIN ======================
+  useEffect(() => {
+    if (!isSandboxMode) return;
+
+    const mockUserId = user?.id || "mock-user-id";
+    const redUserId = "red-player-id";
+    const yellowUserId = "yellow-player-id";
+    const greenUserId = "green-player-id";
+
+    useGameStore.getState().setActiveQuiz(null);
+
+    setGameState({
+      sessionId: id || "debug-sandbox-lobby",
+      status: "IN_PROGRESS",
+      currentPlayerId: mockUserId,
+      turnNumber: 1,
+      diceRolledThisTurn: false,
+      consecutiveSixes: 0,
+      activeRules: ["QUIZ_DUELL", "PLAGUE_FLY"],
+      createdAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+      players: [
+        {
+          id: mockUserId,
+          username: user?.username || "Du (Blau)",
+          color: "BLUE",
+          type: "HUMAN",
+          isCurrentTurn: true,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+        {
+          id: redUserId,
+          username: "Spieler Rot",
+          color: "RED",
+          type: "HUMAN",
+          isCurrentTurn: false,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+        {
+          id: yellowUserId,
+          username: "Spieler Gelb",
+          color: "YELLOW",
+          type: "HUMAN",
+          isCurrentTurn: false,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+        {
+          id: greenUserId,
+          username: "Spieler Grün",
+          color: "GREEN",
+          type: "HUMAN",
+          isCurrentTurn: false,
+          hasFinished: false,
+          figuresInGoal: 0,
+        },
+      ],
+      figures: [
+        // Blue
+        { id: 1, playerId: mockUserId, position: 10, status: "ACTIVE", hasPlagueFly: true, flyDebuffCount: 2 },
+        { id: 2, playerId: mockUserId, position: -1, status: "HOME" },
+        { id: 3, playerId: mockUserId, position: -1, status: "HOME" },
+        { id: 4, playerId: mockUserId, position: -1, status: "HOME" },
+        // Red
+        { id: 5, playerId: redUserId, position: 11, status: "ACTIVE" },
+        { id: 6, playerId: redUserId, position: -1, status: "HOME" },
+        { id: 7, playerId: redUserId, position: -1, status: "HOME" },
+        { id: 8, playerId: redUserId, position: -1, status: "HOME" },
+        // Yellow
+        { id: 9, playerId: yellowUserId, position: 24, status: "ACTIVE" },
+        { id: 10, playerId: yellowUserId, position: -1, status: "HOME" },
+        { id: 11, playerId: yellowUserId, position: -1, status: "HOME" },
+        { id: 12, playerId: yellowUserId, position: -1, status: "HOME" },
+        // Green
+        { id: 13, playerId: greenUserId, position: 37, status: "ACTIVE" },
+        { id: 14, playerId: greenUserId, position: -1, status: "HOME" },
+        { id: 15, playerId: greenUserId, position: -1, status: "HOME" },
+        { id: 16, playerId: greenUserId, position: -1, status: "HOME" },
+      ],
+    });
+
+    useGameStore.setState({ lastDiceValue: null });
+  }, [id, user, setGameState, isSandboxMode]);
+  // ==================== DEBUG MOCK END ======================
+
+  // Pass null to useSSE if debugging to stop streaming server data updates over your state
+  useSSE(isSandboxMode ? null : id || null, {
     onGameState: (data) => useGameStore.getState().handleGameStarted(data),
     onGameStarted: (data) => useGameStore.getState().handleGameStarted(data),
     onMoveExecuted: (data) => {
@@ -147,18 +247,283 @@ export const GamePage = () => {
         iconType: "QUIZ",
       });
     },
+    onPlagueFlyAcquired: (data) => {
+      setNotification({
+        title: "PESTFLIEGE!",
+        message: `Eine Pestfliege hat die Figur ${data.figureId} befallen!`,
+        iconType: "PLAGUE_FLY",
+      });
+    },
+    onPlagueFlyTransferred: (data) => {
+      setNotification({
+        title: "FLIEGE ÜBERTRAGEN!",
+        message: `Die Pestfliege wurde von Figur ${data.fromFigureId} auf Figur ${data.toFigureId} übertragen!`,
+        iconType: "PLAGUE_FLY",
+      });
+    },
   });
 
-  const isMyTurn = gameState && user && gameState.currentPlayerId === user.id;
-  const canRoll = isMyTurn && !gameState.diceRolledThisTurn;
+  const isMyTurn = isSandboxMode
+    ? true
+    : gameState && user && gameState.currentPlayerId === user.id;
 
-  const handleRoll = async () => {
+  const canRoll = isMyTurn && !gameState?.diceRolledThisTurn;
+
+  const handleRoll = async (customValue?: number) => {
+    if (isSandboxMode) {
+      if (gameState) {
+        const generatedRoll = customValue !== undefined ? customValue : Math.floor(Math.random() * 6) + 1;
+        useGameStore.setState({ lastDiceValue: generatedRoll });
+
+        const currentPlayerId = gameState.currentPlayerId || "mock-user-id";
+        const currentPlayerColor = gameState.players.find(p => p.id === currentPlayerId)?.color || "BLUE";
+
+        const startFields: Record<string, number> = {
+          RED: 0,
+          BLUE: 13,
+          YELLOW: 26,
+          GREEN: 39
+        };
+        const startField = startFields[currentPlayerColor] ?? 13;
+
+        let updatedFigures = gameState.figures;
+        const flyActive = gameState.activeRules?.includes("PLAGUE_FLY") ?? true;
+        const activeFliesMap = new Map<number, number>();
+
+        if (flyActive) {
+          updatedFigures = updatedFigures.map((fig) => {
+            if (fig.playerId === currentPlayerId && fig.hasPlagueFly) {
+              const currentCount = fig.flyDebuffCount || 0;
+              const nextCount = currentCount + 1;
+              const shouldHeal = nextCount >= 3;
+
+              if (!shouldHeal) {
+                const debuffVal = Math.floor(Math.random() * 3) + 1;
+                const effectiveRoll = Math.max(1, generatedRoll - debuffVal);
+                activeFliesMap.set(fig.id, effectiveRoll);
+              }
+
+              return {
+                ...fig,
+                flyDebuffCount: shouldHeal ? 0 : nextCount,
+                hasPlagueFly: !shouldHeal
+              };
+            }
+            return fig;
+          });
+        }
+
+        if (flyActive && generatedRoll === 1) {
+          const totalActiveFlies = updatedFigures.filter(f => f.hasPlagueFly).length;
+          if (totalActiveFlies < 3) {
+            const goalStartPositions = [52, 57, 62, 67];
+            const eligible = updatedFigures.find(
+              (f) => {
+                if (f.playerId !== currentPlayerId) return false;
+                if (f.status !== "ACTIVE" || f.position === -1) return false;
+                if (f.hasPlagueFly) return false;
+                if (f.position >= 72) return false;
+                const isInGoalLane = goalStartPositions.some(
+                  (start) => f.position >= start && f.position < start + 5
+                );
+                return !isInGoalLane;
+              }
+            );
+
+            if (eligible) {
+              updatedFigures = updatedFigures.map((f) => {
+                if (f.id === eligible.id) {
+                  return {
+                    ...f,
+                    hasPlagueFly: true,
+                    flyDebuffCount: 0
+                  };
+                }
+                return f;
+              });
+              toast.info(`Eine Pestfliege hat Figur ${eligible.id} infiziert!`);
+            }
+          }
+        }
+
+        const moves: any[] = [];
+        updatedFigures.forEach((fig) => {
+          if (fig.playerId !== currentPlayerId) return;
+
+          const figRoll = activeFliesMap.has(fig.id) ? activeFliesMap.get(fig.id)! : generatedRoll;
+
+          if (fig.status === "HOME" || fig.position === -1) {
+            if (generatedRoll === 6) {
+              moves.push({
+                figureId: fig.id,
+                fromPosition: -1,
+                toPosition: startField,
+                capturesOpponent: updatedFigures.some(
+                  (f) => f.playerId !== currentPlayerId && f.position === startField
+                ),
+              });
+            }
+          } else {
+            const nextPos = (fig.position + figRoll) % 52;
+            moves.push({
+              figureId: fig.id,
+              fromPosition: fig.position,
+              toPosition: nextPos,
+              capturesOpponent: updatedFigures.some(
+                (f) => f.playerId !== currentPlayerId && f.position === nextPos
+              ),
+            });
+          }
+        });
+
+        // Set the state
+        setGameState({
+          ...gameState,
+          lastDiceValue: generatedRoll,
+          figures: updatedFigures,
+          diceRolledThisTurn: true,
+        });
+        useGameStore.getState().setPossibleMoves(moves);
+
+        if (moves.length === 0) {
+          toast.info(`Keine Züge möglich mit einer ${generatedRoll}. Nächster Spieler!`);
+
+          const players = gameState.players;
+          const currentIdx = players.findIndex(p => p.id === currentPlayerId);
+          const nextIdx = (currentIdx + 1) % players.length;
+          const nextPlayerId = players[nextIdx].id;
+          const nextPlayers = players.map(p => ({
+            ...p,
+            isCurrentTurn: p.id === nextPlayerId
+          }));
+
+          setTimeout(() => {
+            setGameState({
+              ...gameState,
+              currentPlayerId: nextPlayerId,
+              players: nextPlayers,
+              diceRolledThisTurn: false,
+              lastDiceValue: null,
+            });
+          }, 2000);
+        }
+      }
+      return;
+    }
+
     if (id) {
       await rollDice(id);
     }
   };
 
   const handleQuizAnswerSubmit = async (answer: "A" | "B" | "C" | "D") => {
+    if (isSandboxMode) {
+      if (!activeQuiz) return;
+
+      const evaluatedQuiz = {
+        ...activeQuiz,
+        attackerAnswer: answer,
+        defenderAnswer: "B" as const,
+        attackerCorrect: answer === "A",
+        defenderCorrect: false,
+      };
+
+      useGameStore.setState({ activeQuiz: evaluatedQuiz });
+
+      setTimeout(() => {
+        setNotification({
+          title: "DUELL BEENDET",
+          message:
+            answer === "A"
+              ? "Der Angreifer hat das Quiz-Duell gewonnen!"
+              : "Der Verteidiger hat das Quiz-Duell gewonnen!",
+          iconType: "INFO",
+        });
+
+        const storeState = useGameStore.getState();
+        const pendingFigId = activeQuiz.pendingFigureId;
+        const targetPos = activeQuiz.pendingToPos;
+        const fromPos = activeQuiz.pendingFromPos;
+
+        let nextFigures = storeState.figures;
+
+        if (answer === "A") {
+          const defenderFig = storeState.figures.find(
+            (fig) => fig.playerId !== storeState.currentPlayerId && fig.position === targetPos
+          );
+          const attackerFig = storeState.figures.find((fig) => fig.id === pendingFigId);
+
+          let nextAttackerFly = attackerFig?.hasPlagueFly ?? false;
+          let nextDefenderFly = defenderFig?.hasPlagueFly ?? false;
+
+          if (attackerFig && defenderFig) {
+            if (attackerFig.hasPlagueFly && defenderFig.hasPlagueFly) {
+              nextAttackerFly = false;
+              nextDefenderFly = false;
+              toast.info("Beide Figuren waren infiziert. Die Pestfliegen fliegen weg!");
+            } else if (defenderFig.hasPlagueFly) {
+              nextAttackerFly = true;
+              nextDefenderFly = false;
+              toast.info("Pestfliege wurde auf den Angreifer übertragen!");
+            } else if (attackerFig.hasPlagueFly) {
+              nextAttackerFly = false;
+              toast.info("Der Angreifer hat seine Pestfliege verloren!");
+            }
+          }
+
+          nextFigures = storeState.figures.map(fig => {
+            if (fig.playerId !== storeState.currentPlayerId && fig.position === targetPos) {
+              return {
+                ...fig,
+                position: -1,
+                status: "HOME" as const,
+                hasPlagueFly: nextDefenderFly,
+                flyDebuffCount: 0
+              };
+            }
+            if (fig.id === pendingFigId) {
+              return {
+                ...fig,
+                position: targetPos,
+                status: "ACTIVE" as const,
+                hasPlagueFly: nextAttackerFly,
+                flyDebuffCount: nextAttackerFly ? (attackerFig?.flyDebuffCount ?? 0) : 0
+              };
+            }
+            return fig;
+          });
+        } else {
+          nextFigures = storeState.figures.map(fig => {
+            if (fig.id === pendingFigId) {
+              return { ...fig, position: fromPos, status: (fromPos === -1 ? "HOME" : "ACTIVE") as any };
+            }
+            return fig;
+          });
+        }
+
+        const players = storeState.players;
+        const currentIdx = players.findIndex(p => p.id === storeState.currentPlayerId);
+        const nextIdx = (currentIdx + 1) % players.length;
+        const nextPlayerId = players[nextIdx].id;
+        const nextPlayers = players.map(p => ({
+          ...p,
+          isCurrentTurn: p.id === nextPlayerId
+        }));
+
+        setGameState({
+          ...storeState.gameState!,
+          currentPlayerId: nextPlayerId,
+          players: nextPlayers,
+          figures: nextFigures,
+          diceRolledThisTurn: false,
+        });
+
+        useGameStore.setState({ activeQuiz: null });
+      }, 3000);
+
+      return;
+    }
+
     if (id) {
       await answerQuiz(id, answer);
     }
@@ -182,7 +547,18 @@ export const GamePage = () => {
 
   return (
     <div className="relative w-full min-h-[calc(100vh-140px)] bg-primary flex flex-col items-center">
-      <PageSubHeader center={`SPIEL #${id || ""}`} />
+      <PageSubHeader
+        center={
+          isSandboxMode ? "🛠 SANDBOX DESIGN DEBUGGER" : `SPIEL #${id || ""}`
+        }
+      />
+
+      {isSandboxMode && (
+        <div className="w-full bg-yellow text-primary py-1 px-4 text-center font-bold text-xs flex items-center justify-center gap-2 tracking-wide uppercase shrink-0 select-none">
+          <ShieldAlert size={14} /> Sandbox Modus aktiv — Backend-Streaming
+          unterdrückt
+        </div>
+      )}
 
       <div className="fixed top-3 left-4 right-4 z-50 pointer-events-none lg:hidden">
         <div className="pointer-events-auto max-w-sm mx-auto">
@@ -193,18 +569,19 @@ export const GamePage = () => {
         </div>
       </div>
 
+      {/* Layout Wrapper */}
       <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 lg:p-4 mt-4">
         <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,380px)] gap-4 lg:gap-10 items-stretch justify-center">
           <div className="w-full flex flex-col items-center justify-center">
-            <div className="w-full lg:hidden mb-4">
+            <div className="w-full md:hidden mb-4">
               <LeaderboardPanel />
             </div>
 
-            <div className="w-full max-w-[min(90vw,90vh)] lg:max-w-[82vh] aspect-square flex-shrink-0">
+            <div className="w-full max-w-[min(90vw,60vh)] md:max-w-[78vh] aspect-square flex-shrink-0">
               <Board diceRoll={lastDiceValue ?? 1} />
             </div>
 
-            <div className="w-full lg:hidden mt-4">
+            <div className="w-full md:hidden mt-4">
               <DicePanel
                 currentRoll={lastDiceValue}
                 onRoll={handleRoll}
@@ -215,34 +592,39 @@ export const GamePage = () => {
             </div>
           </div>
 
-          <div className="hidden lg:flex w-full flex-col h-full min-h-0 gap-4">
-            <div className="w-full shrink-0">
-              <LeaderboardPanel />
+          {/* RECHTER CONTAINER (Desktop Side Panel) */}
+          <div className="hidden md:flex w-full max-w-[360px] mx-auto flex-col justify-center gap-6">
+            <LeaderboardPanel />
+
+            <div className="h-14 w-full flex-shrink-0 flex items-center justify-center">
+              <div
+                className={`w-full transition-all duration-300 ease-in-out ${
+                  notification
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-95 pointer-events-none"
+                }`}
+              >
+                <NotificationPanel
+                  data={notification}
+                  onClose={() => setNotification(null)}
+                />
+              </div>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center w-full min-h-0">
-              <NotificationPanel
-                data={notification}
-                onClose={() => setNotification(null)}
-              />
-            </div>
-
-            <div className="w-full shrink-0">
-              <DicePanel
-                currentRoll={lastDiceValue}
-                onRoll={handleRoll}
-                disabled={!canRoll}
-                phase={phaseConfig[gamePhase].label}
-                PhaseIcon={phaseConfig[gamePhase].icon}
-              />
-            </div>
+            <DicePanel
+              currentRoll={lastDiceValue}
+              onRoll={handleRoll}
+              disabled={!canRoll}
+              phase={phaseConfig[gamePhase].label}
+              PhaseIcon={phaseConfig[gamePhase].icon}
+            />
           </div>
         </div>
       </div>
 
       {activeQuiz && (
         <QuizDuelView
-          key={activeQuiz.id || activeQuiz.questionId}
+          key={activeQuiz.questionText}
           open={Boolean(activeQuiz)}
           onOpenChange={(isOpen) => {
             if (!isOpen) useGameStore.getState().setActiveQuiz(null);
