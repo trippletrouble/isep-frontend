@@ -76,8 +76,8 @@ test.describe("Plague Fly E2E Gameplay", () => {
     await expect(hostPage.locator('svg[viewBox="0 0 1571 1573"]')).toBeVisible();
     await expect(guestPage.locator('svg[viewBox="0 0 1571 1573"]')).toBeVisible();
 
-    // 6. Verify FLIEGEN section text is visible (verifies rule is active)
-    await expect(hostPage.locator('span:has-text("FLIEGEN")').filter({ visible: true }).first()).toBeVisible();
+    // 6. Verify FLIEGE section text is visible (verifies rule is active)
+    await expect(hostPage.locator('span:has-text("FLIEGE")').filter({ visible: true }).first()).toBeVisible();
     console.log("PLAGUE_FLY rule verified active on UI.");
 
     // 7. Queue cheat rolls
