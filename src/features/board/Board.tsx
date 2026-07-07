@@ -503,13 +503,10 @@ export default function Board({ diceRoll }: BoardProps) {
       activeFigure,
     );
 
-    const runLocalAnimation = async () => {
-      for (const p of path) {
-        setDisplayPositions((prev) => ({ ...prev, [figureId]: p }));
-        await sleep(250);
-      }
-    };
-    runLocalAnimation();
+    for (const p of path) {
+      setDisplayPositions((prev) => ({ ...prev, [figureId]: p }));
+      await sleep(250);
+    }
 
     try {
       await moveFigure(sessionId, figureId, toPosition);
