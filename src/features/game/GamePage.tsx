@@ -604,10 +604,8 @@ export const GamePage = () => {
           </div>
 
           {/* RECHTER CONTAINER (Desktop Side Panel) */}
-          <div className="hidden md:flex w-full flex-col h-full min-h-0 gap-4">
-            <div className="flex-1 min-h-0 flex flex-col">
-              <LeaderboardPanel />
-            </div>
+          <div className="hidden md:flex w-full flex-col justify-center gap-6">
+            <LeaderboardPanel />
 
             <div className="h-14 w-full flex-shrink-0 flex items-center justify-center">
               <div
@@ -624,15 +622,13 @@ export const GamePage = () => {
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col">
-              <DicePanel
-                currentRoll={lastDiceValue}
-                onRoll={handleRoll}
-                disabled={!canRoll}
-                phase={phaseConfig[gamePhase].label}
-                PhaseIcon={phaseConfig[gamePhase].icon}
-              />
-            </div>
+            <DicePanel
+              currentRoll={lastDiceValue}
+              onRoll={handleRoll}
+              disabled={!canRoll}
+              phase={phaseConfig[gamePhase].label}
+              PhaseIcon={phaseConfig[gamePhase].icon}
+            />
           </div>
         </div>
       </div>
