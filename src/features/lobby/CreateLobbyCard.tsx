@@ -179,7 +179,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
               </span>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-3 w-full">
+            <div className="flex flex-col gap-3 w-full">
               <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
                 <div className="flex items-center gap-4">
                   <div className="shrink-0 w-12 h-12 rounded-xl text-yellow flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">

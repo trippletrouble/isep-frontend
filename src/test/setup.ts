@@ -48,6 +48,8 @@ class MockEventSource {
 
   static instances: MockEventSource[] = [];
 
+  addEventListener = vi.fn();
+  removeEventListener = vi.fn();
   close = vi.fn();
 }
 

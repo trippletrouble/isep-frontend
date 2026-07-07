@@ -107,11 +107,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           answers:
             rawAnswers.length > 0
               ? rawAnswers
-              : rawOptions.map((o) => ({ id: o.key, text: o.text })),
+              : rawOptions.map((o: any) => ({ id: o.key, text: o.text })),
           options:
             rawOptions.length > 0
               ? rawOptions
-              : rawAnswers.map((a, i) => ({
+              : rawAnswers.map((a: any, i: number) => ({
                   key: ["A", "B", "C", "D"][i] as any,
                   text: a.text,
                 })),
@@ -345,11 +345,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       const answers =
         rawAnswers.length > 0
           ? rawAnswers
-          : rawOptions.map((o) => ({ id: o.key, text: o.text }));
+          : rawOptions.map((o: any) => ({ id: o.key, text: o.text }));
       const options =
         rawOptions.length > 0
           ? rawOptions
-          : rawAnswers.map((a, i) => ({
+          : rawAnswers.map((a: any, i: number) => ({
               key: ["A", "B", "C", "D"][i] as any,
               text: a.text,
             }));

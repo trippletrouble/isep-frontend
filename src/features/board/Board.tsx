@@ -240,11 +240,6 @@ export default function Board({ diceRoll }: BoardProps) {
       position = `goal_${backendFig.position - goalStart}`;
     }
 
-    // Wenn für diese Figur gerade eine Animation läuft, nutzen wir die animierte Position
-    if (animatedPositions[String(id)] !== undefined) {
-      position = animatedPositions[String(id)];
-    }
-
     return {
       id: String(id),
       color,

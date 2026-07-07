@@ -79,7 +79,7 @@ test.describe("Quiz Duel E2E Gameplay", () => {
     // Host starts at RED field 0, Guest starts at BLUE field 13.
     // If Host goes first: Host: 6, 6, 3 (ends at 9). Guest: 6, 2 (ends at 15). Host: 6 (moves 9 -> 15, collides!).
     // If Guest goes first: Guest: 6, 2 (ends at 15). Host: 6, 6, 3 (ends at 9). Guest: 1 (ends at 16). Host: 6, 1 (moves 9 -> 15 -> 16, collides!).
-    const hostWaiting = await hostPage.locator('p:has-text("Warte auf anderen Spieler...")').filter({ visible: true }).isVisible();
+    const hostWaiting = !(await hostPage.locator('span', { hasText: "QuizHost" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible());
     const guestFirst = hostWaiting;
 
     let cheatValues: number[];
@@ -113,16 +113,16 @@ test.describe("Quiz Duel E2E Gameplay", () => {
       }
 
       // Detect active player
-      const hostWait = await hostPage.locator('p:has-text("Warte auf anderen Spieler...")').filter({ visible: true }).isVisible();
-      const guestWait = await guestPage.locator('p:has-text("Warte auf anderen Spieler...")').filter({ visible: true }).isVisible();
+      const isHostTurn = await hostPage.locator('span', { hasText: "QuizHost" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isGuestTurn = await guestPage.locator('span', { hasText: "QuizGuest" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
 
       let activePage = hostPage;
       let activeName = "HostPlayer";
 
-      if (!hostWait) {
+      if (isHostTurn) {
         activePage = hostPage;
         activeName = "HostPlayer";
-      } else if (!guestWait) {
+      } else if (isGuestTurn) {
         activePage = guestPage;
         activeName = "GuestPlayer";
       } else {

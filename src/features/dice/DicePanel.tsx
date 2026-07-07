@@ -74,6 +74,8 @@ export function DicePanel({
     return state.figures.find(f => String(f.id) === state.selectedFigureId);
   });
   const hasFly = selectedFigure?.hasPlagueFly ?? false;
+
+
   const isPlagueFlyActive = useGameStore((state) =>
     state.gameState?.activeRules?.includes("PLAGUE_FLY") ?? false
   );

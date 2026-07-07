@@ -89,14 +89,14 @@ test.describe("Multiplayer Lobby and Game Loop", () => {
       let activePage = hostPage;
       let activeName = "HostPlayer";
 
-      // Detect which player is active: the one who does NOT see "Warte auf anderen Spieler..."
-      const hostWaiting = await hostPage.locator('p:has-text("Warte auf anderen Spieler...")').filter({ visible: true }).isVisible();
-      const guestWaiting = await guestPage.locator('p:has-text("Warte auf anderen Spieler...")').filter({ visible: true }).isVisible();
+      // Detect which player is active: the one who has the pulsing dot on their row
+      const isHostTurn = await hostPage.locator('span', { hasText: "HostPlayer" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isGuestTurn = await guestPage.locator('span', { hasText: "GuestPlayer" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
 
-      if (!hostWaiting) {
+      if (isHostTurn) {
         activePage = hostPage;
         activeName = "HostPlayer";
-      } else if (!guestWaiting) {
+      } else if (isGuestTurn) {
         activePage = guestPage;
         activeName = "GuestPlayer";
       } else {
