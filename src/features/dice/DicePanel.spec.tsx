@@ -78,5 +78,8 @@ describe("DicePanel component", () => {
     
     // Subtraction badge displays -2 (debuff count 1 + 1 = 2)
     expect(screen.getByText("-2")).toBeInTheDocument();
+
+    // Infection stage is Stufe 2/3
+    expect(screen.getByText("Stufe 2/3")).toBeInTheDocument();
   });
 });

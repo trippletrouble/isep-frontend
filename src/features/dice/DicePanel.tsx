@@ -173,21 +173,18 @@ export function DicePanel({
               <span className="font-afacad font-bold text-[18px] md:text-[24px] uppercase tracking-[0.02em] text-white leading-none">
                 FLIEGEN
               </span>
-              <div className="flex items-center gap-[5px] h-[25px] md:h-[35px]">
-                {[0, 1, 2].map((idx) => {
-                  const isActive = idx < displayFlyCount;
-                  return (
-                    <div
-                      key={idx}
-                      className="w-[20px] h-[25px] md:w-[28px] md:h-[35px] transition-all duration-300 flex items-center justify-center"
-                      style={{
-                        opacity: isActive ? 1.0 : 0.2,
-                      }}
-                    >
-                      <Icon iconNode={bee} className="w-full h-full text-white" />
-                    </div>
-                  );
-                })}
+              <div className="flex items-center gap-2 h-[25px] md:h-[35px]">
+                <div
+                  className="w-[20px] h-[25px] md:w-[28px] md:h-[35px] transition-all duration-300 flex items-center justify-center"
+                  style={{
+                    opacity: displayFlyCount > 0 ? 1.0 : 0.2,
+                  }}
+                >
+                  <Icon iconNode={bee} className="w-full h-full text-white" />
+                </div>
+                <span className="font-afacad font-semibold text-[14px] md:text-[18px] text-white/70">
+                  {displayFlyCount > 0 ? `Stufe ${displayFlyCount}/3` : "Keine"}
+                </span>
               </div>
             </div>
           )}
