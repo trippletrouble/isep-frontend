@@ -78,7 +78,7 @@ export function DicePanel({
     return state.figures.find(f => f.playerId === currentPlayerId && f.hasPlagueFly);
   });
 
-  const targetFigureForFly = selectedFigure?.hasPlagueFly ? selectedFigure : activePlayerFigureWithFly;
+  const targetFigureForFly = selectedFigure ? selectedFigure : activePlayerFigureWithFly;
   const hasFly = targetFigureForFly?.hasPlagueFly ?? false;
 
   const isPlagueFlyActive = useGameStore((state) =>
