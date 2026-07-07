@@ -9,6 +9,7 @@ import type {
 
 interface UseSSEOptions {
   onGameState?: (data: GameState) => void;
+  onLobbyUpdated?: (data: { reason: string }) => void
   onGameStarted?: (data: GameState) => void;
   onMoveExecuted?: (data: MoveResult) => void;
   onTurnChanged?: (data: {
@@ -87,6 +88,9 @@ export function useSSE(
           case "game_state":
             optionsRef.current.onGameState?.(data);
             break;
+          case 'lobby_updated':
+            optionsRef.current.onLobbyUpdated?.(data)
+            break
           case "game_started":
             optionsRef.current.onGameStarted?.(data);
             break;

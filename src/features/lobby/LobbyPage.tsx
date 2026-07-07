@@ -50,16 +50,6 @@ export function LobbyPage() {
   useEffect(() => {
     if (!isSessionId || !activeSessionId) return;
     fetchLobby(activeSessionId);
-    const interval = setInterval(async () => {
-      try {
-        await fetchLobby(activeSessionId);
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 409) {
-          navigate(`/game/${activeSessionId}`);
-        }
-      }
-    }, 1000);
-    return () => clearInterval(interval);
   }, [isSessionId, activeSessionId, fetchLobby, navigate]);
 
   useEffect(() => {
@@ -69,6 +59,15 @@ export function LobbyPage() {
   }, [currentLobby, navigate]);
 
   useSSE(isSessionId && activeSessionId ? activeSessionId : null, {
+    onLobbyUpdated: async () => {
+      try {
+        await fetchLobby(activeSessionId);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          navigate(`/game/${activeSessionId}`);
+        }
+      }
+    },
     onGameState: (state) => {
       if (state.status === "IN_PROGRESS") navigate(`/game/${activeSessionId}`);
     },
