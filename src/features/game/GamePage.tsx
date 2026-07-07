@@ -11,9 +11,8 @@ import { useAuthStore } from "@/stores";
 import { useSSE } from "@/hooks/useSSE";
 import { getSessionState, reconnectSession } from "@/api/sessions.api";
 import { getSessionResults, getPossibleMoves } from "@/api/gameplay.api";
-import type { GameResults } from "@/api/types";
 import { QuizDuelView } from "../quiz-duel/QuizDuelView";
-import { Trophy, Home, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { DiceIcon, FigureIcon } from "@/components/icons/PhaseIcons";
 import { toast } from "sonner";
 
@@ -34,7 +33,6 @@ export const GamePage = () => {
   const [notification, setNotification] = useState<NotificationData | null>(
     null,
   );
-  const [results, setResults] = useState<GameResults[] | null>(null);
 
   const isSandboxMode = id === "sandbox" || window.location.pathname.endsWith("/sandbox");
 
@@ -48,6 +46,12 @@ export const GamePage = () => {
         if (!isMounted) return;
 
         setGameState(state);
+
+        if (state.status === 'IN_PROGRESS' && state.diceRolledThisTurn && state.lastDiceValue) {
+          const moves = await getPossibleMoves(id)
+          useGameStore.getState().setPossibleMoves(moves.possibleMoves)
+        }
+
         if (state.status === "IN_PROGRESS") {
           await reconnectSession(id);
           
@@ -62,8 +66,9 @@ export const GamePage = () => {
             }
           }
         } else if (state.status === "FINISHED") {
-          const res = await getSessionResults(id);
-          if (isMounted) setResults(res);
+          if (isMounted) {
+            navigate(`/results/${id}`);
+          }
         }
       } catch (err) {
         console.error("Failed to load game session", err);
@@ -77,19 +82,22 @@ export const GamePage = () => {
   }, [id, setGameState, isSandboxMode, user]);
 
   useEffect(() => {
-    if (isSandboxMode || !id || results) return;
+    if (isSandboxMode || !id) return;
     if (gameState?.status === "FINISHED") {
       let isMounted = true;
       getSessionResults(id)
-        .then((res) => {
-          if (isMounted) setResults(res);
+        .then(() => {
+          if (isMounted) {
+            navigate(`/results/${id}`);
+          }
         })
         .catch((err) => console.error("Failed to load results", err));
+
       return () => {
         isMounted = false;
       };
     }
-  }, [gameState?.status, id, results, isSandboxMode]);
+  }, [gameState?.status, id, navigate, isSandboxMode]);
 
   useEffect(() => {
     if (!notification) return;
@@ -561,42 +569,9 @@ export const GamePage = () => {
         </div>
       </div>
 
-      {gameState?.status === "FINISHED" && results && results.length > 0 && (
-        <div className="absolute inset-0 bg-primary/95 z-50 flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
-          <div className="max-w-md w-full bg-[#292929] border border-accent rounded-[40px] p-8 shadow-2xl flex flex-col items-center gap-6">
-            <Trophy size={64} className="text-yellow animate-bounce" />
-            <h2 className="font-lilita text-4xl text-center uppercase tracking-wide">
-              Spiel Beendet
-            </h2>
-            <div className="w-full flex flex-col gap-3 my-4">
-              {results[0]?.placements?.map((p) => (
-                <div
-                  key={p.playerId}
-                  className="flex items-center justify-between bg-primary/50 border border-accent p-4 rounded-2xl"
-                >
-                  <span className="font-bold text-lg">
-                    {p.rank}. {p.username}
-                  </span>
-                  <span className="text-accent font-bold">
-                    {p.figuresInGoal} / 4 im Ziel
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => navigate("/")}
-              className="w-full h-[60px] bg-green hover:opacity-90 text-primary font-lilita text-xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
-            >
-              <Home size={20} />
-              Hauptmenü
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Layout Wrapper */}
-      <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 md:p-4 mt-4">
-        <div className="w-full grid grid-cols-1 md:grid-cols-[1fr_minmax(280px,360px)] gap-4 md:gap-8 items-stretch justify-center">
+      <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 lg:p-4 mt-4">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,380px)] gap-4 lg:gap-10 items-stretch justify-center">
           <div className="w-full flex flex-col items-center justify-center">
             <div className="w-full md:hidden mb-4">
               <LeaderboardPanel />

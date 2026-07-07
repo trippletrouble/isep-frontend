@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { SkeletonCard } from "@/components/shared/SkeletonCard";
 import { getUserProfile, getUserStats } from "@/api/users.api";
 import type { PlayerProfile, PlayerStats } from "@/api/types";
+import { useTranslation } from "@/i18n";
 
 export function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -11,10 +12,10 @@ export function ProfilePage() {
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [fetchedId, setFetchedId] = useState<string | undefined>(undefined);
   const isLoading = !!userId && fetchedId !== userId;
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!userId) return;
-
     Promise.all([getUserProfile(userId), getUserStats(userId)])
       .then(([p, s]) => {
         setProfile(p);
@@ -29,43 +30,32 @@ export function ProfilePage() {
   return (
     <div className="max-w-md mx-auto py-8 px-4">
       <div className="bg-white/5 border border-accent rounded-3xl p-8 flex flex-col items-center gap-6">
-        {/* Avatar */}
         {isLoading ? (
           <SkeletonCard className="w-20 h-20 rounded-full" />
         ) : profile?.avatarUrl ? (
-          <img
-            src={profile.avatarUrl}
-            alt={profile.username}
-            className="w-20 h-20 rounded-full object-cover"
-          />
+          <img src={profile.avatarUrl} alt={profile.username} className="w-20 h-20 rounded-full object-cover" />
         ) : (
           <div className="w-20 h-20 rounded-full bg-[#57DB8F] flex items-center justify-center">
-            <span className="text-[#292929] font-lilita text-2xl">
-              {initials}
-            </span>
+            <span className="text-[#292929] font-lilita text-2xl">{initials}</span>
           </div>
         )}
 
-        {/* Username */}
         {isLoading ? (
           <SkeletonCard className="h-8 w-40" />
         ) : (
           <div className="flex items-center gap-2">
-            <h1 className="font-lilita text-white text-3xl">
-              {profile?.username}
-            </h1>
+            <h1 className="font-lilita text-white text-3xl">{profile?.username}</h1>
             {profile?.isGuest && (
               <span className="text-xs bg-white/10 text-[#ACACAC] px-2 py-1 rounded-full font-afacad">
-                Gast
+                {t("Gast")}
               </span>
             )}
           </div>
         )}
 
-        {/* Stats */}
         <div className="w-full border-t border-accent pt-6">
           <h2 className="font-lilita text-white text-xl uppercase mb-4 text-center">
-            Statistiken
+            {t("Statistiken")}
           </h2>
           {isLoading ? (
             <div className="flex flex-col gap-3">
@@ -79,16 +69,13 @@ export function ProfilePage() {
           ) : stats ? (
             <div className="flex flex-col gap-3 font-afacad">
               {[
-                ["Gespielte Spiele", stats.gamesPlayed],
-                ["Gewonnen", stats.gamesWon],
-                ["Verloren", stats.gamesLost],
-                ["Siegquote", `${Math.round((stats.winRatio ?? 0) * 100)} %`],
-                ["Figuren geschlagen", stats.totalFiguresCaptured],
+                [t("Gespielte Spiele"), stats.gamesPlayed],
+                [t("Gewonnen"), stats.gamesWon],
+                [t("Verloren"), stats.gamesLost],
+                [t("Siegquote"), `${Math.round((stats.winRatio ?? 0) * 100)} %`],
+                [t("Figuren geschlagen"), stats.totalFiguresCaptured],
               ].map(([label, value]) => (
-                <div
-                  key={label as string}
-                  className="flex justify-between items-center text-sm"
-                >
+                <div key={label as string} className="flex justify-between items-center text-sm">
                   <span className="text-[#ACACAC]">{label}</span>
                   <span className="text-white font-semibold">{value}</span>
                 </div>

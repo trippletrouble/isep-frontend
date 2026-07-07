@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollText, Copy, LogOut, Play, User } from "lucide-react";
 import { RulesDialog } from "@/features/level-select/RulesDialog";
+import { useTranslation } from "@/i18n";
 import { CreateLobbyCard } from "./CreateLobbyCard";
 import { JoinLobbyDialog } from "./JoinLobbyDialog";
 import { PageSubHeader } from "@/components/layout/PageSubHeader";
@@ -37,7 +38,8 @@ export function LobbyPage() {
   } | null>(null);
 
   const [rulesOpen, setRulesOpen] = useState(false);
-  const [joinOpen, setJoinOpen] = useState(false); // <-- New State for Modal
+  const [joinOpen, setJoinOpen] = useState(false);
+  const { t } = useTranslation();
 
   const resolvedParam = level || sessionId || "";
   const isSessionId =
@@ -51,16 +53,6 @@ export function LobbyPage() {
   useEffect(() => {
     if (!isSessionId || !activeSessionId) return;
     fetchLobby(activeSessionId);
-    const interval = setInterval(async () => {
-      try {
-        await fetchLobby(activeSessionId);
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 409) {
-          navigate(`/game/${activeSessionId}`);
-        }
-      }
-    }, 1000);
-    return () => clearInterval(interval);
   }, [isSessionId, activeSessionId, fetchLobby, navigate]);
 
   useEffect(() => {
@@ -70,6 +62,15 @@ export function LobbyPage() {
   }, [currentLobby, navigate]);
 
   useSSE(isSessionId && activeSessionId ? activeSessionId : null, {
+    onLobbyUpdated: async () => {
+      try {
+        await fetchLobby(activeSessionId);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          navigate(`/game/${activeSessionId}`);
+        }
+      }
+    },
     onGameState: (state) => {
       if (state.status === "IN_PROGRESS") navigate(`/game/${activeSessionId}`);
     },
@@ -120,7 +121,7 @@ export function LobbyPage() {
         const result = await generateInvite(activeSessionId);
         setInviteInfo(result);
         await navigator.clipboard.writeText(result.inviteUrl);
-        toast.success("Einladungslink in die Zwischenablage kopiert!");
+        toast.success(t("Einladungslink in die Zwischenablage kopiert!"));
       } catch (err) {
         console.error(err);
       }
@@ -131,7 +132,7 @@ export function LobbyPage() {
     if (isLoading && !currentLobby) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-primary text-white font-lilita text-2xl uppercase tracking-widest">
-          Lobby laden...
+          {t("Lobby laden...")}
         </div>
       );
     }
@@ -139,12 +140,12 @@ export function LobbyPage() {
     if (!currentLobby) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-primary text-white font-lilita text-2xl uppercase tracking-widest gap-4">
-          Lobby nicht gefunden.
+          {t("Lobby nicht gefunden.")}
           <button
             onClick={() => navigate("/")}
             className="text-sm underline font-afacad"
           >
-            Zurück zur Übersicht
+            {t("Zurück zur Übersicht")}
           </button>
         </div>
       );
@@ -163,7 +164,7 @@ export function LobbyPage() {
                 onClick={() => setRulesOpen(true)}
                 className="flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors"
               >
-                Regeln <ScrollText size={20} />
+                {t("Regeln")} <ScrollText size={20} />
               </button>
             }
           />
@@ -172,7 +173,7 @@ export function LobbyPage() {
             <div className="flex justify-between items-start border-b border-accent pb-6">
               <div>
                 <h1 className="font-lilita text-white text-3xl md:text-5xl uppercase tracking-wider leading-none mb-2">
-                  Spiel-Lobby
+                  {t("Spiel-Lobby")}
                 </h1>
                 <p className="text-accent text-sm md:text-base font-bold">
                   ID:{" "}
@@ -187,7 +188,7 @@ export function LobbyPage() {
                   className="flex items-center gap-2 bg-yellow hover:opacity-90 text-primary font-bold px-4 py-2 rounded-xl transition-all font-afacad"
                 >
                   <Copy size={18} />
-                  Einladen
+                  {t("Einladen")}
                 </button>
               )}
             </div>
@@ -195,13 +196,13 @@ export function LobbyPage() {
             {inviteInfo && (
               <div className="bg-[#383838] border border-accent rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-white font-bold text-sm">
-                  Lobby-Code:
+                  {t("Lobby-Code:")}
                 </span>
                 <span className="text-yellow text-xl font-mono font-bold tracking-widest select-all">
                   {inviteInfo.inviteToken}
                 </span>
                 <span className="text-white font-bold text-sm mt-2">
-                  Einladungslink:
+                  {t("Einladungslink:")}
                 </span>
                 <span className="text-accent text-xs break-all select-all">
                   {inviteInfo.inviteUrl}
@@ -211,7 +212,7 @@ export function LobbyPage() {
 
             <div>
               <h2 className="font-lilita text-white text-xl uppercase tracking-wider mb-4">
-                Spieler in der Lobby ({players.length}/
+                {t("Spieler in der Lobby")} ({players.length}/
                 {currentLobby.settings.numberOfPlayers})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -241,13 +242,15 @@ export function LobbyPage() {
                         </div>
                         <div>
                           <span className="text-white font-bold block">
-                            {player ? player.username : "Warte auf Spieler..."}
+                            {player
+                              ? player.username
+                              : t("Warte auf Spieler...")}
                           </span>
                           {player && (
                             <span className="text-accent text-xs">
                               {player.id === currentLobby.hostId
-                                ? "Lobby-Host"
-                                : "Spieler"}
+                                ? t("Lobby-Host")
+                                : t("Spieler")}
                             </span>
                           )}
                         </div>
@@ -257,7 +260,6 @@ export function LobbyPage() {
                 })}
               </div>
             </div>
-
             <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-accent">
               {players.some((p) => p.id === user?.id) ? (
                 <button
@@ -265,14 +267,14 @@ export function LobbyPage() {
                   className="flex-1 h-[60px] bg-[#3A3A3A] border border-accent text-white hover:bg-[#4A4A4A] font-bold text-xl rounded-[20px] flex items-center justify-center gap-2 transition-all"
                 >
                   <LogOut size={20} />
-                  Lobby verlassen
+                  {t("Lobby verlassen")}
                 </button>
               ) : (
                 <button
                   onClick={handleJoinLobby}
                   className="flex-1 h-[60px] bg-green text-primary hover:opacity-90 font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
                 >
-                  Lobby beitreten
+                  {t("Lobby beitreten")}
                 </button>
               )}
 
@@ -283,7 +285,7 @@ export function LobbyPage() {
                   className="flex-1 h-[60px] bg-green text-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
                 >
                   <Play size={22} fill="currentColor" />
-                  Spiel starten
+                  {t("Spiel starten")}
                 </button>
               )}
             </div>
@@ -308,7 +310,7 @@ export function LobbyPage() {
             onClick={() => setRulesOpen(true)}
             className="flex items-center gap-2 text-[24px] font-bold hover:text-white transition-colors"
           >
-            Regeln <ScrollText size={20} />
+            {t("Regeln")} <ScrollText size={20} />
           </button>
         }
       />

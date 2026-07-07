@@ -1,6 +1,7 @@
 import { Lock, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { LEVEL_RULES } from "./levelRules";
+import { getLevelRules } from "./levelRules";
+import { useTranslation } from "@/i18n";
 
 interface RulesDialogProps {
   levelId: number;
@@ -9,7 +10,9 @@ interface RulesDialogProps {
 }
 
 export function RulesDialog({ levelId, open, onOpenChange }: RulesDialogProps) {
-  const config = LEVEL_RULES[levelId] ?? LEVEL_RULES[0];
+  const { t } = useTranslation();
+  const levelRules = getLevelRules(t);
+  const config = levelRules[levelId] ?? levelRules[0];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -28,7 +31,7 @@ export function RulesDialog({ levelId, open, onOpenChange }: RulesDialogProps) {
         {/* Top section */}
         <div className="flex flex-col items-center pt-8 pb-4 px-6 gap-3">
           <h2 className="font-lilita text-white text-4xl uppercase tracking-wide text-center leading-none">
-            Spielregeln
+            {t("Spielregeln")}
           </h2>
 
           {/* Level pill */}
@@ -46,17 +49,17 @@ export function RulesDialog({ levelId, open, onOpenChange }: RulesDialogProps) {
               </div>
               <div className="text-center">
                 <p className="font-lilita text-white text-2xl uppercase tracking-wide">
-                  Demnächst
+                  {t("Demnächst")}
                 </p>
                 <p className="text-accent text-sm font-afacad mt-1 max-w-[220px] mx-auto leading-relaxed">
-                  Diese Erweiterung wird in einer zukünftigen Version freigeschaltet.
+                  {t("Diese Erweiterung wird in einer zukünftigen Version freigeschaltet.")}
                 </p>
               </div>
 
               {/* Teaser */}
               <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 mt-1">
                 <p className="text-accent text-xs font-afacad uppercase tracking-widest mb-3">
-                  Vorschau
+                  {t("Vorschau")}
                 </p>
                 {config.rules.map((rule, i) => (
                   <div key={i}>

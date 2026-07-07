@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ScrollText } from "lucide-react";
 import { RulesDialog } from "./RulesDialog";
+import { useTranslation } from "@/i18n";
 
 interface Level {
   id: number;
@@ -20,21 +21,16 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
   const navigate = useNavigate();
   const itemRef = useRef<HTMLDivElement>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isActive && itemRef.current) {
-      itemRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
+      itemRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [isActive]);
 
   return (
-    <div
-      ref={itemRef}
-      className="w-full flex flex-col transition-all duration-300"
-    >
+    <div ref={itemRef} className="w-full flex flex-col transition-all duration-300">
       <div
         role="button"
         tabIndex={0}
@@ -53,9 +49,7 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
 
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          isActive
-            ? "grid-rows-[1fr] opacity-100 pt-4"
-            : "grid-rows-[0fr] opacity-0 pt-0"
+          isActive ? "grid-rows-[1fr] opacity-100 pt-4" : "grid-rows-[0fr] opacity-0 pt-0"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -69,14 +63,13 @@ export function LevelItem({ level, isActive, onSelect }: LevelItemProps) {
               }
               className="flex-1 h-[60px] bg-green text-black hover:opacity-90 font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2 transition-opacity"
             >
-              Spielen <ChevronRight size={24} strokeWidth={2.5} />
+              {t("Spielen")} <ChevronRight size={24} strokeWidth={2.5} />
             </button>
-
             <button
               onClick={() => setRulesOpen(true)}
               className="flex-1 h-[60px] bg-yellow text-black hover:opacity-90 font-bold text-[32px] tracking-[2%] rounded-[10px] flex items-center justify-center gap-2 transition-opacity"
             >
-              Regeln <ScrollText size={22} />
+              {t("Regeln")} <ScrollText size={22} />
             </button>
             <RulesDialog
               levelId={level.id}

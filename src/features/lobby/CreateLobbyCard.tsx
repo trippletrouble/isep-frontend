@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks";
 import { toast } from "sonner";
 import { bee } from "@lucide/lab";
+import { useTranslation } from "@/i18n";
 
 interface CreateLobbyCardProps {
   cleanLevel: string;
@@ -26,6 +27,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
   const location = useLocation();
   const { createLobby } = useLobby();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [playerName, setPlayerName] = useState(user?.username || "");
   const [playerCount, setPlayerCount] = useState<string>("4");
@@ -97,7 +99,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
   return (
     <div className="flex-1 rounded-[40px] border border-accent bg-primary p-8 shadow-[0px_16px_22.2px_rgba(0,0,0,0.25)] flex flex-col gap-6">
       <span className="font-bold text-white text-[40px] uppercase tracking-[2%]">
-        Lobby erstellen
+        {t("Lobby erstellen")}
       </span>
 
       <div className="flex flex-col gap-6 flex-1">
@@ -105,7 +107,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
           <Input
             type="text"
             required
-            placeholder="Dein Name"
+            placeholder={t("Dein Name")}
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             className="bg-primary border-accent text-white placeholder:text-accent h-12 rounded-xl"
@@ -116,9 +118,9 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
               <SelectValue placeholder="Spieler auswählen" />
             </SelectTrigger>
             <SelectContent className="bg-primary border border-accent text-white text-base rounded-xl">
-              <SelectItem value="2">2 Spieler</SelectItem>
-              <SelectItem value="3">3 Spieler</SelectItem>
-              <SelectItem value="4">4 Spieler</SelectItem>
+              <SelectItem value="2">{t("2 Spieler")}</SelectItem>
+              <SelectItem value="3">{t("3 Spieler")}</SelectItem>
+              <SelectItem value="4">{t("4 Spieler")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -130,7 +132,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
             onChange={(e) => setAgainstAI(e.target.checked)}
             className="w-5 h-5 accent-green rounded border-accent bg-primary"
           />
-          Gegen KI
+          {t("Gegen KI")}
         </label>
 
         <div className="border-t border-accent/40 pt-5 flex flex-col gap-3">
@@ -236,7 +238,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
         disabled={!playerName.trim()}
         className="w-full font-lilita text-2xl tracking-wider bg-green text-primary hover:bg-[#47cb7f] h-14 rounded-[20px] uppercase mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Erstellen
+        {t("Erstellen")}
       </Button>
     </div>
   );

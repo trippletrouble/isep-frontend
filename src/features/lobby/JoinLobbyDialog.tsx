@@ -12,6 +12,7 @@ import {
 import { useLobby } from "@/hooks/useLobby";
 import { useAuth } from "@/hooks";
 import { useUIStore } from "@/stores/ui.store";
+import { useTranslation } from "@/i18n";
 
 interface JoinLobbyDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function JoinLobbyDialog({ open, onOpenChange }: JoinLobbyDialogProps) {
   const navigate = useNavigate();
   const { joinLobby } = useLobby();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [playerName, setPlayerName] = useState(user?.username || "");
   const [lobbyCode, setLobbyCode] = useState("");
@@ -69,7 +71,7 @@ export function JoinLobbyDialog({ open, onOpenChange }: JoinLobbyDialogProps) {
 
         <DialogHeader className="p-0 text-left">
           <DialogTitle className="font-bold text-white text-3xl md:text-5xl uppercase tracking-[2%] font-lilita m-0 pt-2">
-            Lobby beitreten
+            {t("Lobby beitreten")}
           </DialogTitle>
         </DialogHeader>
 
@@ -96,7 +98,7 @@ export function JoinLobbyDialog({ open, onOpenChange }: JoinLobbyDialogProps) {
             disabled={!lobbyCode.trim() || !playerName.trim()}
             className="w-full font-lilita text-xl tracking-wider bg-green text-primary hover:bg-[#47cb7f] h-14 rounded-[20px] uppercase disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
-            Beitreten
+            {t("Beitreten")}
           </Button>
         </div>
       </DialogContent>

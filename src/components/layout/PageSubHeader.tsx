@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/i18n";
 
 interface PageSubHeaderProps {
   backTo?: string;
@@ -11,10 +12,11 @@ interface PageSubHeaderProps {
 
 export function PageSubHeader({ backTo, center, right }: PageSubHeaderProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const backContent = (
     <>
-      <ChevronLeft className="w-4 lg:w-6" strokeWidth={2.5} /> Zurück
+      <ChevronLeft className="w-4 lg:w-6" strokeWidth={2.5} /> {t("Zurück")}
     </>
   );
 
