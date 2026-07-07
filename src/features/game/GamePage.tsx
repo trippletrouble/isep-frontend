@@ -10,7 +10,7 @@ import { useGameActions } from "@/hooks/useGameActions";
 import { useAuthStore } from "@/stores";
 import { useSSE } from "@/hooks/useSSE";
 import { getSessionState, reconnectSession } from "@/api/sessions.api";
-import { getSessionResults } from "@/api/gameplay.api";
+import { getSessionResults, getPossibleMoves } from "@/api/gameplay.api";
 import type { GameResults } from "@/api/types";
 import { QuizDuelView } from "../quiz-duel/QuizDuelView";
 import { Trophy, Home, ShieldAlert } from "lucide-react";
@@ -50,6 +50,17 @@ export const GamePage = () => {
         setGameState(state);
         if (state.status === "IN_PROGRESS") {
           await reconnectSession(id);
+          
+          if (user && state.currentPlayerId === user.id && state.diceRolledThisTurn) {
+            try {
+              const { possibleMoves } = await getPossibleMoves(id);
+              if (isMounted) {
+                useGameStore.getState().setPossibleMoves(possibleMoves);
+              }
+            } catch (movesErr) {
+              console.error("Failed to fetch possible moves on reconnect", movesErr);
+            }
+          }
         } else if (state.status === "FINISHED") {
           const res = await getSessionResults(id);
           if (isMounted) setResults(res);
@@ -63,7 +74,7 @@ export const GamePage = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, setGameState, isSandboxMode]);
+  }, [id, setGameState, isSandboxMode, user]);
 
   useEffect(() => {
     if (isSandboxMode || !id || results) return;
@@ -230,16 +241,16 @@ export const GamePage = () => {
     },
     onPlagueFlyAcquired: (data) => {
       setNotification({
-        title: "PESTFLIEGE! 🪰",
+        title: "PESTFLIEGE!",
         message: `Eine Pestfliege hat die Figur ${data.figureId} befallen!`,
-        iconType: "INFO",
+        iconType: "PLAGUE_FLY",
       });
     },
     onPlagueFlyTransferred: (data) => {
       setNotification({
-        title: "FLIEGE ÜBERTRAGEN! 🪰",
+        title: "FLIEGE ÜBERTRAGEN!",
         message: `Die Pestfliege wurde von Figur ${data.fromFigureId} auf Figur ${data.toFigureId} übertragen!`,
-        iconType: "INFO",
+        iconType: "PLAGUE_FLY",
       });
     },
   });
@@ -276,11 +287,14 @@ export const GamePage = () => {
             if (fig.playerId === currentPlayerId && fig.hasPlagueFly) {
               const currentCount = fig.flyDebuffCount || 0;
               const nextCount = currentCount + 1;
-              const debuffVal = Math.floor(Math.random() * 3) + 1;
-              const effectiveRoll = Math.max(1, generatedRoll - debuffVal);
-              activeFliesMap.set(fig.id, effectiveRoll);
-
               const shouldHeal = nextCount >= 3;
+
+              if (!shouldHeal) {
+                const debuffVal = Math.floor(Math.random() * 3) + 1;
+                const effectiveRoll = Math.max(1, generatedRoll - debuffVal);
+                activeFliesMap.set(fig.id, effectiveRoll);
+              }
+
               return {
                 ...fig,
                 flyDebuffCount: shouldHeal ? 0 : nextCount,
@@ -604,7 +618,7 @@ export const GamePage = () => {
           </div>
 
           {/* RECHTER CONTAINER (Desktop Side Panel) */}
-          <div className="hidden md:flex w-full flex-col justify-center gap-6">
+          <div className="hidden md:flex w-full max-w-[360px] mx-auto flex-col justify-center gap-6">
             <LeaderboardPanel />
 
             <div className="h-14 w-full flex-shrink-0 flex items-center justify-center">

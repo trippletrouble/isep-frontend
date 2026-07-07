@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLobby } from "@/hooks/useLobby";
 import { useAuth } from "@/hooks";
+import { useUIStore } from "@/stores/ui.store";
 
 export function JoinLobbyCard() {
   const navigate = useNavigate();
@@ -14,9 +15,26 @@ export function JoinLobbyCard() {
   const [lobbyCode, setLobbyCode] = useState("");
 
   async function handleJoin() {
+    const trimmedCode = lobbyCode.trim();
+    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const match = trimmedCode.match(uuidRegex);
+    const resolvedSessionId = match ? match[0] : trimmedCode;
+
+    if (!resolvedSessionId) {
+      useUIStore.getState().addToast({
+        type: "error",
+        title: "Fehler",
+        message: "Bitte gib einen gültigen Lobby-Code oder Einladungslink ein!"
+      });
+      return;
+    }
+
+    const tokenMatch = trimmedCode.match(/[?&](token|inviteToken)=([^&]+)/);
+    const inviteToken = tokenMatch ? decodeURIComponent(tokenMatch[2]) : undefined;
+
     try {
-      await joinLobby(lobbyCode, {});
-      navigate(`/lobby/${lobbyCode}`);
+      await joinLobby(resolvedSessionId, { inviteToken });
+      navigate(`/lobby/${resolvedSessionId}`);
     } catch (err) {
       console.error("Failed to join lobby", err);
     }

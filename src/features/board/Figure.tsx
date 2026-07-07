@@ -1,3 +1,6 @@
+import { Icon } from "lucide-react";
+import { bee } from "@lucide/lab";
+
 interface FigureProps {
   x: number;
   y: number;
@@ -7,6 +10,7 @@ interface FigureProps {
   count?: number;
   isSelected?: boolean;
   canMove?: boolean;
+  hasPlagueFly?: boolean;
 }
 
 export function Figure({
@@ -18,6 +22,7 @@ export function Figure({
   count,
   isSelected,
   canMove,
+  hasPlagueFly,
 }: FigureProps) {
   const r = 31.66 * scale;
   const strokeWidth = 4.6 * scale;
@@ -90,6 +95,18 @@ export function Figure({
             >
               {count}
             </text>
+          </g>
+        )}
+        {hasPlagueFly && (
+          <g transform={`translate(${-0.65 * r}, ${-0.65 * r})`} pointerEvents="none">
+            <Icon
+              iconNode={bee}
+              size={1.3 * r}
+              className="text-white"
+              style={{
+                filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.8)) drop-shadow(0 0 1px #000)",
+              }}
+            />
           </g>
         )}
       </g>

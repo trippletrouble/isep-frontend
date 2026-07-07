@@ -54,36 +54,36 @@ export const LeaderboardPanel = ({
 
   return (
     <div
-      className={`border border-accent hover:border-white rounded-2xl lg:rounded-4xl flex flex-col w-full transition-all duration-500 p-3 lg:p-8 ${className}`}
+      className={`bg-[#282828] border border-white/10 shadow-2xl rounded-3xl flex flex-col w-full p-6 transition-all duration-500 hover:border-white/20 ${className}`}
     >
-      <h2 className="text-sm lg:text-3xl text-white font-lilita uppercase tracking-[0.02em] text-center drop-shadow-md mb-2 lg:mb-6">
+      <h2 className="text-[18px] md:text-[22px] text-white font-lilita uppercase tracking-[0.04em] text-center drop-shadow-md mb-4 md:mb-6">
         Leaderboard
       </h2>
 
-      <div className="flex flex-col font-afacad text-white w-full gap-1 lg:gap-3">
+      <div className="flex flex-col font-afacad text-white w-full gap-2 md:gap-3">
         {players.map((p, i) => (
           <div
             key={i}
-            className={`flex justify-between items-center px-2 py-1 lg:p-2 lg:px-3 rounded-xl border border-transparent transition-all duration-300 ${
+            className={`flex justify-between items-center p-2 px-3.5 rounded-xl border border-transparent transition-all duration-300 ${
               p.isCurrentTurn
                 ? `${activeShadowMap[p.rawColor]} scale-[1.02]`
                 : "opacity-60"
             }`}
           >
             {/* Name + Ping */}
-            <div className="flex items-center gap-1.5 lg:gap-3 min-w-0">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0">
               {p.isCurrentTurn && (
-                <span className="relative flex h-2 w-2 lg:h-3.5 lg:w-3.5 shrink-0">
+                <span className="relative flex h-3 w-3 shrink-0">
                   <span
                     className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${p.color}`}
                   />
                   <span
-                    className={`relative inline-flex rounded-full h-2 w-2 lg:h-3.5 lg:w-3.5 ${p.color}`}
+                    className={`relative inline-flex rounded-full h-3 w-3 ${p.color}`}
                   />
                 </span>
               )}
               <span
-                className={`font-semibold text-xs lg:text-2xl tracking-wide truncate ${
+                className={`font-semibold text-sm md:text-lg tracking-wide truncate ${
                   p.isCurrentTurn ? "text-white font-bold" : "text-white/80"
                 }`}
               >
@@ -92,11 +92,11 @@ export const LeaderboardPanel = ({
             </div>
 
             {/* Score dots */}
-            <div className="flex gap-1 lg:gap-2 shrink-0">
+            <div className="flex gap-1.5 shrink-0">
               {Array.from({ length: 4 }).map((_, dotIdx) => (
                 <div
                   key={dotIdx}
-                  className={`w-2 h-2 lg:w-6 lg:h-6 border-2 border-primary rounded-full transition-all duration-300 ${
+                  className={`w-3.5 h-3.5 md:w-5 md:h-5 border-2 border-primary rounded-full transition-all duration-300 ${
                     dotIdx < p.score
                       ? `${p.color} shadow-[0px_6px_22.2px_rgba(255,255,255,0.05)]`
                       : "bg-transparent"

@@ -19,14 +19,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   error: null,
   checkSession: async () => {
-    if (localStorage.getItem("guest_mode") === "true") {
-      set({
-        user: { id: "mock-user-id", username: "Local Tester", role: "USER" },
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      return;
-    }
     set({ isLoading: true, error: null });
     try {
       const user = await getSession();

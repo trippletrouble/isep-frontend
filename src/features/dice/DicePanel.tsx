@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
 import { Dice } from "./Dice";
 import { DiceButton } from "./DiceButton";
-import { useGameStore } from '@/stores/game.store';
-import fliegeIcon from "@/assets/fliege.png";
+import { useGameStore } from "@/stores/game.store";
+import { Icon } from "lucide-react";
+import { bee } from "@lucide/lab";
 
 // Helper to determine step difference based on UI settings
 function calculateSteps(fromPosition: number, toPosition: number, playerColor: string): number {
@@ -44,12 +44,10 @@ export function DicePanel({
   currentRoll,
   onRoll,
   disabled,
+  phase,
+  PhaseIcon,
   className,
 }: DicePanelProps) {
-  const { id: sessionId } = useParams<{ id: string }>();
-  const isSandbox = sessionId === "sandbox" || window.location.pathname.endsWith("/sandbox");
-
-  const isMyTurn = !disabled;
   const [isLocalRolling, setIsLocalRolling] = useState(false);
   const [awaitingServerPhaseUpdate, setAwaitingServerPhaseUpdate] =
     useState(false);
@@ -68,13 +66,13 @@ export function DicePanel({
     currentAwaitingState = false;
   }
 
+  const possibleMoves = useGameStore((state) => state.possibleMoves);
   const selectedFigureId = useGameStore((state) => state.selectedFigureId);
   const selectedFigure = useGameStore((state) => {
     if (!state.selectedFigureId) return null;
     return state.figures.find(f => String(f.id) === state.selectedFigureId);
   });
   const hasFly = selectedFigure?.hasPlagueFly ?? false;
-
 
   const isPlagueFlyActive = useGameStore((state) =>
     state.gameState?.activeRules?.includes("PLAGUE_FLY") ?? false
@@ -84,11 +82,14 @@ export function DicePanel({
     return player ? player.color : null;
   });
 
+  const displayFlyCount = selectedFigure && selectedFigure.hasPlagueFly
+    ? Math.min(3, (selectedFigure.flyDebuffCount ?? 0) + 1)
+    : 0;
+
   const flyDebuff = (() => {
     if (!selectedFigure || !selectedFigure.hasPlagueFly) return null;
 
     if (currentRoll !== null) {
-      const possibleMoves = useGameStore.getState().possibleMoves;
       const move = possibleMoves.find((m) => String(m.figureId) === selectedFigureId);
       if (move && move.fromPosition !== -1 && playerColor) {
         const actualSteps = calculateSteps(move.fromPosition, move.toPosition, playerColor);
@@ -96,57 +97,55 @@ export function DicePanel({
         if (calculatedDebuff > 0) return calculatedDebuff;
       }
     }
-    return 1;
+    return displayFlyCount || 1;
   })();
 
-  const displayFlyCount = hasFly ? (flyDebuff ?? 1) : 0;
+
 
   const handleRollClick = async () => {
     if (disabled || isLocalRolling || currentAwaitingState) return;
 
     setIsLocalRolling(true);
     setAwaitingServerPhaseUpdate(true);
+    const startTime = Date.now();
     try {
       await onRoll();
-    } finally {
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, 1000 - elapsed);
       setTimeout(() => {
         setIsLocalRolling(false);
-      }, 1000);
-    }
-  };
-
-  const handleCheatRoll = async (num: number) => {
-    if (disabled || isLocalRolling || currentAwaitingState) return;
-
-    setIsLocalRolling(true);
-    setAwaitingServerPhaseUpdate(true);
-    try {
-      await onRoll(num);
-    } finally {
-      setTimeout(() => {
-        setIsLocalRolling(false);
-      }, 1000);
+      }, remainingTime);
+    } catch (err) {
+      setIsLocalRolling(false);
+      setAwaitingServerPhaseUpdate(false);
     }
   };
 
   const isButtonDisabled = disabled || isLocalRolling || currentAwaitingState;
+  const isMyTurn = !disabled;
 
   return (
-    <div className="flex flex-col items-center w-full max-w-[391px] mx-auto shrink-0 select-none">
+    <div className="w-full shrink-0 select-none">
       <div
-        className={`relative bg-[#282828] border border-[#797979] shadow-[0px_16px_22.2px_rgba(0,0,0,0.25)] rounded-[40px] flex flex-col items-center justify-start w-full h-[220px] md:h-[330px] pt-4 md:pt-[26px] pb-4 md:pb-[20px] px-6 transition-all duration-700 ease-[cubic-bezier(0.5,1.5,0.4,1)] ${className} ${
+        className={`relative bg-[#282828] border border-white/10 shadow-2xl rounded-3xl flex flex-col items-center justify-between w-full h-[240px] md:h-[330px] p-6 transition-all duration-500 hover:border-white/20 ${className} ${
           isMyTurn && !currentAwaitingState
-            ? "scale-[1.03]"
+            ? "scale-[1.03] border-white/40"
             : "opacity-60"
         }`}
       >
         {isMyTurn && !currentAwaitingState && (
-          <div className="absolute inset-0 bg-white/5 animate-pulse rounded-[40px] pointer-events-none" />
+          <div className="absolute inset-0 bg-white/5 animate-pulse rounded-3xl pointer-events-none" />
         )}
 
-        <div className="flex items-center justify-center mb-3 md:mb-[20px] drop-shadow-md">
-          <p className="text-[26px] md:text-[36px] font-lilita uppercase tracking-[0.04em] text-center text-white leading-none md:leading-[41px]">
-            WÜRFEL
+        {/* Phase Header with Icon and Label */}
+        <div
+          className={`flex items-center justify-center gap-2 mb-3 md:mb-[20px] drop-shadow-md transition-colors duration-300 ${
+            isMyTurn && !currentAwaitingState ? "text-white" : "text-white/50"
+          }`}
+        >
+          {PhaseIcon && <PhaseIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0 opacity-90" />}
+          <p className="text-[16px] md:text-[22px] font-lilita uppercase tracking-[0.04em] text-center leading-none">
+            {phase}
           </p>
         </div>
 
@@ -173,17 +172,12 @@ export function DicePanel({
                   return (
                     <div
                       key={idx}
-                      className="w-[20px] h-[25px] md:w-[28px] md:h-[35px] transition-all duration-300"
+                      className="w-[20px] h-[25px] md:w-[28px] md:h-[35px] transition-all duration-300 flex items-center justify-center"
                       style={{
                         opacity: isActive ? 1.0 : 0.2,
-                        filter: "brightness(0) invert(1)",
                       }}
                     >
-                      <img
-                        src={fliegeIcon}
-                        alt="Pestfliege"
-                        className="w-full h-full object-contain"
-                      />
+                      <Icon iconNode={bee} className="w-full h-full text-white" />
                     </div>
                   );
                 })}
@@ -199,7 +193,7 @@ export function DicePanel({
             shouldPulse={isMyTurn && !currentAwaitingState}
           />
           {hasFly && flyDebuff !== null && (
-            <div className="absolute -top-[12px] -right-[8px] md:-top-[16px] md:-right-[10px] w-[26px] h-[26px] md:w-[33px] md:h-[33px] bg-[#282828] border border-[#797979] rounded-full flex items-center justify-center shadow-[0px_4px_22.2px_rgba(0,0,0,0.25)] pointer-events-none">
+            <div className="absolute -top-[12px] -right-[8px] md:-top-[16px] md:-right-[10px] w-[26px] h-[26px] md:w-[33px] md:h-[33px] bg-[#282828] border border-[#797979] rounded-full flex items-center justify-center shadow-[0px_4px_22.2px_rgba(0,0,0,0.25)] pointer-events-none z-20">
               <span className="font-lilita text-[14px] md:text-[18px] text-white leading-none uppercase">
                 -{flyDebuff}
               </span>
@@ -207,23 +201,6 @@ export function DicePanel({
           )}
         </div>
       </div>
-
-      {isSandbox && !disabled && (
-        <div className="flex items-center justify-center gap-1.5 mt-3 w-full">
-          <span className="text-[10px] text-white/50 font-afacad font-bold uppercase tracking-wider mr-1">
-            Wurf:
-          </span>
-          {[1, 2, 3, 4, 5, 6].map((num) => (
-            <button
-              key={num}
-              onClick={() => handleCheatRoll(num)}
-              className="w-7 h-7 bg-white/10 hover:bg-white/30 text-white font-lilita rounded-lg text-sm flex items-center justify-center border border-white/20 active:scale-95 transition-all"
-            >
-              {num}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

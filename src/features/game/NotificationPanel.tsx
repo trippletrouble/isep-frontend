@@ -1,9 +1,10 @@
-import { X, BookOpen, Swords, Trophy, Lightbulb } from "lucide-react";
+import { X, BookOpen, Swords, Trophy, Lightbulb, Icon } from "lucide-react";
+import { bee } from "@lucide/lab";
 
 export type NotificationData = {
   title: string;
   message: string;
-  iconType?: "CAPTURE" | "WIN" | "INFO" | "QUIZ";
+  iconType?: "CAPTURE" | "WIN" | "INFO" | "QUIZ" | "PLAGUE_FLY";
   extraText?: string;
 };
 
@@ -44,6 +45,13 @@ export const NotificationPanel = ({
           <BookOpen
             className="w-5 h-5 lg:w-6 lg:h-6 text-blue drop-shadow-md"
             strokeWidth={2.5}
+          />
+        );
+      case "PLAGUE_FLY":
+        return (
+          <Icon
+            iconNode={bee}
+            className="w-5 h-5 lg:w-6 lg:h-6 text-yellow drop-shadow-md"
           />
         );
       default:

@@ -7,13 +7,13 @@ import { LevelSelectPage } from "@/features/level-select/LevelSelectPage";
 import { LobbyPage } from "@/features/lobby/LobbyPage";
 import { GamePage } from "@/features/game/GamePage";
 import { GameResultsPage } from "@/features/game/GameResultsPage";
-import { Toaster } from "@/components/ui/sonner";
+import { ErrorToast } from "@/components/shared/ErrorToast";
 
 function App() {
   return (
     <BrowserRouter>
       <div className="relative min-h-screen">
-        <Toaster closeButton />
+        <ErrorToast />
 
         <Routes>
           <Route path="/login" element={<LoginPage />} />

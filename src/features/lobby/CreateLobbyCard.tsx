@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLobby } from "@/hooks/useLobby";
 import type { AdditionalRule } from "@/api/types";
-import { Dices, BookOpen, Flame } from "lucide-react";
+import { Dices, BookOpen, Flame, Icon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,7 +15,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks";
 import { toast } from "sonner";
-import fliegeIcon from "@/assets/fliege.png";
+import { bee } from "@lucide/lab";
 
 interface CreateLobbyCardProps {
   cleanLevel: string;
@@ -206,8 +206,8 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
               {cleanLevel !== "0" && (
                 <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
                   <div className="flex items-center gap-4">
-                    <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">
-                      <img src={fliegeIcon} alt="Fliege" className="w-6 h-6 object-contain brightness-0 invert" />
+                    <div className="shrink-0 w-12 h-12 rounded-xl text-yellow flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">
+                      <Icon iconNode={bee} className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
