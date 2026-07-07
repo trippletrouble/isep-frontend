@@ -1,17 +1,35 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthForm } from "./AuthForm";
 import { Button } from "@/components/ui/button";
-import { getOAuthUrl } from "@/api/auth.api";
+import { getOAuthUrl, testLogin } from "@/api/auth.api";
 import vector7 from "@/assets/vector7.png";
 import { useAuthStore } from "@/stores/auth.store";
 
 export function LoginPage() {
-  const handleGuestMode = () => {
-    localStorage.setItem("guest_mode", "true");
-    useAuthStore.setState({
-      isAuthenticated: true,
-      user: { id: "mock-user-id", username: "Local Tester", role: "USER" },
-      isLoading: false,
-    });
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleGuestMode = async () => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const username = `Spieler_${randomNum}`;
+    const sub = `sub_${randomNum}_${Date.now()}`;
+    try {
+      const user = await testLogin(username, sub);
+      useAuthStore.setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (err) {
+      console.error("Guest mode login failed", err);
+    }
   };
 
   return (
