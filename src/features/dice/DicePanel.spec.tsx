@@ -45,7 +45,7 @@ describe("DicePanel component", () => {
     (useGameStore as any).mockImplementation((selector: any) =>
       selector({
         possibleMoves: [],
-        selectedFigureId: null,
+        selectedFigureId: "1",
         figures: [
           {
             id: 1,

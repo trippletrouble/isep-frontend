@@ -71,19 +71,12 @@ export function DicePanel({
     if (!state.selectedFigureId) return null;
     return state.figures.find(f => String(f.id) === state.selectedFigureId);
   });
-
-  const activePlayerFigureWithFly = useGameStore((state) => {
-    const currentPlayerId = state.gameState?.currentPlayerId;
-    if (!currentPlayerId) return null;
-    return state.figures.find(f => f.playerId === currentPlayerId && f.hasPlagueFly);
-  });
-
-  const targetFigureForFly = selectedFigure ? selectedFigure : activePlayerFigureWithFly;
+  const targetFigureForFly = selectedFigure;
   const hasFly = targetFigureForFly?.hasPlagueFly ?? false;
 
   const isPlagueFlyActive = useGameStore((state) =>
     state.gameState?.activeRules?.includes("PLAGUE_FLY") ?? false
-  );
+  ) && hasFly;
   const playerColor = useGameStore((state) => {
     const player = state.gameState?.players?.find((p) => p.id === targetFigureForFly?.playerId);
     return player ? player.color : null;
