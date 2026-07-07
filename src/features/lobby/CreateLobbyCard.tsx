@@ -73,7 +73,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
     if (throwAgainOn6) rules.push("THROW_AGAIN_ON_6");
     if (quizDuell && cleanLevel !== "0") rules.push("QUIZ_DUELL");
     if (threeSixesLoseTurn) rules.push("THREE_SIXES_LOSE_TURN");
-    if (plagueFly && cleanLevel === "3") rules.push("PLAGUE_FLY");
+    if (plagueFly && cleanLevel !== "0") rules.push("PLAGUE_FLY");
 
     try {
       const lobby = await createLobby({
@@ -203,7 +203,7 @@ export function CreateLobbyCard({ cleanLevel }: CreateLobbyCardProps) {
                 </div>
               </div>
 
-              {cleanLevel === "3" && (
+              {cleanLevel !== "0" && (
                 <div className="relative overflow-hidden flex items-center justify-between border-2 border-yellow/20 hover:border-yellow/80 p-5 rounded-2xl transition-colors min-h-20 w-full group">
                   <div className="flex items-center gap-4">
                     <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border border-yellow/20 group-hover:border-yellow/80 shadow-inner transition-transform duration-300 ease-out group-hover:scale-110">

@@ -2,8 +2,18 @@ import { AuthForm } from "./AuthForm";
 import { Button } from "@/components/ui/button";
 import { getOAuthUrl } from "@/api/auth.api";
 import vector7 from "@/assets/vector7.png";
+import { useAuthStore } from "@/stores/auth.store";
 
 export function LoginPage() {
+  const handleGuestMode = () => {
+    localStorage.setItem("guest_mode", "true");
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: { id: "mock-user-id", username: "Local Tester", role: "USER" },
+      isLoading: false,
+    });
+  };
+
   return (
     <AuthForm>
       <div className="flex items-center gap-3 mb-8">
@@ -22,6 +32,13 @@ export function LoginPage() {
         className="w-full mt-2 font-lilita text-xl tracking-widest bg-green text-primary hover:bg-[#47cb7f] h-14 rounded-[20px] uppercase"
       >
         Mit Keycloak anmelden
+      </Button>
+
+      <Button
+        onClick={handleGuestMode}
+        className="w-full mt-4 font-lilita text-xl tracking-widest bg-yellow text-primary hover:bg-[#ebd536] h-14 rounded-[20px] uppercase"
+      >
+        Gast-Modus (Ohne Login)
       </Button>
     </AuthForm>
   );

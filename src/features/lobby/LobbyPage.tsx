@@ -3,9 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ScrollText, Copy, LogOut, Play, User } from "lucide-react";
 import { RulesDialog } from "@/features/level-select/RulesDialog";
 import { CreateLobbyCard } from "./CreateLobbyCard";
-import { JoinLobbyDialog } from "./JoinLobbyDialog";
+import { JoinLobbyCard } from "./JoinLobbyCard";
 import { PageSubHeader } from "@/components/layout/PageSubHeader";
-import { Button } from "@/components/ui/button";
 import { useLobby } from "@/hooks/useLobby";
 import { useAuthStore } from "@/stores/auth.store";
 import { useSSE } from "@/hooks/useSSE";
@@ -36,7 +35,7 @@ export function LobbyPage() {
   } | null>(null);
 
   const [rulesOpen, setRulesOpen] = useState(false);
-  const [joinOpen, setJoinOpen] = useState(false); // <-- New State for Modal
+
 
   const resolvedParam = level || sessionId || "";
   const isSessionId =
@@ -253,14 +252,25 @@ export function LobbyPage() {
               </button>
 
               {isHost && (
-                <button
-                  onClick={handleStart}
-                  disabled={players.length < 2}
-                  className="flex-1 h-[60px] bg-green text-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
-                >
-                  <Play size={22} fill="currentColor" />
-                  Spiel starten
-                </button>
+                <div className="flex-1 flex flex-col gap-2">
+                  <button
+                    onClick={handleStart}
+                    disabled={players.length < 2}
+                    className="w-full h-[60px] bg-green text-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Play size={22} fill="currentColor" />
+                    Spiel starten
+                  </button>
+                  {players.length < 2 && (
+                    <button
+                      onClick={() => navigate("/game/sandbox")}
+                      className="w-full h-[40px] bg-yellow/80 hover:bg-yellow text-primary font-bold rounded-[15px] flex items-center justify-center gap-1.5 transition-all text-sm font-afacad"
+                    >
+                      <Play size={16} fill="currentColor" />
+                      Offline-Sandbox-Test starten
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -289,24 +299,24 @@ export function LobbyPage() {
         }
       />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 md:mb-8">
-        <h1 className="font-lilita text-white text-4xl md:text-6xl uppercase leading-none m-0">
-          LEVEL {cleanLevel}
-        </h1>
-        <Button
-          onClick={() => setJoinOpen(true)}
-          className="bg-green text-primary border-2 hover:bg-green/90 hover:border-white font-lilita text-xl h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl uppercase tracking-wider transition-colors w-full md:w-auto"
-        >
-          Lobby beitreten
-        </Button>
-      </div>
+      <h1 className="font-lilita text-white text-4xl md:text-6xl uppercase leading-none mb-8">
+        LEVEL {cleanLevel}
+      </h1>
 
-      <div className="w-full mx-auto">
+      <div className="flex flex-col md:flex-row justify-between gap-6">
         <CreateLobbyCard cleanLevel={cleanLevel} />
+        <JoinLobbyCard />
       </div>
 
-      <JoinLobbyDialog open={joinOpen} onOpenChange={setJoinOpen} />
-
+      <div className="flex justify-center mt-6">
+        <button
+          onClick={() => navigate("/game/sandbox")}
+          className="px-6 py-3 bg-yellow hover:opacity-90 text-primary font-bold rounded-xl transition-all font-afacad text-lg shadow-lg flex items-center gap-2"
+        >
+          <Play size={20} fill="currentColor" />
+          Offline-Sandbox testen (Ohne Mitspieler)
+        </button>
+      </div>
       <RulesDialog
         levelId={levelId}
         open={rulesOpen}

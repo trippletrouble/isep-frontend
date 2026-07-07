@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Dice } from "./Dice";
 import { DiceButton } from "./DiceButton";
 import { useGameStore } from '@/stores/game.store';
 import fliegeIcon from "@/assets/fliege.png";
 
+// Helper to determine step difference based on UI settings
 function calculateSteps(fromPosition: number, toPosition: number, playerColor: string): number {
   if (fromPosition === -1) return 6;
   const startField = ({ RED: 0, BLUE: 13, YELLOW: 26, GREEN: 39 } as Record<string, number>)[playerColor] ?? 0;
@@ -31,7 +33,7 @@ function calculateSteps(fromPosition: number, toPosition: number, playerColor: s
 
 interface DicePanelProps {
   currentRoll: number | null;
-  onRoll: () => Promise<void> | void;
+  onRoll: (customValue?: number) => void | Promise<void>;
   disabled?: boolean;
   phase: string;
   PhaseIcon: React.ComponentType<{ className?: string }> | null;
@@ -44,6 +46,9 @@ export function DicePanel({
   disabled,
   className,
 }: DicePanelProps) {
+  const { id: sessionId } = useParams<{ id: string }>();
+  const isSandbox = sessionId === "sandbox" || window.location.pathname.endsWith("/sandbox");
+
   const isMyTurn = !disabled;
   const [isLocalRolling, setIsLocalRolling] = useState(false);
   const [awaitingServerPhaseUpdate, setAwaitingServerPhaseUpdate] =
@@ -69,7 +74,6 @@ export function DicePanel({
     return state.figures.find(f => String(f.id) === state.selectedFigureId);
   });
   const hasFly = selectedFigure?.hasPlagueFly ?? false;
-  const flyDebuffCount = selectedFigure?.flyDebuffCount ?? 0;
   const isPlagueFlyActive = useGameStore((state) =>
     state.gameState?.activeRules?.includes("PLAGUE_FLY") ?? false
   );
@@ -109,6 +113,20 @@ export function DicePanel({
     }
   };
 
+  const handleCheatRoll = async (num: number) => {
+    if (disabled || isLocalRolling || currentAwaitingState) return;
+
+    setIsLocalRolling(true);
+    setAwaitingServerPhaseUpdate(true);
+    try {
+      await onRoll(num);
+    } finally {
+      setTimeout(() => {
+        setIsLocalRolling(false);
+      }, 1000);
+    }
+  };
+
   const isButtonDisabled = disabled || isLocalRolling || currentAwaitingState;
 
   return (
@@ -137,7 +155,7 @@ export function DicePanel({
             
             {/* Dice wrapper */}
             <div className="relative z-10 transition-all duration-300">
-              <Dice value={currentRoll ?? 0} isSpinning={isLocalRolling} />
+              <Dice value={currentRoll ?? 0} isRolling={isLocalRolling} />
             </div>
           </div>
 
@@ -187,6 +205,23 @@ export function DicePanel({
           )}
         </div>
       </div>
+
+      {isSandbox && !disabled && (
+        <div className="flex items-center justify-center gap-1.5 mt-3 w-full">
+          <span className="text-[10px] text-white/50 font-afacad font-bold uppercase tracking-wider mr-1">
+            Wurf:
+          </span>
+          {[1, 2, 3, 4, 5, 6].map((num) => (
+            <button
+              key={num}
+              onClick={() => handleCheatRoll(num)}
+              className="w-7 h-7 bg-white/10 hover:bg-white/30 text-white font-lilita rounded-lg text-sm flex items-center justify-center border border-white/20 active:scale-95 transition-all"
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
