@@ -145,8 +145,8 @@ const INITIAL_FIGURES: FigureState[] = [
 const GOAL_START_FIELDS: Record<string, number> = {
   RED: 52,
   BLUE: 57,
-  GREEN: 62,
-  YELLOW: 67,
+  YELLOW: 62,
+  GREEN: 67,
 };
 const FINAL_GOAL_POSITIONS: Record<string, number> = {
   RED: 72,
@@ -244,10 +244,30 @@ export default function Board({ diceRoll }: BoardProps) {
   ): Array<"nest" | number | string> => {
     if (startPos === "nest") return [targetPos];
 
-    const path: Array<"nest" | number | string> = [];
     const colorName = HEX_TO_COLOR[fig.color] ?? "RED";
     const goalStart = GOAL_START_FIELDS[colorName];
     const finalGoalPos = FINAL_GOAL_POSITIONS[colorName];
+    const startTrack = fig.startTrackIndex;
+
+    const fullSequence: number[] = [];
+
+    let currTrack = startTrack;
+    for (let i = 0; i < 51; i++) {
+      fullSequence.push(currTrack);
+      currTrack = (currTrack + 1) % 52;
+    }
+
+    for (let i = 0; i < 5; i++) {
+      fullSequence.push(goalStart + i);
+    }
+
+    fullSequence.push(finalGoalPos);
+
+    let startNumeric = 0;
+    if (typeof startPos === "number") startNumeric = startPos;
+    else if (startPos === "center") startNumeric = finalGoalPos;
+    else if (startPos.startsWith("goal_"))
+      startNumeric = goalStart + parseInt(startPos.split("_")[1], 10);
 
     let targetNumeric = 0;
     if (typeof targetPos === "number") targetNumeric = targetPos;
@@ -255,41 +275,25 @@ export default function Board({ diceRoll }: BoardProps) {
     else if (targetPos.startsWith("goal_"))
       targetNumeric = goalStart + parseInt(targetPos.split("_")[1], 10);
 
-    if (typeof startPos === "number") {
-      let curr = startPos;
-      const trackDistance = (targetNumeric - startPos + 52) % 52;
-      const stepsToGoalStart = (goalStart - startPos + 52) % 52;
-      const willEnterHouse = targetNumeric >= goalStart;
+    const startIndex = fullSequence.indexOf(startNumeric);
+    const targetIndex = fullSequence.indexOf(targetNumeric);
 
-      const stepsOnTrack = willEnterHouse ? stepsToGoalStart : trackDistance;
+    if (startIndex === -1 || targetIndex === -1 || startIndex >= targetIndex) {
+      return [targetPos];
+    }
 
-      for (let i = 1; i <= stepsOnTrack; i++) {
-        curr = (curr + 1) % 52;
-        path.push(curr);
-      }
-
-      if (willEnterHouse) {
-        const houseSteps = targetNumeric - goalStart;
-        for (let i = 0; i < houseSteps; i++) {
-          if (goalStart + i === finalGoalPos - 1) path.push("center");
-          else path.push(`goal_${i}`);
-        }
-        if (targetNumeric === finalGoalPos && !path.includes("center")) {
-          path.push("center");
-        }
-      }
-    } else if (typeof startPos === "string" && startPos.startsWith("goal_")) {
-      const startGoalIdx = parseInt(startPos.split("_")[1], 10);
-      const endGoalIdx =
-        targetPos === "center"
-          ? 5
-          : parseInt((targetPos as string).split("_")[1], 10);
-
-      for (let idx = startGoalIdx + 1; idx <= endGoalIdx; idx++) {
-        if (idx === 5 || goalStart + idx === finalGoalPos) path.push("center");
-        else path.push(`goal_${idx}`);
+    const path: Array<"nest" | number | string> = [];
+    for (let i = startIndex + 1; i <= targetIndex; i++) {
+      const num = fullSequence[i];
+      if (num === finalGoalPos) {
+        path.push("center");
+      } else if (num >= goalStart && num < goalStart + 5) {
+        path.push(`goal_${num - goalStart}`);
+      } else {
+        path.push(num);
       }
     }
+
     return path;
   };
 
@@ -297,7 +301,6 @@ export default function Board({ diceRoll }: BoardProps) {
     Record<string, "nest" | number | string>
   >({});
   const prevStoreFiguresRef = useRef<BackendFigure[] | null>(null);
-  const localMoveTracker = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!storeFigures) return;
@@ -328,15 +331,14 @@ export default function Board({ diceRoll }: BoardProps) {
           const newFrontend = mapBackendFigureToFrontend(newFig);
 
           if (prevFrontend.position !== newFrontend.position) {
-            if (localMoveTracker.current.has(String(newFig.id))) {
-              newDisplay[newFig.id] = newFrontend.position;
-              localMoveTracker.current.delete(String(newFig.id));
-            } else if (
+            // Instantly snap if knocked back to the nest
+            if (
               newFrontend.position === "nest" &&
               prevFrontend.position !== "nest"
             ) {
               newDisplay[newFig.id] = "nest";
             } else {
+              // Lock to current spot before smoothly animating forward step-by-step
               newDisplay[newFig.id] = prevFrontend.position;
               animationsToRun.push({
                 id: String(newFig.id),
@@ -478,25 +480,9 @@ export default function Board({ diceRoll }: BoardProps) {
 
     const toPosition = activeMove.toPosition;
     const figureId = activeMove.figureId;
-    const targetPos = targetResult.position;
 
     setSelectedFigureId(null);
     setActivePile(null);
-
-    localMoveTracker.current.add(String(figureId));
-    const path = getPathOfPositions(
-      activeFigure.position,
-      targetPos,
-      activeFigure,
-    );
-
-    const runLocalAnimation = async () => {
-      for (const p of path) {
-        setDisplayPositions((prev) => ({ ...prev, [figureId]: p }));
-        await sleep(250);
-      }
-    };
-    runLocalAnimation();
 
     try {
       await moveFigure(sessionId, figureId, toPosition);

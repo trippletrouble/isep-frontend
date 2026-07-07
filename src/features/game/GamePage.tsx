@@ -69,19 +69,23 @@ export const GamePage = () => {
   }, [id, setGameState]);
 
   useEffect(() => {
-    if (!id || results) return;
+    if (!id) return; // Keep it clean
+
     if (gameState?.status === "FINISHED") {
       let isMounted = true;
       getSessionResults(id)
         .then((res) => {
-          if (isMounted) setResults(res);
+          if (isMounted) {
+            navigate(`/results/${id}`);
+          }
         })
         .catch((err) => console.error("Failed to load results", err));
+
       return () => {
         isMounted = false;
       };
     }
-  }, [gameState?.status, id, results]);
+  }, [gameState?.status, id, navigate]);
 
   useEffect(() => {
     if (!notification) return;
@@ -188,39 +192,6 @@ export const GamePage = () => {
           />
         </div>
       </div>
-
-      {gameState?.status === "FINISHED" && results && results.length > 0 && (
-        <div className="absolute inset-0 bg-primary/95 z-50 flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
-          <div className="max-w-md w-full bg-[#292929] border border-accent rounded-[40px] p-8 shadow-2xl flex flex-col items-center gap-6">
-            <Trophy size={64} className="text-yellow animate-bounce" />
-            <h2 className="font-lilita text-4xl text-center uppercase tracking-wide">
-              Spiel Beendet
-            </h2>
-            <div className="w-full flex flex-col gap-3 my-4">
-              {results[0]?.placements?.map((p) => (
-                <div
-                  key={p.playerId}
-                  className="flex items-center justify-between bg-primary/50 border border-accent p-4 rounded-2xl"
-                >
-                  <span className="font-bold text-lg">
-                    {p.rank}. {p.username}
-                  </span>
-                  <span className="text-accent font-bold">
-                    {p.figuresInGoal} / 4 im Ziel
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => navigate("/")}
-              className="w-full h-[60px] bg-green hover:opacity-90 text-primary font-lilita text-xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
-            >
-              <Home size={20} />
-              Hauptmenü
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="w-full max-w-[95vw] xl:max-w-[1600px] mx-auto flex flex-col p-2 lg:p-4 mt-4">
         <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_minmax(320px,380px)] gap-4 lg:gap-10 items-stretch justify-center">
