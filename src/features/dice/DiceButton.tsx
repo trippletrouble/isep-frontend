@@ -13,10 +13,10 @@ export function DiceButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`w-[262px] h-[53px] bg-[#FFFDFD] border border-[#797979] rounded-[20px] font-lilita text-[28px] text-[#292929] uppercase flex items-center justify-center transition-all duration-300 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
+      className={`w-full font-lilita text-xs sm:text-base uppercase py-2 sm:py-3 lg:py-4 px-2 lg:px-6 rounded-full transition-all duration-300 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
         shouldPulse
-          ? "animate-pulse scale-[1.03] shadow-[0px_4px_22.2px_rgba(0,0,0,0.4)]"
-          : "shadow-[0px_4px_22.2px_rgba(0,0,0,0.25)] hover:bg-white/90"
+          ? "bg-white text-primary animate-pulse scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.6)] hover:bg-white"
+          : "bg-white text-primary hover:bg-gray-100"
       }`}
     >
       WÜRFEL WERFEN
