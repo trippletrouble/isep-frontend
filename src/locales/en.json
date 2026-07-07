@@ -1,5 +1,8 @@
 {
   "ANMELDEN": "SIGN IN",
+  "Abmelden": "Logout",
+  "Einstellungen": "Settings",
+  "Sprache": "Language",
   "REGISTRIEREN": "REGISTER",
   "Mit Keycloak anmelden": "Sign in with Keycloak",
   "Mit Keycloak registrieren": "Register with Keycloak",

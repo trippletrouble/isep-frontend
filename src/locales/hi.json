@@ -1,5 +1,8 @@
 {
   "ANMELDEN": "लॉग इन",
+  "Abmelden": "लॉग आउट",
+  "Einstellungen": "SETTINGS",
+  "Sprache": "भाषा",
   "REGISTRIEREN": "रजिस्टर करें",
   "Mit Keycloak anmelden": "Keycloak से लॉग इन करें",
   "Mit Keycloak registrieren": "Keycloak से रजिस्टर करें",

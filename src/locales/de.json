@@ -1,5 +1,8 @@
 {
   "ANMELDEN": "ANMELDEN",
+  "Abmelden": "Abmelden",
+  "Einstellungen": "Einstellungen",
+  "Sprache": "Sprache",
   "REGISTRIEREN": "REGISTRIEREN",
   "Mit Keycloak anmelden": "Mit Keycloak anmelden",
   "Mit Keycloak registrieren": "Mit Keycloak registrieren",

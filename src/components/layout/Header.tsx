@@ -1,11 +1,10 @@
-import { Settings, ChevronDown } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import vector7 from "@/assets/vector7.png";
 import { useAuth } from "@/hooks/useAuth";
-import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { SettingsDropdown } from "@/components/ui/SettingsDropdown";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <div className="w-full px-4 pt-6 flex justify-center">
@@ -16,24 +15,13 @@ export function Header() {
           className="h-12 w-auto object-contain select-none"
         />
 
-        <button
-          onClick={logout}
-          title="Abmelden"
-          className="flex items-center gap-2 py-2 px-8 rounded-[40px] border font-lilita border-accent justify-center text-2xl text-white bg-transparent hover:bg-white/5 transition-colors"
-        >
+        <div className="flex items-center gap-2 py-2 px-8 rounded-[40px] border font-lilita border-accent justify-center text-2xl text-white bg-transparent select-none">
           <img src={vector7} alt="" className="w-5 h-5 object-contain" />
-          {user?.username || "Spieler"}
-          <ChevronDown size={20} />
-        </button>
+          <span>{user?.username || "Spieler"}</span>
+        </div>
 
         <div className="flex items-center gap-3">
-          <LanguageSwitcher />
-          <button
-            aria-label="Einstellungen"
-            className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-white/5 transition-colors"
-          >
-            <Settings size={24} className="text-white" />
-          </button>
+          <SettingsDropdown />
         </div>
       </header>
     </div>
