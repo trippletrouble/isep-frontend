@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ScrollText, Copy, LogOut, Play, User } from "lucide-react";
+import {
+  ScrollText,
+  Copy,
+  LogOut,
+  Play,
+  User,
+  UserRoundPlus,
+} from "lucide-react";
 import { RulesDialog } from "@/features/level-select/RulesDialog";
 import { useTranslation } from "@/i18n";
 import { CreateLobbyCard } from "./CreateLobbyCard";
@@ -83,7 +90,10 @@ export function LobbyPage() {
     if (activeSessionId) {
       try {
         const queryParams = new URLSearchParams(window.location.search);
-        const inviteToken = queryParams.get("token") || queryParams.get("inviteToken") || undefined;
+        const inviteToken =
+          queryParams.get("token") ||
+          queryParams.get("inviteToken") ||
+          undefined;
         await joinLobby(activeSessionId, { inviteToken });
         toast.success("Lobby erfolgreich beigetreten!");
         await fetchLobby(activeSessionId);
@@ -272,8 +282,9 @@ export function LobbyPage() {
               ) : (
                 <button
                   onClick={handleJoinLobby}
-                  className="flex-1 h-[60px] bg-green text-primary hover:opacity-90 font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-2 transition-all"
+                  className="flex-1 h-[60px] bg-green text-primary hover:opacity-90 font-lilita text-2xl uppercase rounded-[20px] flex items-center justify-center gap-4 transition-all"
                 >
+                  <UserRoundPlus size={32} strokeWidth={2} />
                   {t("Lobby beitreten")}
                 </button>
               )}
@@ -321,9 +332,10 @@ export function LobbyPage() {
         </h1>
         <Button
           onClick={() => setJoinOpen(true)}
-          className="bg-green text-primary border-2 hover:bg-green/90 hover:border-white font-lilita text-xl h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl uppercase tracking-wider transition-colors w-full md:w-auto"
+          className="bg-green text-primary border-2 hover:bg-green/90 hover:border-white font-lilita flex gap-4 text-xl h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl uppercase tracking-wider transition-colors w-full md:w-auto"
         >
-          Lobby beitreten
+          <UserRoundPlus strokeWidth={2} />
+          {t("Lobby beitreten")}
         </Button>
       </div>
 

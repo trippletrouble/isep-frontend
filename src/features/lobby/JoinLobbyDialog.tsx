@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
+import { X, UserRoundPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,8 @@ export function JoinLobbyDialog({ open, onOpenChange }: JoinLobbyDialogProps) {
 
   async function handleJoin() {
     const trimmedCode = lobbyCode.trim();
-    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const uuidRegex =
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
     const match = trimmedCode.match(uuidRegex);
     const resolvedSessionId = match ? match[0] : trimmedCode;
 
@@ -38,13 +39,15 @@ export function JoinLobbyDialog({ open, onOpenChange }: JoinLobbyDialogProps) {
       useUIStore.getState().addToast({
         type: "error",
         title: "Fehler",
-        message: "Bitte gib einen gültigen Lobby-Code oder Einladungslink ein!"
+        message: "Bitte gib einen gültigen Lobby-Code oder Einladungslink ein!",
       });
       return;
     }
 
     const tokenMatch = trimmedCode.match(/[?&](token|inviteToken)=([^&]+)/);
-    const inviteToken = tokenMatch ? decodeURIComponent(tokenMatch[2]) : undefined;
+    const inviteToken = tokenMatch
+      ? decodeURIComponent(tokenMatch[2])
+      : undefined;
 
     try {
       await joinLobby(resolvedSessionId, { inviteToken });
@@ -70,7 +73,8 @@ export function JoinLobbyDialog({ open, onOpenChange }: JoinLobbyDialogProps) {
         </button>
 
         <DialogHeader className="p-0 text-left">
-          <DialogTitle className="font-bold text-white text-3xl md:text-5xl uppercase tracking-[2%] font-lilita m-0 pt-2">
+          <DialogTitle className="font-bold text-white flex items-center gap-4 text-3xl md:text-5xl uppercase tracking-[2%] font-lilita m-0 pt-2">
+            <UserRoundPlus size={32} strokeWidth={2} />
             {t("Lobby beitreten")}
           </DialogTitle>
         </DialogHeader>
