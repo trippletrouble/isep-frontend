@@ -332,9 +332,10 @@ export function LobbyPage() {
         </h1>
         <Button
           onClick={() => setJoinOpen(true)}
-          className="bg-green text-primary border-2 hover:bg-green/90 hover:border-white font-lilita text-xl h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl uppercase tracking-wider transition-colors w-full md:w-auto"
+          className="bg-green text-primary border-2 hover:bg-green/90 hover:border-white font-lilita flex gap-4 text-xl h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl uppercase tracking-wider transition-colors w-full md:w-auto"
         >
-          Lobby beitreten
+          <UserRoundPlus strokeWidth={2} />
+          {t("Lobby beitreten")}
         </Button>
       </div>
 
