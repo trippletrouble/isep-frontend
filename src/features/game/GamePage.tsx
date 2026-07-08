@@ -34,8 +34,7 @@ export const GamePage = () => {
     null,
   );
 
-  const isSandboxMode =
-    id === "sandbox" || window.location.pathname.endsWith("/sandbox");
+  const isSandboxMode = id === "sandbox" || window.location.pathname.endsWith("/sandbox");
 
   useEffect(() => {
     if (!id || isSandboxMode) return;
@@ -48,33 +47,22 @@ export const GamePage = () => {
 
         setGameState(state);
 
-        if (
-          state.status === "IN_PROGRESS" &&
-          state.diceRolledThisTurn &&
-          state.lastDiceValue
-        ) {
-          const moves = await getPossibleMoves(id);
-          useGameStore.getState().setPossibleMoves(moves.possibleMoves);
+        if (state.status === 'IN_PROGRESS' && state.diceRolledThisTurn && state.lastDiceValue) {
+          const moves = await getPossibleMoves(id)
+          useGameStore.getState().setPossibleMoves(moves.possibleMoves)
         }
 
         if (state.status === "IN_PROGRESS") {
           await reconnectSession(id);
-
-          if (
-            user &&
-            state.currentPlayerId === user.id &&
-            state.diceRolledThisTurn
-          ) {
+          
+          if (user && state.currentPlayerId === user.id && state.diceRolledThisTurn) {
             try {
               const { possibleMoves } = await getPossibleMoves(id);
               if (isMounted) {
                 useGameStore.getState().setPossibleMoves(possibleMoves);
               }
             } catch (movesErr) {
-              console.error(
-                "Failed to fetch possible moves on reconnect",
-                movesErr,
-              );
+              console.error("Failed to fetch possible moves on reconnect", movesErr);
             }
           }
         } else if (state.status === "FINISHED") {
@@ -178,14 +166,7 @@ export const GamePage = () => {
       ],
       figures: [
         // Blue
-        {
-          id: 1,
-          playerId: mockUserId,
-          position: 10,
-          status: "ACTIVE",
-          hasPlagueFly: true,
-          flyDebuffCount: 2,
-        },
+        { id: 1, playerId: mockUserId, position: 10, status: "ACTIVE", hasPlagueFly: true, flyDebuffCount: 2 },
         { id: 2, playerId: mockUserId, position: -1, status: "HOME" },
         { id: 3, playerId: mockUserId, position: -1, status: "HOME" },
         { id: 4, playerId: mockUserId, position: -1, status: "HOME" },
@@ -291,22 +272,17 @@ export const GamePage = () => {
   const handleRoll = async (customValue?: number) => {
     if (isSandboxMode) {
       if (gameState) {
-        const generatedRoll =
-          customValue !== undefined
-            ? customValue
-            : Math.floor(Math.random() * 6) + 1;
+        const generatedRoll = customValue !== undefined ? customValue : Math.floor(Math.random() * 6) + 1;
         useGameStore.setState({ lastDiceValue: generatedRoll });
 
         const currentPlayerId = gameState.currentPlayerId || "mock-user-id";
-        const currentPlayerColor =
-          gameState.players.find((p) => p.id === currentPlayerId)?.color ||
-          "BLUE";
+        const currentPlayerColor = gameState.players.find(p => p.id === currentPlayerId)?.color || "BLUE";
 
         const startFields: Record<string, number> = {
           RED: 0,
           BLUE: 13,
           YELLOW: 26,
-          GREEN: 39,
+          GREEN: 39
         };
         const startField = startFields[currentPlayerColor] ?? 13;
 
@@ -330,7 +306,7 @@ export const GamePage = () => {
               return {
                 ...fig,
                 flyDebuffCount: shouldHeal ? 0 : nextCount,
-                hasPlagueFly: !shouldHeal,
+                hasPlagueFly: !shouldHeal
               };
             }
             return fig;
@@ -338,21 +314,21 @@ export const GamePage = () => {
         }
 
         if (flyActive && generatedRoll === 1) {
-          const totalActiveFlies = updatedFigures.filter(
-            (f) => f.hasPlagueFly,
-          ).length;
+          const totalActiveFlies = updatedFigures.filter(f => f.hasPlagueFly).length;
           if (totalActiveFlies < 3) {
             const goalStartPositions = [52, 57, 62, 67];
-            const eligible = updatedFigures.find((f) => {
-              if (f.playerId !== currentPlayerId) return false;
-              if (f.status !== "ACTIVE" || f.position === -1) return false;
-              if (f.hasPlagueFly) return false;
-              if (f.position >= 72) return false;
-              const isInGoalLane = goalStartPositions.some(
-                (start) => f.position >= start && f.position < start + 5,
-              );
-              return !isInGoalLane;
-            });
+            const eligible = updatedFigures.find(
+              (f) => {
+                if (f.playerId !== currentPlayerId) return false;
+                if (f.status !== "ACTIVE" || f.position === -1) return false;
+                if (f.hasPlagueFly) return false;
+                if (f.position >= 72) return false;
+                const isInGoalLane = goalStartPositions.some(
+                  (start) => f.position >= start && f.position < start + 5
+                );
+                return !isInGoalLane;
+              }
+            );
 
             if (eligible) {
               updatedFigures = updatedFigures.map((f) => {
@@ -360,7 +336,7 @@ export const GamePage = () => {
                   return {
                     ...f,
                     hasPlagueFly: true,
-                    flyDebuffCount: 0,
+                    flyDebuffCount: 0
                   };
                 }
                 return f;
@@ -374,9 +350,7 @@ export const GamePage = () => {
         updatedFigures.forEach((fig) => {
           if (fig.playerId !== currentPlayerId) return;
 
-          const figRoll = activeFliesMap.has(fig.id)
-            ? activeFliesMap.get(fig.id)!
-            : generatedRoll;
+          const figRoll = activeFliesMap.has(fig.id) ? activeFliesMap.get(fig.id)! : generatedRoll;
 
           if (fig.status === "HOME" || fig.position === -1) {
             if (generatedRoll === 6) {
@@ -385,8 +359,7 @@ export const GamePage = () => {
                 fromPosition: -1,
                 toPosition: startField,
                 capturesOpponent: updatedFigures.some(
-                  (f) =>
-                    f.playerId !== currentPlayerId && f.position === startField,
+                  (f) => f.playerId !== currentPlayerId && f.position === startField
                 ),
               });
             }
@@ -397,7 +370,7 @@ export const GamePage = () => {
               fromPosition: fig.position,
               toPosition: nextPos,
               capturesOpponent: updatedFigures.some(
-                (f) => f.playerId !== currentPlayerId && f.position === nextPos,
+                (f) => f.playerId !== currentPlayerId && f.position === nextPos
               ),
             });
           }
@@ -413,17 +386,15 @@ export const GamePage = () => {
         useGameStore.getState().setPossibleMoves(moves);
 
         if (moves.length === 0) {
-          toast.info(
-            `Keine Züge möglich mit einer ${generatedRoll}. Nächster Spieler!`,
-          );
+          toast.info(`Keine Züge möglich mit einer ${generatedRoll}. Nächster Spieler!`);
 
           const players = gameState.players;
-          const currentIdx = players.findIndex((p) => p.id === currentPlayerId);
+          const currentIdx = players.findIndex(p => p.id === currentPlayerId);
           const nextIdx = (currentIdx + 1) % players.length;
           const nextPlayerId = players[nextIdx].id;
-          const nextPlayers = players.map((p) => ({
+          const nextPlayers = players.map(p => ({
             ...p,
-            isCurrentTurn: p.id === nextPlayerId,
+            isCurrentTurn: p.id === nextPlayerId
           }));
 
           setTimeout(() => {
@@ -478,13 +449,9 @@ export const GamePage = () => {
 
         if (answer === "A") {
           const defenderFig = storeState.figures.find(
-            (fig) =>
-              fig.playerId !== storeState.currentPlayerId &&
-              fig.position === targetPos,
+            (fig) => fig.playerId !== storeState.currentPlayerId && fig.position === targetPos
           );
-          const attackerFig = storeState.figures.find(
-            (fig) => fig.id === pendingFigId,
-          );
+          const attackerFig = storeState.figures.find((fig) => fig.id === pendingFigId);
 
           let nextAttackerFly = attackerFig?.hasPlagueFly ?? false;
           let nextDefenderFly = defenderFig?.hasPlagueFly ?? false;
@@ -493,9 +460,7 @@ export const GamePage = () => {
             if (attackerFig.hasPlagueFly && defenderFig.hasPlagueFly) {
               nextAttackerFly = false;
               nextDefenderFly = false;
-              toast.info(
-                "Beide Figuren waren infiziert. Die Pestfliegen fliegen weg!",
-              );
+              toast.info("Beide Figuren waren infiziert. Die Pestfliegen fliegen weg!");
             } else if (defenderFig.hasPlagueFly) {
               nextAttackerFly = true;
               nextDefenderFly = false;
@@ -506,17 +471,14 @@ export const GamePage = () => {
             }
           }
 
-          nextFigures = storeState.figures.map((fig) => {
-            if (
-              fig.playerId !== storeState.currentPlayerId &&
-              fig.position === targetPos
-            ) {
+          nextFigures = storeState.figures.map(fig => {
+            if (fig.playerId !== storeState.currentPlayerId && fig.position === targetPos) {
               return {
                 ...fig,
                 position: -1,
                 status: "HOME" as const,
                 hasPlagueFly: nextDefenderFly,
-                flyDebuffCount: 0,
+                flyDebuffCount: 0
               };
             }
             if (fig.id === pendingFigId) {
@@ -525,35 +487,27 @@ export const GamePage = () => {
                 position: targetPos,
                 status: "ACTIVE" as const,
                 hasPlagueFly: nextAttackerFly,
-                flyDebuffCount: nextAttackerFly
-                  ? (attackerFig?.flyDebuffCount ?? 0)
-                  : 0,
+                flyDebuffCount: nextAttackerFly ? (attackerFig?.flyDebuffCount ?? 0) : 0
               };
             }
             return fig;
           });
         } else {
-          nextFigures = storeState.figures.map((fig) => {
+          nextFigures = storeState.figures.map(fig => {
             if (fig.id === pendingFigId) {
-              return {
-                ...fig,
-                position: fromPos,
-                status: (fromPos === -1 ? "HOME" : "ACTIVE") as any,
-              };
+              return { ...fig, position: fromPos, status: (fromPos === -1 ? "HOME" : "ACTIVE") as any };
             }
             return fig;
           });
         }
 
         const players = storeState.players;
-        const currentIdx = players.findIndex(
-          (p) => p.id === storeState.currentPlayerId,
-        );
+        const currentIdx = players.findIndex(p => p.id === storeState.currentPlayerId);
         const nextIdx = (currentIdx + 1) % players.length;
         const nextPlayerId = players[nextIdx].id;
-        const nextPlayers = players.map((p) => ({
+        const nextPlayers = players.map(p => ({
           ...p,
-          isCurrentTurn: p.id === nextPlayerId,
+          isCurrentTurn: p.id === nextPlayerId
         }));
 
         setGameState({
