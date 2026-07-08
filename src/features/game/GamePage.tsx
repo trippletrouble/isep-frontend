@@ -112,25 +112,9 @@ export const GamePage = () => {
   }, [gameState?.status, id, navigate, isSandboxMode]);
 
   useEffect(() => {
-    if (!id || isSandboxMode) return;
-
-    const currentStoreSessionId = useGameStore.getState().gameState?.sessionId;
-
-    if (currentStoreSessionId && currentStoreSessionId !== id) {
-      useGameStore.setState({
-        gameState: null,
-        figures: [],
-        possibleMoves: [],
-        activeQuiz: null,
-        lastDiceValue: null,
-      });
-    }
-  }, [id, isSandboxMode]);
-
-  useEffect(() => {
     if (!notification) return;
-    const timer = setTimeout(() => setNotification(null), 5000);
-    return () => clearTimeout(timer);
+    // const timer = setTimeout(() => setNotification(null), 5000);
+    // return () => clearTimeout(timer);
   }, [notification]);
 
   // ==================== DEBUG MOCK BEGIN ======================
@@ -270,7 +254,6 @@ export const GamePage = () => {
     },
     onGameEnded: (data) => {
       useGameStore.getState().handleGameEnded(data);
-      navigate(`/results/${id}`);
     },
     onQuizStarted: (quizData) => {
       handleQuizStarted(quizData);

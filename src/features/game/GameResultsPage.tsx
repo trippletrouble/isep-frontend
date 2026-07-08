@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGameStore } from "@/stores/game.store";
 import { Home, Plus, ChevronDown, ChevronUp, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getResults, getHistory } from "@/api/gameplay.api";
@@ -9,7 +8,7 @@ import confetti from "canvas-confetti";
 import { useTranslation } from "@/i18n";
 
 const COLOR_HEX: Record<PlayerColor, string> = {
-  RED: "var(--color-red)",
+  RED: "#DB5757",
   BLUE: "#577CDB",
   GREEN: "#57DB8F",
   YELLOW: "#EBE036",
@@ -17,60 +16,19 @@ const COLOR_HEX: Record<PlayerColor, string> = {
 
 const DOT_POSITIONS: Record<number, [number, number][]> = {
   1: [[50, 50]],
-  2: [
-    [25, 25],
-    [75, 75],
-  ],
-  3: [
-    [25, 25],
-    [50, 50],
-    [75, 75],
-  ],
-  4: [
-    [25, 25],
-    [75, 25],
-    [25, 75],
-    [75, 75],
-  ],
-  5: [
-    [25, 25],
-    [75, 25],
-    [50, 50],
-    [25, 75],
-    [75, 75],
-  ],
-  6: [
-    [25, 22],
-    [75, 22],
-    [25, 50],
-    [75, 50],
-    [25, 78],
-    [75, 78],
-  ],
+  2: [[25, 25], [75, 75]],
+  3: [[25, 25], [50, 50], [75, 75]],
+  4: [[25, 25], [75, 25], [25, 75], [75, 75]],
+  5: [[25, 25], [75, 25], [50, 50], [25, 75], [75, 75]],
+  6: [[25, 22], [75, 22], [25, 50], [75, 50], [25, 78], [75, 78]],
 };
 
-function DieFace({
-  value,
-  faceColor,
-  dotColor,
-}: {
-  value: number;
-  faceColor: string;
-  dotColor: string;
-}) {
+function DieFace({ value, faceColor, dotColor }: { value: number; faceColor: string; dotColor: string }) {
   const dots = DOT_POSITIONS[value] ?? [];
   return (
     <svg viewBox="0 0 100 100" width="100%" height="100%">
       <rect x="2" y="2" width="96" height="96" rx="18" fill={faceColor} />
-      <rect
-        x="2"
-        y="2"
-        width="96"
-        height="96"
-        rx="18"
-        fill="white"
-        fillOpacity="0.07"
-      />
+      <rect x="2" y="2" width="96" height="96" rx="18" fill="white" fillOpacity="0.07" />
       {dots.map(([cx, cy], i) => (
         <circle key={i} cx={cx} cy={cy} r="9" fill={dotColor} />
       ))}
@@ -79,50 +37,15 @@ function DieFace({
 }
 
 const DICE_CONFIG = [
-  {
-    value: 6,
-    color: "#57DB8F",
-    dotColor: "#1a4a2e",
-    top: "18%",
-    floatAnim: "pawn-float 3.4s ease-in-out infinite",
-  },
-  {
-    value: 3,
-    color: "#EBE036",
-    dotColor: "#4a3d00",
-    top: "55%",
-    floatAnim: "pawn-float-alt 4.2s ease-in-out infinite 0.6s",
-  },
-  {
-    value: 1,
-    color: "#577CDB",
-    dotColor: "#0f1f4a",
-    top: "22%",
-    floatAnim: "pawn-float-slow 3.9s ease-in-out infinite 0.3s",
-  },
-  {
-    value: 4,
-    color: "#DB5757",
-    dotColor: "#4a0f0f",
-    top: "58%",
-    floatAnim: "pawn-drift 4.6s ease-in-out infinite 1.0s",
-  },
+  { value: 6, color: "#57DB8F", dotColor: "#1a4a2e", top: "18%", floatAnim: "pawn-float 3.4s ease-in-out infinite" },
+  { value: 3, color: "#EBE036", dotColor: "#4a3d00", top: "55%", floatAnim: "pawn-float-alt 4.2s ease-in-out infinite 0.6s" },
+  { value: 1, color: "#577CDB", dotColor: "#0f1f4a", top: "22%", floatAnim: "pawn-float-slow 3.9s ease-in-out infinite 0.3s" },
+  { value: 4, color: "#DB5757", dotColor: "#4a0f0f", top: "58%", floatAnim: "pawn-drift 4.6s ease-in-out infinite 1.0s" },
 ];
 
-function InteractiveDie({
-  value,
-  color,
-  dotColor,
-  top,
-  floatAnim,
-  side,
-}: {
-  value: number;
-  color: string;
-  dotColor: string;
-  top: string;
-  floatAnim: string;
-  side: "left" | "right";
+function InteractiveDie({ value, color, dotColor, top, floatAnim, side }: {
+  value: number; color: string; dotColor: string; top: string;
+  floatAnim: string; side: "left" | "right";
 }) {
   const innerRef = useRef<HTMLDivElement>(null);
 
@@ -159,14 +82,7 @@ function InteractiveDie({
         filter: `drop-shadow(0 8px 28px ${color}66)`,
       }}
     >
-      <div
-        ref={innerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          transition: "transform 0.1s ease-out",
-        }}
-      >
+      <div ref={innerRef} style={{ width: "100%", height: "100%", transition: "transform 0.1s ease-out" }}>
         <DieFace value={value} faceColor={color} dotColor={dotColor} />
       </div>
     </div>
@@ -179,7 +95,7 @@ function formatDuration(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min`;
 }
 
-function formatTime(iso: string | Date) {
+function formatTime(iso: string) {
   const d = new Date(iso);
   return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
 }
@@ -190,38 +106,10 @@ const PREVIEW_RESULTS: GameResults = {
   durationSeconds: 427,
   totalTurns: 38,
   placements: [
-    {
-      rank: 1,
-      playerId: "p1",
-      username: "Alice",
-      color: "GREEN",
-      figuresInGoal: 4,
-      figuresCaptured: 3,
-    },
-    {
-      rank: 2,
-      playerId: "p2",
-      username: "Bob",
-      color: "BLUE",
-      figuresInGoal: 2,
-      figuresCaptured: 1,
-    },
-    {
-      rank: 3,
-      playerId: "p3",
-      username: "Carol",
-      color: "RED",
-      figuresInGoal: 1,
-      figuresCaptured: 0,
-    },
-    {
-      rank: 4,
-      playerId: "p4",
-      username: "Dave",
-      color: "YELLOW",
-      figuresInGoal: 0,
-      figuresCaptured: 2,
-    },
+    { rank: 1, playerId: "p1", username: "Alice", color: "GREEN", figuresInGoal: 4, figuresCaptured: 3 },
+    { rank: 2, playerId: "p2", username: "Bob", color: "BLUE", figuresInGoal: 2, figuresCaptured: 1 },
+    { rank: 3, playerId: "p3", username: "Carol", color: "RED", figuresInGoal: 1, figuresCaptured: 0 },
+    { rank: 4, playerId: "p4", username: "Dave", color: "YELLOW", figuresInGoal: 0, figuresCaptured: 2 },
   ],
 };
 
@@ -230,30 +118,13 @@ function useConfetti(trigger: boolean) {
     if (!trigger) return;
     const colors = ["#57DB8F", "#EBE036", "#577CDB", "#DB5757", "#ffffff"];
     const burst = () => {
-      confetti({
-        particleCount: 120,
-        spread: 100,
-        origin: { x: 0.3, y: 0.4 },
-        colors,
-        scalar: 1.2,
-        gravity: 0.9,
-      });
-      confetti({
-        particleCount: 120,
-        spread: 100,
-        origin: { x: 0.7, y: 0.4 },
-        colors,
-        scalar: 1.2,
-        gravity: 0.9,
-      });
+      confetti({ particleCount: 120, spread: 100, origin: { x: 0.3, y: 0.4 }, colors, scalar: 1.2, gravity: 0.9 });
+      confetti({ particleCount: 120, spread: 100, origin: { x: 0.7, y: 0.4 }, colors, scalar: 1.2, gravity: 0.9 });
     };
     burst();
     const t1 = setTimeout(burst, 600);
     const t2 = setTimeout(burst, 1400);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [trigger]);
 }
 
@@ -285,150 +156,10 @@ export function GameResultsPage() {
       setResults(PREVIEW_RESULTS);
       return;
     }
-
-    const storeState = useGameStore.getState();
-    const currentGameState = storeState.gameState;
-
-    if (
-      currentGameState &&
-      currentGameState.players &&
-      currentGameState.players.length > 0
-    ) {
-      const allFigures = storeState.figures || [];
-
-      const playerStats = currentGameState.players.map((player) => {
-        const figuresInGoalZone = allFigures.filter(
-          (f) => f.playerId === player.id && f.position >= 40,
-        );
-
-        const uniqueFiguresInGoal = new Set(
-          figuresInGoalZone.map((f) => f.id ?? (f as any).figureId),
-        ).size;
-
-        return {
-          playerId: player.id,
-          username: player.username || t("Unbekannt"),
-          color: player.color,
-          figuresInGoal: Math.min(uniqueFiguresInGoal, 4),
-          figuresCaptured: 0,
-          isWinner: player.id === currentGameState.winnerId,
-        };
-      });
-
-      playerStats.sort((a, b) => {
-        if (a.isWinner) return -1;
-        if (b.isWinner) return 1;
-        return b.figuresInGoal - a.figuresInGoal;
-      });
-
-      const computedPlacements = playerStats.map((stat, index) => ({
-        rank: index + 1,
-        playerId: stat.playerId,
-        username: stat.username,
-        color: stat.color,
-        figuresInGoal: stat.figuresInGoal,
-        figuresCaptured: stat.figuresCaptured,
-      }));
-
-      setResults({
-        sessionId,
-        finishedAt: new Date().toISOString(),
-        durationSeconds: 0,
-        totalTurns: currentGameState.turnNumber || 0,
-        placements: computedPlacements,
-      });
-
-      getHistory(sessionId)
-        .then((h) => {
-          if (h && h.length > 0) setHistory(h);
-        })
-        .catch((err) => console.error("Could not fetch game history:", err));
-    } else {
-      Promise.all([getResults(sessionId), getHistory(sessionId)])
-        .then(([resultsRes, historyData]) => {
-          const resultsData = (resultsRes as any).data || resultsRes;
-          const validHistory = historyData || [];
-
-          if (validHistory.length > 0) {
-            setHistory(validHistory);
-          }
-
-          const winnerId = resultsData?.winnerId;
-
-          const statsTracker: Record<
-            string,
-            { figuresInGoal: Set<number>; figuresCaptured: number }
-          > = {};
-
-          validHistory.forEach((event) => {
-            if (!event.playerId) return;
-
-            if (!statsTracker[event.playerId]) {
-              statsTracker[event.playerId] = {
-                figuresInGoal: new Set<number>(),
-                figuresCaptured: 0,
-              };
-            }
-
-            if (event.actionType === "GOAL" && event.figureId !== undefined) {
-              statsTracker[event.playerId].figuresInGoal.add(event.figureId);
-            }
-
-            if (
-              event.actionType === "CAPTURE" ||
-              event.outcome === "CAPTURED"
-            ) {
-              statsTracker[event.playerId].figuresCaptured += 1;
-            }
-          });
-
-          const activePlayerIds = Object.keys(statsTracker);
-
-          const parsedStats = activePlayerIds.map((id) => {
-            const historicalMetrics = statsTracker[id];
-
-            return {
-              playerId: id,
-              username: `${t("Spieler")} (${id})`,
-              color: "GREEN" as PlayerColor,
-              figuresInGoal: Math.min(historicalMetrics.figuresInGoal.size, 4),
-              figuresCaptured: historicalMetrics.figuresCaptured,
-              isWinner: id === winnerId,
-            };
-          });
-
-          parsedStats.sort((a, b) => {
-            if (a.isWinner) return -1;
-            if (b.isWinner) return 1;
-            return b.figuresInGoal - a.figuresInGoal;
-          });
-
-          const computedPlacements = parsedStats.map((stat, index) => ({
-            rank: index + 1,
-            playerId: stat.playerId,
-            username: stat.username,
-            color: stat.color,
-            figuresInGoal: stat.figuresInGoal,
-            figuresCaptured: stat.figuresCaptured,
-          }));
-
-          setResults({
-            sessionId,
-            finishedAt: resultsData?.finishedAt || new Date().toISOString(),
-            durationSeconds: resultsData?.durationSeconds || 0,
-            totalTurns: 0,
-            placements: computedPlacements,
-          });
-        })
-        .catch((err) => {
-          console.error(
-            "Failed reconstructing results from database logs:",
-            err,
-          );
-          setResults(PREVIEW_RESULTS);
-        });
-    }
-  }, [sessionId, t]);
+    Promise.all([getResults(sessionId), getHistory(sessionId)])
+      .then(([r, h]) => { setResults(r); setHistory(h); })
+      .catch(() => navigate("/"));
+  }, [sessionId]);
 
   useEffect(() => {
     if (!results) return;
@@ -438,14 +169,7 @@ export function GameResultsPage() {
     const t3 = setTimeout(() => setVisibleRows(3), 1150);
     const t4 = setTimeout(() => setVisibleRows(4), 1350);
     const t5 = setTimeout(() => setReady(true), 700);
-    return () => {
-      clearTimeout(t0);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(t5);
-    };
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, [results]);
 
   if (!results) {
@@ -462,40 +186,31 @@ export function GameResultsPage() {
 
   return (
     <div className="relative flex flex-col items-center justify-center px-4 overflow-hidden">
-      <div
-        className="hidden lg:block fixed left-0 top-0 h-full pointer-events-none z-0"
-        style={{ width: 120 }}
-      >
+
+      <div className="hidden lg:block fixed left-0 top-0 h-full pointer-events-none z-0" style={{ width: 120 }}>
         {DICE_CONFIG.slice(0, 2).map((d) => (
           <InteractiveDie key={d.value + d.color} {...d} side="left" />
         ))}
       </div>
 
-      <div
-        className="hidden lg:block fixed right-0 top-0 h-full pointer-events-none z-0"
-        style={{ width: 120 }}
-      >
+      <div className="hidden lg:block fixed right-0 top-0 h-full pointer-events-none z-0" style={{ width: 120 }}>
         {DICE_CONFIG.slice(2).map((d) => (
           <InteractiveDie key={d.value + d.color} {...d} side="right" />
         ))}
       </div>
 
       <div className="w-full max-w-lg relative z-10">
+
         <div
           className="text-center mb-2 transition-all duration-700"
-          style={{
-            opacity: showTitle ? 1 : 0,
-            transform: showTitle ? "translateY(0)" : "translateY(-24px)",
-          }}
+          style={{ opacity: showTitle ? 1 : 0, transform: showTitle ? "translateY(0)" : "translateY(-24px)" }}
         >
           <h1 className="font-[family-name:var(--font-lilita)] text-white text-5xl md:text-6xl uppercase tracking-wide">
             {t("Spiel beendet")}
           </h1>
           <p className="text-[#ACACAC] font-[family-name:var(--font-afacad)] font-bold text-base mt-2">
-            {results.totalTurns != null &&
-              `${results.totalTurns} ${t("Runden")} · `}
-            {results.durationSeconds != null &&
-              formatDuration(results.durationSeconds)}
+            {results.totalTurns != null && `${results.totalTurns} ${t("Runden")} · `}
+            {results.durationSeconds != null && formatDuration(results.durationSeconds)}
           </p>
         </div>
 
@@ -504,23 +219,16 @@ export function GameResultsPage() {
             className="relative mb-5 rounded-[28px] p-5 flex items-center gap-4 overflow-hidden transition-all duration-700"
             style={{
               opacity: visibleRows >= 1 ? 1 : 0,
-              transform:
-                visibleRows >= 1
-                  ? "scale(1) translateY(0)"
-                  : "scale(0.9) translateY(20px)",
+              transform: visibleRows >= 1 ? "scale(1) translateY(0)" : "scale(0.9) translateY(20px)",
               background: `linear-gradient(135deg, ${COLOR_HEX[winner.color]}22 0%, ${COLOR_HEX[winner.color]}08 100%)`,
               border: `1.5px solid ${COLOR_HEX[winner.color]}55`,
             }}
           >
-            <div
-              className="absolute -top-8 -left-8 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none"
-              style={{ background: COLOR_HEX[winner.color] }}
-            />
+            <div className="absolute -top-8 -left-8 w-40 h-40 rounded-full blur-3xl opacity-30 pointer-events-none"
+              style={{ background: COLOR_HEX[winner.color] }} />
 
-            <div
-              className="relative flex items-center justify-center w-14 h-14 rounded-2xl shrink-0"
-              style={{ background: `${COLOR_HEX[winner.color]}33` }}
-            >
+            <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl shrink-0"
+              style={{ background: `${COLOR_HEX[winner.color]}33` }}>
               <Trophy size={30} style={{ color: COLOR_HEX[winner.color] }} />
             </div>
 
@@ -531,12 +239,9 @@ export function GameResultsPage() {
               <p className="font-[family-name:var(--font-lilita)] text-white text-3xl uppercase tracking-wide leading-none">
                 {winner.username}
               </p>
-              <p
-                className="font-[family-name:var(--font-afacad)] font-bold text-sm mt-1"
-                style={{ color: COLOR_HEX[winner.color] }}
-              >
-                {winner.figuresInGoal}/4 {t("Figuren")} ·{" "}
-                {winner.figuresCaptured ?? 0} {t("geschlagen")}
+              <p className="font-[family-name:var(--font-afacad)] font-bold text-sm mt-1"
+                style={{ color: COLOR_HEX[winner.color] }}>
+                {winner.figuresInGoal}/4 {t("Figuren")} · {winner.figuresCaptured ?? 0} {t("geschlagen")}
               </p>
             </div>
 
@@ -551,44 +256,24 @@ export function GameResultsPage() {
               className="flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-500"
               style={{
                 opacity: visibleRows > i ? 1 : 0,
-                transform:
-                  visibleRows > i ? "translateX(0)" : "translateX(-32px)",
-                background:
-                  p.rank === 1
-                    ? `${COLOR_HEX[p.color]}15`
-                    : "rgba(255,255,255,0.04)",
-                border:
-                  p.rank === 1
-                    ? `1px solid ${COLOR_HEX[p.color]}40`
-                    : "1px solid transparent",
+                transform: visibleRows > i ? "translateX(0)" : "translateX(-32px)",
+                background: p.rank === 1 ? `${COLOR_HEX[p.color]}15` : "rgba(255,255,255,0.04)",
+                border: p.rank === 1 ? `1px solid ${COLOR_HEX[p.color]}40` : "1px solid transparent",
               }}
             >
               <span className="font-[family-name:var(--font-lilita)] text-xl w-8 text-center shrink-0">
-                {p.rank <= 3 ? (
-                  RANK_MEDAL[p.rank - 1]
-                ) : (
-                  <span className="text-[#ACACAC]">{p.rank}.</span>
-                )}
+                {p.rank <= 3 ? RANK_MEDAL[p.rank - 1] : <span className="text-[#ACACAC]">{p.rank}.</span>}
               </span>
 
-              <div
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ backgroundColor: COLOR_HEX[p.color] }}
-              />
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLOR_HEX[p.color] }} />
 
               <span className="font-[family-name:var(--font-afacad)] font-bold text-white flex-1 text-lg">
                 {p.username}
               </span>
 
               <div className="text-right font-[family-name:var(--font-afacad)] text-sm text-[#ACACAC]">
-                <div>
-                  {p.figuresInGoal}/4 {t("Figuren")}
-                </div>
-                {p.figuresCaptured != null && (
-                  <div>
-                    {p.figuresCaptured} {t("geschlagen")}
-                  </div>
-                )}
+                <div>{p.figuresInGoal}/4 {t("Figuren")}</div>
+                {p.figuresCaptured != null && <div>{p.figuresCaptured} {t("geschlagen")}</div>}
               </div>
             </div>
           ))}
@@ -598,10 +283,7 @@ export function GameResultsPage() {
           className="flex gap-3 mb-4 transition-all duration-500"
           style={{
             opacity: visibleRows >= results.placements.length ? 1 : 0,
-            transform:
-              visibleRows >= results.placements.length
-                ? "translateY(0)"
-                : "translateY(16px)",
+            transform: visibleRows >= results.placements.length ? "translateY(0)" : "translateY(16px)",
           }}
         >
           <Button
@@ -627,17 +309,8 @@ export function GameResultsPage() {
               onClick={() => setShowHistory(!showHistory)}
               className="w-full flex items-center justify-between px-6 py-4 text-white font-[family-name:var(--font-lilita)] text-lg uppercase tracking-wide hover:bg-white/5 transition-colors"
             >
-              <span>
-                {t("Spielverlauf ({0} Ereignisse)").replace(
-                  "{0}",
-                  String(history.length),
-                )}
-              </span>
-              {showHistory ? (
-                <ChevronUp size={20} />
-              ) : (
-                <ChevronDown size={20} />
-              )}
+              <span>{t("Spielverlauf ({0} Ereignisse)").replace("{0}", String(history.length))}</span>
+              {showHistory ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
             {showHistory && (
               <div className="px-4 pb-4 max-h-80 overflow-y-auto flex flex-col gap-1">
@@ -647,22 +320,12 @@ export function GameResultsPage() {
                     <div
                       key={e.eventId}
                       className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-[family-name:var(--font-afacad)] ${
-                        isCapture
-                          ? "bg-red-500/10 border border-red-500/20"
-                          : "bg-white/3"
+                        isCapture ? "bg-red-500/10 border border-red-500/20" : "bg-white/3"
                       }`}
                     >
-                      <span className="text-[#ACACAC] shrink-0 w-16 text-xs">
-                        {formatTime(e.timestamp)}
-                      </span>
-                      <span className="text-white flex-1">
-                        {ACTION_LABELS[e.actionType] ?? e.actionType}
-                      </span>
-                      {e.diceValue && (
-                        <span className="text-[#ACACAC] shrink-0">
-                          [{e.diceValue}]
-                        </span>
-                      )}
+                      <span className="text-[#ACACAC] shrink-0 w-16 text-xs">{formatTime(e.timestamp)}</span>
+                      <span className="text-white flex-1">{ACTION_LABELS[e.actionType] ?? e.actionType}</span>
+                      {e.diceValue && <span className="text-[#ACACAC] shrink-0">[{e.diceValue}]</span>}
                     </div>
                   );
                 })}
