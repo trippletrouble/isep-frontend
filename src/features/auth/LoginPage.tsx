@@ -46,7 +46,9 @@ export function LoginPage() {
         <T k="Du wirst zu unserem Anmelde-Portal weitergeleitet." />
       </p>
       <Button
-        onClick={() => { window.location.href = getOAuthUrl(); }}
+        onClick={() => {
+          window.location.href = getOAuthUrl();
+        }}
         className="w-full mt-2 font-lilita text-xl tracking-widest bg-green text-primary hover:bg-[#47cb7f] h-14 rounded-[20px] uppercase"
       >
         {t("Mit Keycloak anmelden")}
