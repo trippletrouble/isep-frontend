@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Home, Plus, ChevronDown, ChevronUp, Trophy } from "lucide-react";
+import { Home, Plus, ChevronDown, ChevronUp, Trophy, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getResults, getHistory } from "@/api/gameplay.api";
 import type { GameResults, GameHistoryEvent, PlayerColor } from "@/api/types";
@@ -89,7 +89,7 @@ function InteractiveDie({ value, color, dotColor, top, floatAnim, side }: {
   );
 }
 
-const RANK_MEDAL = ["🥇", "🥈", "🥉"];
+const RANK_MEDAL_COLOR = ["#EBC547", "#C0C0C0", "#CD7F32"];
 
 function formatDuration(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min`;
@@ -245,7 +245,7 @@ export function GameResultsPage() {
               </p>
             </div>
 
-            <span className="text-4xl relative">🏆</span>
+            <Trophy size={36} className="relative shrink-0" style={{ color: COLOR_HEX[winner.color] }} />
           </div>
         )}
 
@@ -261,8 +261,12 @@ export function GameResultsPage() {
                 border: p.rank === 1 ? `1px solid ${COLOR_HEX[p.color]}40` : "1px solid transparent",
               }}
             >
-              <span className="font-[family-name:var(--font-lilita)] text-xl w-8 text-center shrink-0">
-                {p.rank <= 3 ? RANK_MEDAL[p.rank - 1] : <span className="text-[#ACACAC]">{p.rank}.</span>}
+              <span className="flex items-center justify-center w-8 shrink-0">
+                {p.rank <= 3 ? (
+                  <Medal size={22} style={{ color: RANK_MEDAL_COLOR[p.rank - 1] }} />
+                ) : (
+                  <span className="font-[family-name:var(--font-lilita)] text-xl text-[#ACACAC]">{p.rank}.</span>
+                )}
               </span>
 
               <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLOR_HEX[p.color] }} />
@@ -323,6 +327,10 @@ export function GameResultsPage() {
                         isCapture ? "bg-red-500/10 border border-red-500/20" : "bg-white/3"
                       }`}
                     >
+                      <span
+                        className="shrink-0 w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: COLOR_HEX[e.color] }}
+                      />
                       <span className="text-[#ACACAC] shrink-0 w-16 text-xs">{formatTime(e.timestamp)}</span>
                       <span className="text-white flex-1">{ACTION_LABELS[e.actionType] ?? e.actionType}</span>
                       {e.diceValue && <span className="text-[#ACACAC] shrink-0">[{e.diceValue}]</span>}
