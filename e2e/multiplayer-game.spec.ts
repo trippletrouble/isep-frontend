@@ -64,10 +64,10 @@ test.describe("Multiplayer Lobby and Game Loop", () => {
 
     // Verify both players are visible in the lobby player list on both screens
     console.log("Verifying player lobby lists...");
-    await expect(hostPage.locator('span:has-text("HostPlayer")')).toBeVisible();
-    await expect(hostPage.locator('span:has-text("GuestPlayer")')).toBeVisible();
-    await expect(guestPage.locator('span:has-text("HostPlayer")')).toBeVisible();
-    await expect(guestPage.locator('span:has-text("GuestPlayer")')).toBeVisible();
+    await expect(hostPage.locator('main').locator('span:has-text("HostPlayer")')).toBeVisible();
+    await expect(hostPage.locator('main').locator('span:has-text("GuestPlayer")')).toBeVisible();
+    await expect(guestPage.locator('main').locator('span:has-text("HostPlayer")')).toBeVisible();
+    await expect(guestPage.locator('main').locator('span:has-text("GuestPlayer")')).toBeVisible();
 
     // 5. Host starts the game
     console.log("HostPlayer starting the game...");
@@ -90,8 +90,8 @@ test.describe("Multiplayer Lobby and Game Loop", () => {
       let activeName = "HostPlayer";
 
       // Detect which player is active: the one who has the pulsing dot on their row
-      const isHostTurn = await hostPage.locator('span', { hasText: "HostPlayer" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
-      const isGuestTurn = await guestPage.locator('span', { hasText: "GuestPlayer" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isHostTurn = await hostPage.locator('h2:has-text("Leaderboard") ~ div').locator('span', { hasText: "HostPlayer" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isGuestTurn = await guestPage.locator('h2:has-text("Leaderboard") ~ div').locator('span', { hasText: "GuestPlayer" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
 
       if (isHostTurn) {
         activePage = hostPage;

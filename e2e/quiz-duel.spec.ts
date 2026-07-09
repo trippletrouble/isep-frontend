@@ -64,6 +64,10 @@ test.describe("Quiz Duel E2E Gameplay", () => {
 
     await expect(guestPage).toHaveURL(new RegExp(`/lobby/${sessionId}`));
 
+    // Verify both players are visible in the lobby list on Host screen
+    await expect(hostPage.locator('main').locator('span:has-text("QuizHost")')).toBeVisible();
+    await expect(hostPage.locator('main').locator('span:has-text("QuizGuest")')).toBeVisible();
+
     // 5. Host starts the game
     console.log("HostPlayer starting the game...");
     await hostPage.click('button:has-text("Spiel starten")');
@@ -113,8 +117,8 @@ test.describe("Quiz Duel E2E Gameplay", () => {
       }
 
       // Detect active player
-      const isHostTurn = await hostPage.locator('span', { hasText: "QuizHost" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
-      const isGuestTurn = await guestPage.locator('span', { hasText: "QuizGuest" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isHostTurn = await hostPage.locator('h2:has-text("Leaderboard") ~ div').locator('span', { hasText: "QuizHost" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isGuestTurn = await guestPage.locator('h2:has-text("Leaderboard") ~ div').locator('span', { hasText: "QuizGuest" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
 
       let activePage = hostPage;
       let activeName = "HostPlayer";
@@ -165,27 +169,70 @@ test.describe("Quiz Duel E2E Gameplay", () => {
 
     expect(quizTriggered).toBe(true);
 
-    // 8. Submit quiz answers on both screens
-    console.log("Both players submitting answer A...");
-    
-    // Click option A on Host screen
+    // 8. Submit different quiz answers on screens to ensure a decisive win/loss
+    console.log("Host player submitting answer A...");
     const hostOptionA = hostPage.getByRole("button").filter({ hasText: "A" }).filter({ visible: true }).first();
     await hostOptionA.click();
-    console.log("HostPlayer clicked answer A.");
 
-    // Click option A on Guest screen
-    const guestOptionA = guestPage.getByRole("button").filter({ hasText: "A" }).filter({ visible: true }).first();
-    await guestOptionA.click();
-    console.log("GuestPlayer clicked answer A.");
+    console.log("Guest player submitting answer B...");
+    const guestOptionB = guestPage.getByRole("button").filter({ hasText: "B" }).filter({ visible: true }).first();
+    await guestOptionB.click();
+
+    // Wait for the duel results to propagate and the overlay status to update
+    console.log("Waiting for winner/loser/draw overlay banners to be rendered...");
+    await expect(
+      hostPage.locator('text=DU HAST GEWONNEN!').first()
+        .or(hostPage.locator('text=GEGNER HAT GEWONNEN!').first())
+        .or(hostPage.locator('text=UNENTSCHIEDEN!').first())
+        .or(hostPage.locator('text=KEINER HAT RECHT!').first())
+    ).toBeVisible({ timeout: 8000 });
+
+    const hostWon = await hostPage.locator('text=DU HAST GEWONNEN!').first().isVisible();
+    const guestWon = await guestPage.locator('text=DU HAST GEWONNEN!').first().isVisible();
+    const hostLost = await hostPage.locator('text=GEGNER HAT GEWONNEN!').first().isVisible();
+    const guestLost = await guestPage.locator('text=GEGNER HAT GEWONNEN!').first().isVisible();
+    const draw = await hostPage.locator('text=UNENTSCHIEDEN!').first().isVisible();
+    const neither = await hostPage.locator('text=KEINER HAT RECHT!').first().isVisible();
+
+    console.log(`Host state: won=${hostWon}, lost=${hostLost}. Guest state: won=${guestWon}, lost=${guestLost}. Draw=${draw}, Neither=${neither}`);
+    expect(hostWon || guestWon || draw || neither).toBe(true);
 
     // 9. Wait for duel resolution and dialog to close
     console.log("Waiting for Quiz Duel to resolve and dialog to close...");
-    await hostPage.waitForTimeout(5000);
+    const hostClose = hostPage.getByRole("button", { name: /Schließen|Close/i }).first();
+    if (await hostClose.isVisible()) {
+      await hostClose.click();
+    }
+    const guestClose = guestPage.getByRole("button", { name: /Schließen|Close/i }).first();
+    if (await guestClose.isVisible()) {
+      await guestClose.click();
+    }
 
-    // Assert that the Quiz Duel dialog is closed
-    await expect(hostPage.locator('h2:has-text("QUIZDUELL")')).not.toBeVisible();
-    await expect(guestPage.locator('h2:has-text("QUIZDUELL")')).not.toBeVisible();
+    await expect(hostPage.locator('h2:has-text("QUIZDUELL")')).not.toBeVisible({ timeout: 8000 });
+    await expect(guestPage.locator('h2:has-text("QUIZDUELL")')).not.toBeVisible({ timeout: 8000 });
     console.log("Quiz Duel resolved and closed successfully!");
+
+    // 10. Query backend session to verify the loser's figure has been kicked back to HOME (-1)
+    const cookies = await hostPage.context().cookies();
+    console.log(`[DEBUG] COOKIES FOUND: ${JSON.stringify(cookies)}`);
+    const sessionCookie = cookies.find(c => c.name === "session")?.value;
+
+    const sessionResponse = await hostPage.request.get(`http://localhost:3000/sessions/${sessionId}`, {
+      headers: {
+        "Cookie": `session=${sessionCookie}`
+      }
+    });
+    const sessionData = await sessionResponse.json();
+    const game = sessionData.data;
+
+    const hostPlayer = game.players.find((p: any) => p.username === "QuizHost");
+    const guestPlayer = game.players.find((p: any) => p.username === "QuizGuest");
+
+    const hostIsHome = game.figures.filter((f: any) => f.playerId === hostPlayer.id).every((f: any) => f.position === -1);
+    const guestIsHome = game.figures.filter((f: any) => f.playerId === guestPlayer.id).every((f: any) => f.position === -1);
+    
+    console.log(`Figures home status -> Host: ${hostIsHome}, Guest: ${guestIsHome}`);
+    expect(hostIsHome || guestIsHome).toBe(true);
 
     // Clean up browser contexts
     await hostContext.close();
