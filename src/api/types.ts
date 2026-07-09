@@ -212,6 +212,7 @@ export interface GameHistoryEvent {
   eventId: number;
   timestamp: string;
   playerId: string;
+  color: PlayerColor;
   actionType: GameHistoryActionType;
   diceValue?: number | null;
   figureId?: number | null;

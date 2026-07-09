@@ -103,6 +103,7 @@ export function normalizeHistoryEvent(raw: any): GameHistoryEvent {
     eventId: raw.id ?? raw.eventId,
     timestamp: raw.createdAt ?? raw.timestamp,
     playerId: raw.participantId ?? raw.playerId,
+    color: raw.color,
     actionType: raw.actionType,
     diceValue: raw.diceValue ?? null,
     figureId: raw.figureId ?? null,
