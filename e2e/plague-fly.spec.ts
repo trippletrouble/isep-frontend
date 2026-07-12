@@ -65,6 +65,10 @@ test.describe("Plague Fly E2E Gameplay", () => {
 
     await expect(guestPage).toHaveURL(new RegExp(`/lobby/${sessionId}`));
 
+    // Verify both players are visible in the lobby list on Host screen
+    await expect(hostPage.locator('main').locator('span:has-text("PlagueHost")')).toBeVisible();
+    await expect(hostPage.locator('main').locator('span:has-text("PlagueGuest")')).toBeVisible();
+
     // 5. Host starts the game
     console.log("HostPlayer starting the game...");
     await hostPage.click('button:has-text("Spiel starten")');
@@ -76,16 +80,15 @@ test.describe("Plague Fly E2E Gameplay", () => {
     await expect(hostPage.locator('svg[viewBox="0 0 1571 1573"]')).toBeVisible();
     await expect(guestPage.locator('svg[viewBox="0 0 1571 1573"]')).toBeVisible();
 
-    // 6. Verify FLIEGE section text is visible (verifies rule is active)
-    await expect(hostPage.locator('span:has-text("FLIEGE")').filter({ visible: true }).first()).toBeVisible();
-    console.log("PLAGUE_FLY rule verified active on UI.");
+    // 6. Plague fly rule is active, which we will verify when a figure becomes infected.
+    console.log("PLAGUE_FLY rule is active.");
 
     // 7. Queue cheat rolls
     // We roll:
     // Spawning player: 6 (spawns), 1 (lands on 1, gets fly)
     // Waiting player: 2 (cannot move, turn passes back)
     // Infected player: 5 (rolls 5, debuff is applied)
-    const cheatValues = [6, 1, 2, 5];
+    const cheatValues = [6, 1, 2, 5, 2, 5, 2, 5];
     const response = await hostPage.request.post(`http://localhost:3000/sessions/${sessionId}/cheat-roll`, {
       data: { values: cheatValues }
     });
@@ -94,13 +97,14 @@ test.describe("Plague Fly E2E Gameplay", () => {
     // 8. Dynamic gameplay loop
     console.log("Starting play turns loop...");
     let flyAssigned = false;
-    let debuffVerified = false;
+    let debuffsFired = 0;
+    let healingVerified = false;
     let flyPlayerColor = "";
 
-    for (let step = 1; step <= 30; step++) {
+    for (let step = 1; step <= 40; step++) {
       // Detect active player
-      const isHostTurn = await hostPage.locator('span', { hasText: "PlagueHost" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
-      const isGuestTurn = await guestPage.locator('span', { hasText: "PlagueGuest" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isHostTurn = await hostPage.locator('h2:has-text("Leaderboard") ~ div').locator('span', { hasText: "PlagueHost" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
+      const isGuestTurn = await guestPage.locator('h2:has-text("Leaderboard") ~ div').locator('span', { hasText: "PlagueGuest" }).filter({ visible: true }).first().locator('xpath=..').locator('.animate-ping').first().isVisible();
 
       let activePage = hostPage;
       let activeName = "HostPlayer";
@@ -118,29 +122,8 @@ test.describe("Plague Fly E2E Gameplay", () => {
         continue;
       }
 
-      // If fly is assigned and it's the turn of the infected player, and they have rolled the dice (roll button disabled):
       const rollButton = activePage.getByRole("button", { name: "WÜRFEL WERFEN", exact: true }).filter({ visible: true }).first();
       const rollEnabled = await rollButton.isEnabled();
-
-      if (flyAssigned && !rollEnabled && flyPlayerColor) {
-        const color = flyPlayerColor === "RED" ? "#DB5757" : "#EBE036";
-        const figure = activePage.locator(`circle[data-testid="figure"][data-color="${color}"]`).first();
-        if (await figure.isVisible()) {
-          console.log(`Selecting infected figure for ${activeName} to verify debuff...`);
-          await figure.click();
-          await hostPage.waitForTimeout(1000);
-
-          // Check if debuff badge is visible
-          const debuffBadge = activePage.locator('div:has-text("-")').filter({ visible: true }).first();
-          if (await debuffBadge.isVisible()) {
-            const debuffText = await debuffBadge.innerText();
-            console.log(`Success! Debuff badge detected: ${debuffText}`);
-            expect(debuffText).toMatch(/-[1-3]/);
-            debuffVerified = true;
-            break;
-          }
-        }
-      }
 
       if (rollEnabled) {
         console.log(`[Step ${step}] ${activeName} rolling dice...`);
@@ -149,23 +132,56 @@ test.describe("Plague Fly E2E Gameplay", () => {
       } else {
         // Move figure
         console.log(`[Step ${step}] ${activeName} moving figure...`);
+        const flyPlayerName = flyPlayerColor === "RED" ? "HostPlayer" : "GuestPlayer";
         const color = activeName === "HostPlayer" ? "#DB5757" : "#EBE036"; // RED or YELLOW
         const figure = activePage.locator(`circle[data-testid="figure"][data-color="${color}"]`).first();
         
         if (await figure.isVisible()) {
           await figure.click();
-          await hostPage.waitForTimeout(800);
+          await hostPage.waitForTimeout(1000);
+
+          // E2E fly verification checks when the infected player selects their figure (before moving)
+          if (flyAssigned && activeName === flyPlayerName) {
+            if (debuffsFired === 0) {
+              await expect(activePage.locator('span:has-text("FLIEGE")').filter({ visible: true }).first()).toBeVisible();
+              const debuffBadge = activePage.locator('span').filter({ hasText: /^-[1-3]$/ }).filter({ visible: true }).first();
+              await expect(debuffBadge).toBeVisible();
+              const debuffText = await debuffBadge.innerText();
+              console.log(`First debuff verified: ${debuffText}`);
+              expect(debuffText).toMatch(/-[1-3]/);
+              debuffsFired = 1;
+            }
+          }
           
           const targetTile = activePage.locator('circle[data-testid="target-tile"]').first();
           if (await targetTile.isVisible()) {
             await targetTile.click({ force: true });
             await hostPage.waitForTimeout(2000);
 
+            // Increment debuffsFired count or verify cured state after infected player moves their figure
+            if (flyAssigned && activeName === flyPlayerName) {
+              if (debuffsFired === 1) {
+                debuffsFired = 2;
+              } else if (debuffsFired === 2) {
+                // Now that the 3rd debuff move is done, the fly should be cured
+                await expect(activePage.locator('span:has-text("FLIEGE")').first()).not.toBeVisible();
+                const debuffBadge = activePage.locator('span').filter({ hasText: /^-[1-3]$/ }).filter({ visible: true }).first();
+                await expect(debuffBadge).not.toBeVisible();
+                console.log("Success! Plague fly was cured after 3 debuffs, and figure has no debuff active.");
+                healingVerified = true;
+              }
+            }
+
             // The spawning player gets the fly after completing their second move (the '1' roll)
             if (step === 4) {
               console.log(`Fly should now be assigned to ${activeName}!`);
               flyAssigned = true;
               flyPlayerColor = activeName === "HostPlayer" ? "RED" : "YELLOW";
+            }
+
+            if (healingVerified) {
+              console.log("Healing verified and last move executed. Exiting loop!");
+              break;
             }
           } else {
             console.log("No possible moves highlighted for figure.");
@@ -175,7 +191,7 @@ test.describe("Plague Fly E2E Gameplay", () => {
       }
     }
 
-    expect(debuffVerified).toBe(true);
+    expect(healingVerified).toBe(true);
 
     // Clean up browser contexts
     await hostContext.close();

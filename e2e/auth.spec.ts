@@ -19,10 +19,13 @@ test.describe("Authentication and Navigation", () => {
     await expect(page.locator('h1:has-text("Spiellevel")')).toBeVisible();
 
     // Verify user name is shown in the header
-    await expect(page.getByTitle("Abmelden")).toContainText("TestPlayer");
+    await expect(page.locator("header")).toContainText("TestPlayer");
+
+    // Open settings dropdown
+    await page.getByLabel("Einstellungen").click();
 
     // Click logout
-    await page.getByTitle("Abmelden").click();
+    await page.locator('span:has-text("Abmelden")').click();
     
     // Should be redirected back to the login page
     await expect(page).toHaveURL(/\/login/);
